@@ -1,0 +1,21 @@
+[Unit]
+Description=PanDB Web service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pandb
+Group=pandb
+WorkingDirectory=/opt/pandb
+EnvironmentFile=-/etc/pandb/pandb.env
+Environment=DBX_STATIC_DIR=/opt/pandb/dist
+Environment=DBX_DATA_DIR=/var/lib/pandb
+ExecStart=/opt/pandb/bin/dbx-web-bin
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
