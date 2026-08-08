@@ -255,6 +255,16 @@ jobs:
           releaseDraft: true
           args: --target ${{ matrix.target }}
 
+      - name: Preserve Linux desktop bundles
+        if: always() && startsWith(matrix.platform, 'ubuntu')
+        uses: actions/upload-artifact@v4
+        with:
+          name: PanDB-${{ matrix.target }}-desktop-bundles
+          path: |
+            target/${{ matrix.target }}/release/bundle/deb/*.deb
+            target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
       - name: Show sccache stats
         if: always()
         continue-on-error: true
