@@ -1,6 +1,6 @@
 module github.com/ActiveInAI/PanDB/agents/drivers/cassandra-go
 
-go 1.22
+go 1.25.0
 
 require (
 	github.com/apache/cassandra-gocql-driver/v2 v2.1.2
@@ -23,7 +23,7 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 )

@@ -1,13 +1,13 @@
 module github.com/t8y2/dbx/agents/go-common/gohive
 
-go 1.23.0
+go 1.25.0
 
 require (
-	github.com/apache/thrift v0.22.0
+	github.com/apache/thrift v0.23.0
 	github.com/beltran/gohive/v2 v2.1.0
 	github.com/beltran/gosasl v1.0.0
 	github.com/pkg/errors v0.9.1
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.55.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/jcmturner/gokrb5 v8.4.2+incompatible // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 )
 
 replace github.com/beltran/gosasl => ../gosasl

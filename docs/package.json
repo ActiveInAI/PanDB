@@ -32,5 +32,11 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.28.2",
+      "js-yaml": "4.3.1"
+    }
   }
 }

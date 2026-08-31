@@ -9,7 +9,7 @@ name = "dbx-web"
 path = "src/main.rs"
 
 [features]
-default = ["duckdb-sidecar", "dynamodb", "mq-admin", "sqlite-sqlcipher", "system-fonts"]
+default = ["duckdb-sidecar", "sqlite-sqlcipher", "system-fonts"]
 duckdb-sidecar = ["dbx-core/duckdb-sidecar"]
 dynamodb = ["dbx-core/dynamodb"]
 mq-admin = ["dbx-core/mq-admin"]

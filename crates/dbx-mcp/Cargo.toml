@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [features]
-default = ["duckdb-sidecar", "mq-admin"]
+default = ["duckdb-sidecar"]
 duckdb-sidecar = ["dbx-core/duckdb-sidecar"]
 mq-admin = ["dbx-core/mq-admin"]
 
