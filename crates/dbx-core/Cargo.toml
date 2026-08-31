@@ -53,7 +53,7 @@ sqlparser = { version = "0.62.0", features = ["visitor"] }
 redis = { version = "0.32.2", features = ["tokio-comp", "tls-rustls", "tls-rustls-insecure", "tokio-rustls-comp", "sentinel", "cluster-async"] }
 rustls = { version = "0.23", features = ["aws-lc-rs"] }
 rustls-pemfile = "2.2"
-tiberius = { version = "0.12.3", default-features = false, features = ["tds73", "chrono", "rust_decimal", "rustls", "sql-browser-tokio"] }
+tiberius = { version = "0.12.3", default-features = false, features = ["tds73", "chrono", "rust_decimal", "vendored-openssl", "sql-browser-tokio"] }
 reqwest = { version = "0.12", default-features = false, features = ["cookies", "json", "stream", "rustls-tls", "socks"] }
 prometheus-parse = "=0.2.5"
 futures = "0.3"
