@@ -1,6 +1,6 @@
 module github.com/t8y2/dbx/agents/drivers/zookeeper
 
-go 1.23.0
+go 1.25.0
 
 require (
 	github.com/beltran/gosasl v1.0.0
@@ -17,8 +17,8 @@ require (
 	github.com/jcmturner/gokrb5 v8.4.2+incompatible // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
-	golang.org/x/net v0.0.0-20210326220855-61e056675ecf // indirect
+	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 )
 
 replace github.com/beltran/gosasl => ../../go-common/gosasl
