@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import { BOOLEAN_CELL_EDITOR_VALUES, booleanCellEditorValue, isBooleanCellValue, isBooleanColumnType, normalizeBooleanCellValue, parseBooleanCellEditorValue } from "../../apps/desktop/src/lib/dataGrid/dataGridBooleanColumn.ts";
-import { resolveDataGridColumnsByResultIndex } from "../../apps/desktop/src/lib/dataGrid/dataGridColumnMetadata.ts";
+import { resolveDataGridColumnNullability, resolveDataGridColumnsByResultIndex } from "../../apps/desktop/src/lib/dataGrid/dataGridColumnMetadata.ts";
 import type { ColumnInfo } from "../../apps/desktop/src/types/database.ts";
 
 function column(name: string, dataType: string): ColumnInfo {
@@ -22,6 +22,8 @@ test("detects boolean types using database semantics", () => {
   assert.equal(isBooleanColumnType("bit", "sqlserver"), true);
   assert.equal(isBooleanColumnType("boolean", "mysql"), true);
   assert.equal(isBooleanColumnType("  BOOLEAN ", "postgres"), true);
+  assert.equal(isBooleanColumnType("bit", "mysql"), true);
+  assert.equal(isBooleanColumnType("bit(1)", "mysql"), true);
 });
 
 test("does not treat database bit strings or MySQL integer aliases as boolean", () => {
@@ -31,8 +33,6 @@ test("does not treat database bit strings or MySQL integer aliases as boolean", 
   assert.equal(isBooleanColumnType("varbit", "postgres"), false);
   assert.equal(isBooleanColumnType("bit", "opengauss"), false);
   assert.equal(isBooleanColumnType("bit", undefined), false);
-  assert.equal(isBooleanColumnType("bit", "mysql"), false);
-  assert.equal(isBooleanColumnType("bit(1)", "mysql"), false);
   assert.equal(isBooleanColumnType("bit(8)", "mysql"), false);
   assert.equal(isBooleanColumnType("tinyint(1)", "mysql"), false);
   assert.equal(isBooleanColumnType(undefined, "mysql"), false);
@@ -79,28 +79,59 @@ test("parses explicit enum-style boolean selections", () => {
   assert.equal(parseBooleanCellEditorValue("maybe"), undefined);
 });
 
-test("indexes table metadata once and resolves source-column aliases", () => {
+test("indexes table metadata once and honors explicit source-column mappings", () => {
   const enabled = column("Enabled", "boolean");
   const displayName = column("DisplayName", "varchar");
-  const resolved = resolveDataGridColumnsByResultIndex({
+  const explicitlyMapped = resolveDataGridColumnsByResultIndex({
     resultColumns: ["enabled_alias", "DisplayName", "missing"],
     sourceColumns: ["enabled", undefined, undefined],
     tableColumns: [enabled, displayName],
   });
+  const inferred = resolveDataGridColumnsByResultIndex({
+    resultColumns: ["DisplayName"],
+    tableColumns: [enabled, displayName],
+  });
 
-  assert.equal(resolved[0], enabled);
-  assert.equal(resolved[1], displayName);
-  assert.equal(resolved[2], undefined);
+  assert.equal(explicitlyMapped[0], enabled);
+  assert.equal(explicitlyMapped[1], undefined);
+  assert.equal(explicitlyMapped[2], undefined);
+  assert.equal(inferred[0], displayName);
 });
 
-test("uses the enum editor for boolean cells without checkbox rendering or click cycling", () => {
+test("shows nullability only for query results with resolved column metadata", () => {
+  const nullable = column("nickname", "varchar");
+  const required = { ...column("code", "varchar"), is_nullable: false };
+
+  assert.equal(resolveDataGridColumnNullability("results", nullable), "nullable");
+  assert.equal(resolveDataGridColumnNullability("results", required), "required");
+  assert.equal(resolveDataGridColumnNullability("results", undefined), undefined);
+  assert.equal(resolveDataGridColumnNullability("table-data", nullable), undefined);
+  assert.equal(resolveDataGridColumnNullability(undefined, nullable), undefined);
+});
+
+test("keeps the enum editor as the default boolean edit path and gates checkbox interaction behind the checkbox display mode", () => {
   const gridSource = readFileSync("apps/desktop/src/components/grid/DataGrid.vue", "utf8");
   const rendererSource = readFileSync("apps/desktop/src/lib/dataGrid/canvasDataGridRenderer.ts", "utf8");
 
   assert.match(gridSource, /v-else-if="isBooleanGridCell\([^\n]+"[\s\S]*?v-model="booleanEditorModelValue"[\s\S]*?:values="BOOLEAN_CELL_EDITOR_VALUES"/);
   assert.match(gridSource, /@commit="commitBooleanGridEdit"/);
-  assert.doesNotMatch(gridSource, /cycleBooleanCellValue|tryCycleBooleanCheckboxOnCanvasMouseDown|booleanCellChecked/);
-  assert.doesNotMatch(rendererSource, /drawBooleanCheckbox|BOOLEAN_CHECKBOX_SIZE|columnIsBoolean/);
+  // The editor-side cycle helper the old checkbox implementation depended on stays removed.
+  assert.doesNotMatch(gridSource, /cycleBooleanCellValue/);
+  // Checkbox rendering and click cycling only exist behind the checkbox display mode.
+  assert.match(gridSource, /booleanCellsUseCheckbox\.value/);
+  assert.match(rendererSource, /booleanDisplayMode === "checkbox"/);
+});
+
+test("DOM checkbox mode renders a clickable placeholder for null boolean cells so they can be cycled like canvas", () => {
+  const gridSource = readFileSync("apps/desktop/src/components/grid/DataGrid.vue", "utf8");
+  // Canvas surfaces null booleans via booleanNullTextHitFromCanvasEvent (click the NULL text to cycle).
+  // The DOM path must offer the same affordance: a null boolean cell in checkbox mode renders its NULL
+  // text with a click handler that triggers cycleBooleanGridCell, instead of falling through to the
+  // static v-else text (which cannot be cycled and is short-circuited by onDomCellDblClick).
+  const domCellBranch = gridSource.match(/<template v-else-if="booleanCellsUseCheckbox && isBooleanGridCell\([^\n]+=== null[\s\S]*?cycleBooleanGridCell/);
+  assert.ok(domCellBranch, "DOM checkbox mode must render a clickable cycle placeholder for null boolean cells");
+  assert.match(domCellBranch![0], /@click\.stop="cycleBooleanGridCell/);
+  assert.match(domCellBranch![0], /text-muted-foreground/);
 });
 
 test("uses the indexed metadata lookup in grid hot paths", () => {

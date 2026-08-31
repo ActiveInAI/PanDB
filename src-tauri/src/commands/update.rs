@@ -14,6 +14,8 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 
 const OFFICIAL_UPDATE_ENDPOINTS: [&str; 1] =
     ["https://github.com/ActiveInAI/PanDB/releases/latest/download/latest.json"];
+const R2_LATEST_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/ActiveInAI/PanDB/releases/latest/download/";
+const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/ActiveInAI/PanDB/releases/download/";
 const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/ActiveInAI/PanDB/releases/download/";
 const UPDATE_DOWNLOAD_PROGRESS_EVENT: &str = "update-download-progress";
 const DOWNLOAD_CANCELED_ERROR: &str = "Download canceled by user.";
@@ -33,6 +35,28 @@ pub enum UpdateDownloadSource {
 pub struct UpdateDownloadProgress {
     pub downloaded: u64,
     pub total: Option<u64>,
+}
+
+#[derive(Default)]
+struct UpdateDownloadProgressGate {
+    last_visible_percentage: Option<u128>,
+}
+
+impl UpdateDownloadProgressGate {
+    fn should_emit(&mut self, downloaded: u64, total: Option<u64>) -> bool {
+        let visible_percentage = match total {
+            Some(total) if total > 0 => {
+                let total = total as u128;
+                ((downloaded as u128).saturating_mul(100).saturating_add(total / 2)) / total
+            }
+            _ => 0,
+        };
+        if self.last_visible_percentage == Some(visible_percentage) {
+            return false;
+        }
+        self.last_visible_percentage = Some(visible_percentage);
+        true
+    }
 }
 
 enum PendingUpdate {
@@ -172,11 +196,39 @@ impl UpdateDownloadSource {
         }
     }
 
-    fn endpoints(&self, _latest_version: Option<&str>) -> Result<Vec<String>, String> {
+    fn endpoints(&self, latest_version: Option<&str>) -> Result<Vec<String>, String> {
         match self {
             Self::Official => Ok(OFFICIAL_UPDATE_ENDPOINTS.iter().map(|endpoint| endpoint.to_string()).collect()),
-            // Keep the stored source value readable, but never send PanDB users to a legacy DBX mirror.
-            Self::Cnb => Ok(OFFICIAL_UPDATE_ENDPOINTS.iter().map(|endpoint| endpoint.to_string()).collect()),
+            Self::Cnb => {
+                let version =
+                    latest_version.ok_or_else(|| "Latest version is required for CNB updates.".to_string())?;
+                Ok(vec![
+                    format!("{CNB_RELEASE_DOWNLOAD_PREFIX}{}/latest.json", tag_version(version)),
+                    OFFICIAL_UPDATE_ENDPOINTS[0].to_string(),
+                ])
+            }
+        }
+    }
+
+    fn rewrite_download_url(&self, url: &str) -> Result<Option<String>, String> {
+        let Some(target_prefix) = self.mirror_download_prefix() else { return Ok(None) };
+
+        if url.starts_with(target_prefix) {
+            return Ok(None);
+        }
+
+        // Mirror latest.json files still contain GitHub asset URLs, so rewrite only that known release prefix.
+        let rewritten = url
+            .strip_prefix(GITHUB_RELEASE_DOWNLOAD_PREFIX)
+            .map(|path| format!("{target_prefix}{path}"))
+            .ok_or_else(|| format!("Unsupported update download URL for {} source: {url}", self.label()))?;
+        Ok(Some(rewritten))
+    }
+
+    fn mirror_download_prefix(&self) -> Option<&'static str> {
+        match self {
+            Self::Cnb => Some(CNB_RELEASE_DOWNLOAD_PREFIX),
+            Self::Official => None,
         }
     }
 
@@ -188,8 +240,16 @@ impl UpdateDownloadSource {
         let normalized_version = latest_version.trim().trim_start_matches('v');
         let filename = update_portable::portable_asset_name(normalized_version, arch)?;
         let tag = tag_version(normalized_version);
-        let _ = self;
-        let archive_urls = vec![format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}")];
+        let archive_urls = match self {
+            Self::Official => vec![
+                format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}{filename}"),
+                format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}"),
+            ],
+            Self::Cnb => vec![
+                format!("{CNB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}"),
+                format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}{filename}"),
+            ],
+        };
         Ok(archive_urls
             .into_iter()
             .map(|archive_url| PortableAssetCandidate { signature_url: format!("{archive_url}.sig"), archive_url })
@@ -209,11 +269,32 @@ impl UpdateDownloadSource {
             "".to_string()
         });
 
-        let _ = self;
-        let mut raw_candidates = vec![download_url.to_string()];
-        if !tag.is_empty() && !filename.is_empty() {
-            raw_candidates.push(format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}"));
-        }
+        let raw_candidates = match self {
+            Self::Official => {
+                let mut urls = Vec::new();
+                if !filename.is_empty() {
+                    urls.push(format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}{filename}"));
+                }
+                urls.push(download_url.to_string());
+                if !tag.is_empty() && !filename.is_empty() {
+                    urls.push(format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}"));
+                }
+                urls
+            }
+            Self::Cnb => {
+                let mut urls = Vec::new();
+                if let Ok(Some(rewritten)) = self.rewrite_download_url(download_url) {
+                    urls.push(rewritten);
+                } else if !tag.is_empty() && !filename.is_empty() {
+                    urls.push(format!("{CNB_RELEASE_DOWNLOAD_PREFIX}{tag}/{filename}"));
+                }
+                if !filename.is_empty() {
+                    urls.push(format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}{filename}"));
+                }
+                urls.push(download_url.to_string());
+                urls
+            }
+        };
 
         let mut unique = Vec::new();
         for url in raw_candidates {
@@ -312,7 +393,7 @@ async fn download_update_inner(
     cancellation: &Arc<DownloadCancellation>,
 ) -> Result<(Update, Vec<u8>), String> {
     let endpoint_urls = source.endpoints(latest_version)?;
-    println!("[PanDB updater] checking from {} endpoints: {}", source.label(), endpoint_urls.join(", "));
+    println!("[DBX updater] checking from {} endpoints: {}", source.label(), endpoint_urls.join(", "));
     let mut endpoints = Vec::with_capacity(endpoint_urls.len());
     for endpoint_url in endpoint_urls {
         endpoints.push(endpoint_url.parse().map_err(|e| format!("Invalid update endpoint: {e}"))?);
@@ -332,7 +413,7 @@ async fn download_update_inner(
     };
 
     let candidates = source.installer_asset_candidates(update.download_url.as_str(), latest_version);
-    println!("[PanDB updater] candidates for installer download: {:?}", candidates);
+    println!("[DBX updater] candidates for installer download: {:?}", candidates);
 
     let mut failures = Vec::new();
 
@@ -340,7 +421,7 @@ async fn download_update_inner(
         if cancellation.is_canceled() {
             return Err(DOWNLOAD_CANCELED_ERROR.to_string());
         }
-        println!("[PanDB updater] downloading installer update from {candidate_url}");
+        println!("[DBX updater] downloading installer update from {candidate_url}");
         let parsed_url = match reqwest::Url::parse(&candidate_url) {
             Ok(url) => url,
             Err(e) => {
@@ -353,6 +434,7 @@ async fn download_update_inner(
         let finished_downloaded = Arc::clone(&downloaded);
         let progress_app_chunk = app.clone();
         let progress_app_finish = app.clone();
+        let mut progress_gate = UpdateDownloadProgressGate::default();
 
         let (progress_tx, progress_rx) = tokio::sync::mpsc::channel::<()>(16);
 
@@ -367,8 +449,10 @@ async fn download_update_inner(
                             let downloaded = downloaded
                                 .fetch_add(chunk_len as u64, Ordering::Relaxed)
                                 .saturating_add(chunk_len as u64);
-                            let _ = progress_app_chunk
-                                .emit(UPDATE_DOWNLOAD_PROGRESS_EVENT, UpdateDownloadProgress { downloaded, total });
+                            if progress_gate.should_emit(downloaded, total) {
+                                let _ = progress_app_chunk
+                                    .emit(UPDATE_DOWNLOAD_PROGRESS_EVENT, UpdateDownloadProgress { downloaded, total });
+                            }
                             let _ = progress_tx.try_send(());
                         },
                         move || {
@@ -396,7 +480,7 @@ async fn download_update_inner(
                 if cancellation.is_canceled() || error.contains("canceled") {
                     return Err(DOWNLOAD_CANCELED_ERROR.to_string());
                 }
-                println!("[PanDB updater] installer candidate failed ({candidate_url}): {error}");
+                println!("[DBX updater] installer candidate failed ({candidate_url}): {error}");
                 failures.push(format!("{candidate_url}: {error}"));
             }
         }
@@ -420,7 +504,7 @@ async fn download_portable_update_inner(
         if cancellation.is_canceled() {
             return Err(DOWNLOAD_CANCELED_ERROR.to_string());
         }
-        println!("[PanDB updater] downloading portable update from {}", candidate.archive_url);
+        println!("[DBX updater] downloading portable update from {}", candidate.archive_url);
         let result = async {
             let signature = download_bounded_bytes(
                 &client,
@@ -451,7 +535,7 @@ async fn download_portable_update_inner(
                 if cancellation.is_canceled() || error.contains("canceled") {
                     return Err(DOWNLOAD_CANCELED_ERROR.to_string());
                 }
-                println!("[PanDB updater] portable update candidate failed: {error}");
+                println!("[DBX updater] portable update candidate failed: {error}");
                 failures.push(format!("{}: {error}", candidate.archive_url));
             }
         }
@@ -505,6 +589,8 @@ async fn download_bounded_bytes(
     if let Some(app) = progress_app {
         let _ = app.emit(UPDATE_DOWNLOAD_PROGRESS_EVENT, UpdateDownloadProgress { downloaded: 0, total });
     }
+    let mut progress_gate = UpdateDownloadProgressGate::default();
+    progress_gate.should_emit(0, total);
     let mut bytes = Vec::with_capacity(total.unwrap_or(0).min(max_bytes as u64) as usize);
 
     loop {
@@ -531,9 +617,13 @@ async fn download_bounded_bytes(
             return Err(format!("Update asset exceeds the {max_bytes} byte limit."));
         }
         bytes.extend_from_slice(&chunk);
-        if let Some(app) = progress_app {
-            let _ = app
-                .emit(UPDATE_DOWNLOAD_PROGRESS_EVENT, UpdateDownloadProgress { downloaded: bytes.len() as u64, total });
+        if progress_gate.should_emit(bytes.len() as u64, total) {
+            if let Some(app) = progress_app {
+                let _ = app.emit(
+                    UPDATE_DOWNLOAD_PROGRESS_EVENT,
+                    UpdateDownloadProgress { downloaded: bytes.len() as u64, total },
+                );
+            }
         }
     }
     Ok(bytes)
@@ -618,8 +708,9 @@ fn schedule_portable_update_exit(app: AppHandle) {
 mod tests {
     use super::{
         requires_manual_update, tag_version, wait_for_download_step, wait_for_progressing_download,
-        DownloadCancellation, PendingUpdateState, UpdateDownloadSource, DOWNLOAD_CANCELED_ERROR,
-        GITHUB_RELEASE_DOWNLOAD_PREFIX, OFFICIAL_UPDATE_ENDPOINTS,
+        DownloadCancellation, PendingUpdateState, UpdateDownloadProgressGate, UpdateDownloadSource,
+        CNB_RELEASE_DOWNLOAD_PREFIX, DOWNLOAD_CANCELED_ERROR, GITHUB_RELEASE_DOWNLOAD_PREFIX,
+        OFFICIAL_UPDATE_ENDPOINTS, R2_LATEST_RELEASE_DOWNLOAD_PREFIX,
     };
     use std::{future::pending, sync::Arc, time::Duration};
 
@@ -642,54 +733,134 @@ mod tests {
     }
 
     #[test]
-    fn legacy_cnb_source_falls_back_to_official_endpoint() {
+    fn builds_cnb_update_endpoint_for_tag() {
         let endpoints = UpdateDownloadSource::Cnb.endpoints(Some("0.5.39")).unwrap();
-        assert_eq!(endpoints, OFFICIAL_UPDATE_ENDPOINTS);
+        assert_eq!(
+            endpoints,
+            vec![format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.39/latest.json"), OFFICIAL_UPDATE_ENDPOINTS[0].to_string()]
+        );
+    }
+
+    #[test]
+    fn rewrites_github_asset_url_to_cnb() {
+        let download_url = UpdateDownloadSource::Cnb
+            .rewrite_download_url(
+                "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg",
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(download_url, "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg");
+    }
+
+    #[test]
+    fn accepts_existing_cnb_asset_url() {
+        let download_url = UpdateDownloadSource::Cnb
+            .rewrite_download_url("https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg")
+            .unwrap();
+        assert_eq!(download_url, None);
     }
 
     #[test]
     fn builds_signed_official_portable_asset_candidates() {
         let candidates = UpdateDownloadSource::Official.portable_asset_candidates("0.5.64", "x86_64").unwrap();
-        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates.len(), 2);
         assert_eq!(
             candidates[0].archive_url,
-            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/PanDB_0.5.64_x64-portable.zip")
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_x64-portable.zip")
+        );
+        assert_eq!(
+            candidates[1].archive_url,
+            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_x64-portable.zip")
         );
         assert!(candidates.iter().all(|candidate| candidate.signature_url == format!("{}.sig", candidate.archive_url)));
     }
 
     #[test]
-    fn legacy_cnb_source_uses_github_portable_asset_candidate() {
+    fn builds_cnb_portable_asset_candidate_with_r2_fallback() {
         let candidates = UpdateDownloadSource::Cnb.portable_asset_candidates("v0.5.64", "aarch64").unwrap();
-        assert_eq!(candidates.len(), 1);
         assert_eq!(
             candidates[0].archive_url,
-            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/PanDB_0.5.64_arm64-portable.zip")
+            format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_arm64-portable.zip")
+        );
+        assert_eq!(
+            candidates[1].archive_url,
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_arm64-portable.zip")
         );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_cnb_source() {
         let candidates = UpdateDownloadSource::Cnb.installer_asset_candidates(
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg",
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
+        assert_eq!(candidates.len(), 3);
+        assert_eq!(candidates[0], "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg");
+        assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
         assert_eq!(
-            candidates,
-            vec!["https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg"]
+            candidates[2],
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg"
         );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_official_source() {
         let candidates = UpdateDownloadSource::Official.installer_asset_candidates(
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg",
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
+        assert_eq!(candidates.len(), 2);
+        assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
         assert_eq!(
-            candidates,
-            vec!["https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg"]
+            candidates[1],
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg"
         );
+        assert!(!candidates.iter().any(|url| url.contains("cnb.cool")));
+    }
+
+    #[test]
+    fn emits_progress_only_when_the_visible_percentage_changes() {
+        let mut gate = UpdateDownloadProgressGate::default();
+
+        assert!(gate.should_emit(0, Some(1_000)));
+        assert!(!gate.should_emit(4, Some(1_000)));
+        assert!(gate.should_emit(5, Some(1_000)));
+        assert!(!gate.should_emit(14, Some(1_000)));
+        assert!(gate.should_emit(15, Some(1_000)));
+        assert!(gate.should_emit(1_000, Some(1_000)));
+    }
+
+    #[test]
+    fn keeps_unknown_length_progress_visually_stable_until_completion() {
+        let mut gate = UpdateDownloadProgressGate::default();
+
+        assert!(gate.should_emit(0, None));
+        assert!(!gate.should_emit(512, None));
+        assert!(!gate.should_emit(1_024, Some(0)));
+        assert!(gate.should_emit(1_024, Some(1_024)));
+    }
+
+    #[test]
+    fn handles_large_progress_values_without_overflow() {
+        let mut gate = UpdateDownloadProgressGate::default();
+
+        assert!(gate.should_emit(u64::MAX / 2, Some(u64::MAX)));
+        assert!(gate.should_emit(u64::MAX, Some(u64::MAX)));
+    }
+
+    #[test]
+    fn limits_chunk_events_to_visible_percentage_updates() {
+        let total = 19_527_892_u64;
+        let mut downloaded = 0_u64;
+        let mut emitted = 0;
+        let mut gate = UpdateDownloadProgressGate::default();
+
+        while downloaded < total {
+            downloaded = downloaded.saturating_add(16_384).min(total);
+            emitted += usize::from(gate.should_emit(downloaded, Some(total)));
+        }
+
+        assert_eq!(emitted, 101);
     }
 
     #[test]

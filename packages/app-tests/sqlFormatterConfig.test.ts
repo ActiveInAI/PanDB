@@ -250,6 +250,8 @@ test("maps PanDB formatter settings to sql-formatter options", () => {
       denseOperators: false,
       newlineBeforeSemicolon: true,
       paramTypes: {
+        positional: true,
+        named: [":", "@"],
         custom: [{ regex: String.raw`\$\{[^}]+\}` }, { regex: String.raw`#\{[^}]+\}` }],
       },
     },
@@ -275,6 +277,7 @@ test("maps PanDB formatter settings to sql-formatter options", () => {
       newlineBeforeSemicolon: false,
       paramTypes: {
         positional: true,
+        named: [":", "@"],
         custom: [{ regex: String.raw`\$\{[^}]+\}` }, { regex: String.raw`#\{[^}]+\}` }],
       },
     },

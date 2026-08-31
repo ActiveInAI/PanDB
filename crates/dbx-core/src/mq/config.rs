@@ -30,6 +30,17 @@ pub struct MqConnectOverride {
     pub port: u16,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MqSocksProxy {
+    pub host: String,
+    pub port: u16,
+    #[serde(default)]
+    pub username: String,
+    #[serde(default)]
+    pub password: String,
+}
+
 /// Configuration for an MQ admin connection, decoded from
 /// `ConnectionConfig.external_config`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,6 +71,8 @@ pub struct MqAdminConfig {
     /// its Management HTTP API listens on an independently configured port.
     #[serde(skip)]
     pub management_connect_override: Option<MqConnectOverride>,
+    #[serde(skip)]
+    pub socks_proxy: Option<MqSocksProxy>,
     /// Runtime-only: from `ConnectionConfig.query_timeout_secs` (`0` = unlimited).
     #[serde(skip)]
     pub query_timeout_secs: u64,
@@ -141,6 +154,16 @@ impl MqAdminConfig {
         self.management_connect_override = Some(MqConnectOverride { host: host.to_string(), port });
         self
     }
+
+    pub fn with_socks_proxy(mut self, host: &str, port: u16, username: &str, password: &str) -> Self {
+        self.socks_proxy = Some(MqSocksProxy {
+            host: host.to_string(),
+            port,
+            username: username.to_string(),
+            password: password.to_string(),
+        });
+        self
+    }
 }
 
 pub fn admin_url_with_endpoint(admin_url: &str, host: &str, port: u16) -> Result<String, String> {
@@ -170,7 +193,9 @@ mod tests {
             username: String::new(),
             password: String::new(),
             database: None,
+            default_schema: None,
             visible_databases: None,
+            visible_database_patterns: None,
             visible_schemas: None,
             show_system_schemas: false,
             attached_databases: Vec::new(),
@@ -198,6 +223,7 @@ mod tests {
             redis_key_separator: String::new(),
             redis_scan_page_size: None,
             redis_database_aliases: Default::default(),
+            redis_key_templates: Vec::new(),
             etcd_endpoints: String::new(),
             gbase_server: String::new(),
             informix_server: String::new(),
@@ -205,6 +231,7 @@ mod tests {
             jdbc_driver_class: None,
             jdbc_driver_paths: Vec::new(),
             one_time: false,
+            save_password: true,
             read_only: false,
             is_production: false,
             production_databases: vec![],

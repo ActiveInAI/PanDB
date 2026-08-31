@@ -59,6 +59,37 @@ test("bumps the native RabbitMQ agent from its Go directory", () => {
   assert.equal(result.versions.rabbitmq, "0.1.1");
 });
 
+test("bumps the native RocketMQ agent from its Go directory", () => {
+  const result = evaluateAgentVersionBump({
+    versions: { rocketmq: "0.1.0" },
+    changedFiles: ["agents/drivers/rocketmq/main.go"],
+    moduleExists: (path) => path === "agents/drivers/rocketmq",
+    readModuleFile: () => "",
+  });
+
+  assert.equal(result.versions.rocketmq, "0.1.1");
+  assert.deepEqual(result.nativeModules, ["rocketmq"]);
+});
+
+test("bumps ZooKeeper from native and shared SASL source directories", () => {
+  for (const changedFile of [
+    "agents/drivers/zookeeper/main.go",
+    "agents/go-common/gosasl/sasl.go",
+    "agents/go-common/go-gssapi/krb5/krb5.go",
+  ]) {
+    const result = evaluateAgentVersionBump({
+      versions: { zookeeper: "0.1.0" },
+      changedFiles: [changedFile],
+      moduleExists: (path) => path === "agents/drivers/zookeeper",
+      readModuleFile: () => "",
+    });
+
+    assert.equal(result.versions.zookeeper, "0.1.1");
+    assert.deepEqual(result.javaModules, []);
+    assert.deepEqual(result.nativeModules, ["zookeeper"]);
+  }
+});
+
 test("bumps the native Vastbase agent from its independent Go directory", () => {
   const result = evaluateAgentVersionBump({
     versions: { vastbase: "0.1.37" },
@@ -83,6 +114,26 @@ test("bumps Cassandra from its native Go source directory", () => {
   assert.deepEqual(result.nativeModules, ["cassandra"]);
 });
 
+test("bumps Hive from native and shared Kerberos source directories", () => {
+  for (const changedFile of [
+    "agents/drivers/hive-go/main.go",
+    "agents/go-common/gohive/driver.go",
+    "agents/go-common/gosasl/gssapi.go",
+    "agents/go-common/go-gssapi/krb5/krb5.go",
+  ]) {
+    const result = evaluateAgentVersionBump({
+      versions: { hive: "0.1.43" },
+      changedFiles: [changedFile],
+      moduleExists: (path) => path === "agents/drivers/hive-go",
+      readModuleFile: () => "",
+    });
+
+    assert.equal(result.versions.hive, "0.1.44");
+    assert.deepEqual(result.javaModules, []);
+    assert.deepEqual(result.nativeModules, ["hive"]);
+  }
+});
+
 test("bumps Neo4j from its native Go source directory", () => {
   const result = evaluateAgentVersionBump({
     versions: { neo4j: "0.1.39" },
@@ -94,6 +145,19 @@ test("bumps Neo4j from its native Go source directory", () => {
   assert.equal(result.versions.neo4j, "0.1.40");
   assert.deepEqual(result.javaModules, []);
   assert.deepEqual(result.nativeModules, ["neo4j"]);
+});
+
+test("bumps IoTDB from its native Go source directory", () => {
+  const result = evaluateAgentVersionBump({
+    versions: { iotdb: "0.1.30" },
+    changedFiles: ["agents/drivers/iotdb/main.go"],
+    moduleExists: (path) => path === "agents/drivers/iotdb",
+    readModuleFile: () => "",
+  });
+
+  assert.equal(result.versions.iotdb, "0.1.31");
+  assert.deepEqual(result.javaModules, []);
+  assert.deepEqual(result.nativeModules, ["iotdb"]);
 });
 
 test("rebuilds native modules when shared native packaging changes", () => {

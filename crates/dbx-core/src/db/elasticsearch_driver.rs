@@ -1,9 +1,11 @@
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
+use regex::Regex;
 use reqwest::{Client as HttpClient, Method, StatusCode};
 use serde::Deserialize;
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
 use super::{http_client_builder, with_connection_timeout};
@@ -50,6 +52,12 @@ pub struct EsClient {
     transport_mode: ElasticsearchTransportMode,
     /// GET path used for connect / health / test (default "/").
     connectivity_check_path: String,
+    /// 为 true 时完全跳过连通性检查（test_connection 直接返回 Ok）。
+    /// 用于账号连 `/` 或任何检查路径都无权限、且集群间权限不统一的场景。
+    connectivity_check_disabled: bool,
+    /// 正则:把易变的时间/滚动后缀折叠成 `*`，将同一前缀的滚动索引聚合成一个
+    /// pattern 节点。`None` 表示关闭聚合，展示原始索引名。
+    index_grouping: Option<Regex>,
 }
 
 impl EsClient {
@@ -68,6 +76,8 @@ impl EsClient {
             timeout,
             ElasticsearchTransportMode::Direct,
             "/".to_string(),
+            false,
+            None,
         )
     }
 
@@ -79,16 +89,30 @@ impl EsClient {
         timeout: Duration,
         transport_mode: ElasticsearchTransportMode,
         connectivity_check_path: String,
+        connectivity_check_disabled: bool,
+        index_grouping: Option<Regex>,
     ) -> Self {
         let base_url = url.trim_end_matches('/').to_string();
         let auth = match (username, password) {
             (Some(u), Some(p)) if !u.is_empty() => Some((u.to_string(), p.to_string())),
             _ => None,
         };
-        let builder = http_client_builder(timeout).danger_accept_invalid_certs(accept_invalid_certs);
+        let mut builder = http_client_builder(timeout).danger_accept_invalid_certs(accept_invalid_certs);
+        if let Some(addrs) = elasticsearch_localhost_resolve_addrs(&base_url, connectivity_check_disabled) {
+            builder = builder.resolve_to_addrs("localhost", &addrs);
+        }
         let http = builder.build().unwrap_or_else(|_| HttpClient::new());
         let fallback_base_urls = elasticsearch_base_url_fallbacks(&base_url);
-        Self { http, base_url, fallback_base_urls, auth, transport_mode, connectivity_check_path }
+        Self {
+            http,
+            base_url,
+            fallback_base_urls,
+            auth,
+            transport_mode,
+            connectivity_check_path,
+            connectivity_check_disabled,
+            index_grouping,
+        }
     }
 
     pub fn from_config(
@@ -108,6 +132,8 @@ impl EsClient {
         };
         let base_url = format!("{}{}", url.trim_end_matches('/'), kibana_base_path.as_deref().unwrap_or(""));
         let connectivity_check_path = elasticsearch_connectivity_check_path(external_config);
+        let connectivity_check_disabled = elasticsearch_connectivity_check_disabled(external_config);
+        let index_grouping = elasticsearch_index_grouping(external_config);
         Self::new_with_mode(
             &base_url,
             username,
@@ -116,6 +142,8 @@ impl EsClient {
             timeout,
             transport_mode,
             connectivity_check_path,
+            connectivity_check_disabled,
+            index_grouping,
         )
     }
 
@@ -142,7 +170,8 @@ impl EsClient {
                 .http
                 .post(format!("{}/api/console/proxy", self.base_url))
                 .query(&[("path", path), ("method", method.as_str())])
-                .header("kbn-xsrf", "true"),
+                .header("kbn-xsrf", "true")
+                .header("osd-xsrf", "true"),
         };
         self.with_auth(req)
     }
@@ -180,6 +209,8 @@ impl Clone for EsClient {
             auth: self.auth.clone(),
             transport_mode: self.transport_mode,
             connectivity_check_path: self.connectivity_check_path.clone(),
+            connectivity_check_disabled: self.connectivity_check_disabled,
+            index_grouping: self.index_grouping.clone(),
         }
     }
 }
@@ -227,7 +258,68 @@ pub fn elasticsearch_connectivity_check_path(external_config: Option<&Value>) ->
     }
 }
 
+/// 解析连接配置里的索引聚合正则。**默认关闭**（命名格式因环境而异，不做全局假设）。
+/// - 缺省/空/`off`/`none`/`false` → 关闭聚合，展示原始索引名。
+/// - 其它 → 作为自定义正则；编译失败同样视为关闭，避免意外折叠。
+///
+/// 语义：用 `${1}*` 模板替换匹配区间——正则带捕获组 1 时保留其内容做前缀，
+/// 不带捕获组时即把匹配到的“易变尾巴”替换成 `*`。
+/// 是否完全跳过连通性检查。读取配置 `connectivityCheckDisabled`（布尔）。
+/// 也兼容字符串 "true"/"1"/"yes"/"on"。用于账号无任何集群/索引探活权限的场景。
+pub fn elasticsearch_connectivity_check_disabled(external_config: Option<&Value>) -> bool {
+    let Some(value) = external_config.and_then(Value::as_object).and_then(|c| c.get("connectivityCheckDisabled"))
+    else {
+        return false;
+    };
+    match value {
+        Value::Bool(b) => *b,
+        Value::String(s) => {
+            let s = s.trim();
+            s.eq_ignore_ascii_case("true") || s == "1" || s.eq_ignore_ascii_case("yes") || s.eq_ignore_ascii_case("on")
+        }
+        _ => false,
+    }
+}
+
+pub fn elasticsearch_index_grouping(external_config: Option<&Value>) -> Option<Regex> {
+    let raw = external_config
+        .and_then(Value::as_object)
+        .and_then(|config| config.get("indexGroupingPattern"))
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim();
+    if raw.is_empty()
+        || raw.eq_ignore_ascii_case("off")
+        || raw.eq_ignore_ascii_case("none")
+        || raw.eq_ignore_ascii_case("false")
+    {
+        return None;
+    }
+    Regex::new(raw).ok()
+}
+
+/// 用分组正则把索引名聚合成 pattern。`None` 表示关闭聚合，原样返回。
+fn group_index_names(names: Vec<String>, pattern: Option<&Regex>) -> Vec<String> {
+    let Some(re) = pattern else {
+        return names;
+    };
+    let mut buckets: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for name in names {
+        // `${1}*`：有捕获组则保留组1做前缀，无组则把匹配尾巴替换成 `*`。
+        let key = re.replace(&name, "${1}*").into_owned();
+        buckets.entry(key).or_default().push(name);
+    }
+    let mut out: Vec<String> = buckets.into_keys().collect();
+    out.sort();
+    out.dedup();
+    out
+}
+
 pub async fn test_connection(client: &mut EsClient, timeout: Duration) -> Result<(), String> {
+    // 用户显式关闭连通性检查：不发探活请求，直接视为可连。
+    if client.connectivity_check_disabled {
+        return Ok(());
+    }
     let mut errors = Vec::new();
     let urls = std::iter::once(client.base_url.clone()).chain(client.fallback_base_urls.clone());
     let check_path = client.connectivity_check_path.clone();
@@ -307,6 +399,17 @@ fn elasticsearch_base_url_fallbacks(base_url: &str) -> Vec<String> {
     }
 }
 
+fn elasticsearch_localhost_resolve_addrs(base_url: &str, connectivity_check_disabled: bool) -> Option<[SocketAddr; 2]> {
+    if !connectivity_check_disabled {
+        return None;
+    }
+    let parsed = reqwest::Url::parse(base_url).ok()?;
+    if !parsed.host_str()?.eq_ignore_ascii_case("localhost") {
+        return None;
+    }
+    Some([SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 0), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0)])
+}
+
 fn elasticsearch_index_path(index: &str, endpoint: &str) -> String {
     format!("/{}/{}", elasticsearch_path_segment(index), endpoint.trim_start_matches('/'))
 }
@@ -375,20 +478,92 @@ struct CatIndex {
     index: String,
 }
 
+#[derive(Deserialize)]
+struct ResolveIndexResponse {
+    #[serde(default)]
+    indices: Vec<ResolveNamed>,
+    #[serde(default)]
+    data_streams: Vec<ResolveNamed>,
+}
+
+#[derive(Deserialize)]
+struct ResolveNamed {
+    name: String,
+}
+
+/// 去掉 ES 内部索引（以 `.` 开头），排序并去重后返回可见索引名。
+fn normalize_index_names(names: impl Iterator<Item = String>) -> Vec<String> {
+    let mut names: Vec<String> = names.filter(|name| !name.starts_with('.')).collect();
+    names.sort();
+    names.dedup();
+    names
+}
+
 pub async fn list_indices(client: &EsClient) -> Result<Vec<String>, String> {
+    let names = list_raw_index_names(client).await?;
+    Ok(group_index_names(names, client.index_grouping.as_ref()))
+}
+
+async fn list_raw_index_names(client: &EsClient) -> Result<Vec<String>, String> {
+    // 主路径 `_cat/indices` 需要集群级 `monitor` 权限。仅有索引级权限的账号
+    // （例如日志采集用户）会在这里拿到 401/403，此时降级到索引级元数据端点。
     let resp = client
         .get("/_cat/indices?format=json&h=index")
         .send()
         .await
         .map_err(|e| format!("Elasticsearch request failed: {e}"))?;
+    let status = client.response_status(&resp);
+    if status.is_success() {
+        let indices: Vec<CatIndex> = resp.json().await.map_err(|e| format!("Elasticsearch parse error: {e}"))?;
+        return Ok(normalize_index_names(indices.into_iter().map(|i| i.index)));
+    }
+    if status == StatusCode::FORBIDDEN || status == StatusCode::UNAUTHORIZED {
+        return list_indices_via_metadata(client).await;
+    }
+    let body = resp.text().await.unwrap_or_default();
+    Err(format!("Elasticsearch error: {body}"))
+}
+
+/// 集群 `monitor` 不可用时的降级：`_resolve/index` 与 `_alias` 属于
+/// `indices:admin/*` 动作，`view_index_metadata`/`read` 索引权限即可访问，
+/// 且 ES 安全层会把结果过滤为当前账号可见的索引。
+async fn list_indices_via_metadata(client: &EsClient) -> Result<Vec<String>, String> {
+    // 优先 `_resolve/index`：同时覆盖普通索引与数据流（data stream）。
+    if let Some(names) = resolve_index_names(client).await? {
+        return Ok(names);
+    }
+    // 再退回 `_alias`：以对象 key 形式返回具体索引名。
+    alias_index_names(client).await
+}
+
+/// 通过 `GET /_resolve/index/*` 列举索引。该端点缺权限时返回 `Ok(None)`，
+/// 以便继续尝试 `_alias`；其它错误如实上抛。
+async fn resolve_index_names(client: &EsClient) -> Result<Option<Vec<String>>, String> {
+    let resp =
+        client.get("/_resolve/index/*").send().await.map_err(|e| format!("Elasticsearch request failed: {e}"))?;
+    let status = client.response_status(&resp);
+    if status == StatusCode::FORBIDDEN || status == StatusCode::UNAUTHORIZED {
+        return Ok(None);
+    }
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("Elasticsearch error: {body}"));
+    }
+    let body: ResolveIndexResponse = resp.json().await.map_err(|e| format!("Elasticsearch parse error: {e}"))?;
+    let names = body.indices.into_iter().chain(body.data_streams).map(|item| item.name);
+    Ok(Some(normalize_index_names(names)))
+}
+
+/// 通过 `GET /_alias` 列举索引（对象 key 即索引名）。
+async fn alias_index_names(client: &EsClient) -> Result<Vec<String>, String> {
+    let resp = client.get("/_alias").send().await.map_err(|e| format!("Elasticsearch request failed: {e}"))?;
     if !client.response_status(&resp).is_success() {
         let body = resp.text().await.unwrap_or_default();
         return Err(format!("Elasticsearch error: {body}"));
     }
-    let indices: Vec<CatIndex> = resp.json().await.map_err(|e| format!("Elasticsearch parse error: {e}"))?;
-    let mut names: Vec<String> = indices.into_iter().filter(|i| !i.index.starts_with('.')).map(|i| i.index).collect();
-    names.sort();
-    Ok(names)
+    let body: serde_json::Map<String, Value> =
+        resp.json().await.map_err(|e| format!("Elasticsearch parse error: {e}"))?;
+    Ok(normalize_index_names(body.into_iter().map(|(name, _)| name)))
 }
 
 pub async fn get_columns(client: &EsClient, index: &str) -> Result<Vec<crate::db::ColumnInfo>, String> {
@@ -655,6 +830,7 @@ fn search_response_to_document_result(result: SearchResponse) -> Result<Document
         extended_documents: None,
         total,
         total_is_exact,
+        next_cursor: None,
     })
 }
 
@@ -1298,6 +1474,7 @@ fn parse_elasticsearch_response_with_sql_parser(
                 session_id: None,
                 has_more: false,
                 elasticsearch_raw_body: None,
+                messages: Vec::new(),
             })
         } else {
             Ok(json_response_result(status, &body, start))
@@ -1323,6 +1500,7 @@ fn parse_elasticsearch_response_with_sql_parser(
             session_id: None,
             has_more: false,
             elasticsearch_raw_body: None,
+            messages: Vec::new(),
         })
     } else {
         Ok(json_response_result(status, &body, start))
@@ -1494,6 +1672,7 @@ fn raw_json_response_result(
         session_id: None,
         has_more: false,
         elasticsearch_raw_body: None,
+        messages: Vec::new(),
     }
 }
 
@@ -1560,6 +1739,7 @@ fn parse_elasticsearch_rest_response_with_sql_parser(
         session_id: None,
         has_more: false,
         elasticsearch_raw_body: None,
+        messages: Vec::new(),
     })
 }
 
@@ -1996,6 +2176,7 @@ pub(crate) fn parse_tabular_sql_response(
         session_id: body.get("cursor").and_then(|cursor| cursor.as_str()).map(str::to_string),
         has_more: body.get("cursor").and_then(|cursor| cursor.as_str()).is_some(),
         elasticsearch_raw_body: None,
+        messages: Vec::new(),
     })
 }
 
@@ -2090,7 +2271,8 @@ fn parse_aggregations(aggs: &serde_json::Map<String, serde_json::Value>) -> (Vec
 mod tests {
     use super::{
         build_count_documents_body, build_find_documents_body, elasticsearch_accept_invalid_certs,
-        elasticsearch_base_url_fallbacks, redact_elasticsearch_url, EsClient, SearchResponse,
+        elasticsearch_base_url_fallbacks, elasticsearch_index_grouping, group_index_names, normalize_index_names,
+        redact_elasticsearch_url, EsClient, SearchResponse,
     };
     use serde_json::json;
     use std::time::Duration;
@@ -2135,6 +2317,89 @@ mod tests {
         assert_eq!(request.path, "/_nodes/stats/jvm?pretty");
         assert_eq!(request.body, None);
         assert_eq!(request.body_kind, super::ElasticsearchRestBodyKind::Json);
+    }
+
+    #[test]
+    fn normalize_index_names_filters_sorts_and_dedups() {
+        let names = normalize_index_names(
+            [".kibana", "ngx-log-2", "ngx-log-1", "ngx-log-1", ".security-7"].into_iter().map(String::from),
+        );
+        // 去掉点前缀内部索引、排序、去重。
+        assert_eq!(names, vec!["ngx-log-1".to_string(), "ngx-log-2".to_string()]);
+    }
+
+    #[test]
+    fn connectivity_check_disabled_parses_bool_and_string() {
+        use super::elasticsearch_connectivity_check_disabled as disabled;
+        assert!(!disabled(None));
+        assert!(!disabled(Some(&serde_json::json!({}))));
+        assert!(disabled(Some(&serde_json::json!({ "connectivityCheckDisabled": true }))));
+        assert!(disabled(Some(&serde_json::json!({ "connectivityCheckDisabled": "on" }))));
+        assert!(disabled(Some(&serde_json::json!({ "connectivityCheckDisabled": "TRUE" }))));
+        assert!(!disabled(Some(&serde_json::json!({ "connectivityCheckDisabled": false }))));
+        assert!(!disabled(Some(&serde_json::json!({ "connectivityCheckDisabled": "off" }))));
+    }
+
+    #[test]
+    fn group_index_names_off_by_default() {
+        // 缺省配置 → 关闭聚合，原样返回。
+        assert!(elasticsearch_index_grouping(None).is_none());
+        let raw = vec!["a-2026.08.04".to_string(), "a-2026.08.05".to_string()];
+        assert_eq!(group_index_names(raw.clone(), None), raw);
+    }
+
+    #[test]
+    fn group_index_names_tenant_level_with_capture_group() {
+        // 保留 `@<第一段>`（到第一个下划线），其后全部折叠成 `*`。用中性占位名。
+        let cfg = serde_json::json!({ "indexGroupingPattern": r"^([^@]*@[^_]+)_.*$" });
+        let re = elasticsearch_index_grouping(Some(&cfg));
+        let out = group_index_names(
+            vec![
+                "svc@alpha_r1-2026.08.06@0-000001".to_string(),
+                "svc@alpha_r1-2026.08.07@0-000001".to_string(),
+                "svc@beta_r1-2026.08.06@0-000001".to_string(),
+                "svc_err-2026.08.06@0-000001".to_string(), // 无 @ → 不匹配 → 原样
+            ],
+            re.as_ref(),
+        );
+        assert_eq!(
+            out,
+            vec!["svc@alpha*".to_string(), "svc@beta*".to_string(), "svc_err-2026.08.06@0-000001".to_string(),]
+        );
+    }
+
+    #[test]
+    fn group_index_names_tail_strip_without_capture_group() {
+        // 无捕获组：按 ES 惯例剥掉“日期+滚动号”尾巴，`${1}` 为空即替换成 `*`。
+        let cfg = serde_json::json!({ "indexGroupingPattern": r"[-_.@]\d{4}[-_.]?\d{2}[-_.]?\d{2}.*$" });
+        let re = elasticsearch_index_grouping(Some(&cfg));
+        let out = group_index_names(
+            vec!["logs-2026.08.06".to_string(), "logs-2026.08.07".to_string(), "orders-2026.08.01".to_string()],
+            re.as_ref(),
+        );
+        assert_eq!(out, vec!["logs*".to_string(), "orders*".to_string()]);
+    }
+
+    #[test]
+    fn group_index_names_mixed_tenant_and_plain_scheme() {
+        // 同一条正则同时处理：真租户（@后跟字母）折到 @租户；无租户的按名字剥日期尾巴；
+        // 普通非时间序列索引保持原样。区分点：真租户 @ 后是字母，滚动号 @ 后是数字。用中性名。
+        let cfg = serde_json::json!({ "indexGroupingPattern": r"^([^@]*@[a-zA-Z][a-zA-Z0-9]*|[^-@]*)[-_.@].*$" });
+        let re = elasticsearch_index_grouping(Some(&cfg));
+        let out = group_index_names(
+            vec![
+                "svc_err-2026.08.10@0-000001".to_string(), // 无租户 → svc_err*
+                "svc_err-2026.08.11@0-000001".to_string(),
+                "svc@alpha_r1-2026.08.10@0-000001".to_string(), // 带区域租户 → svc@alpha*
+                "svc@beta-2026.08.10@0-000001".to_string(),     // 无区域租户 → svc@beta*
+                "catalog".to_string(),                          // 普通索引无尾巴 → 原样
+            ],
+            re.as_ref(),
+        );
+        assert_eq!(
+            out,
+            vec!["catalog".to_string(), "svc@alpha*".to_string(), "svc@beta*".to_string(), "svc_err*".to_string(),]
+        );
     }
 
     #[test]
@@ -2206,6 +2471,51 @@ mod tests {
             vec!["https://127.0.0.1:9200".to_string()]
         );
         assert_eq!(elasticsearch_base_url_fallbacks("https://search.example.com:9200"), Vec::<String>::new());
+    }
+
+    #[test]
+    fn disabled_connectivity_check_keeps_localhost_request_fallback() {
+        assert_eq!(
+            super::elasticsearch_localhost_resolve_addrs("https://localhost:9200", true),
+            Some(["[::1]:0".parse().unwrap(), "127.0.0.1:0".parse().unwrap()])
+        );
+        assert_eq!(super::elasticsearch_localhost_resolve_addrs("https://localhost:9200", false), None);
+        assert_eq!(super::elasticsearch_localhost_resolve_addrs("https://search.example.com:9200", true), None);
+    }
+
+    #[tokio::test]
+    async fn disabled_connectivity_check_can_request_ipv4_localhost() {
+        use tokio::io::AsyncWriteExt;
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let request = read_http_request(&mut socket).await;
+            assert!(request.starts_with("GET /_cluster/health "), "unexpected request: {request}");
+            let body = r#"{"status":"green"}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            socket.write_all(response.as_bytes()).await.unwrap();
+        });
+
+        let mut client = EsClient::from_config(
+            &format!("http://localhost:{}", addr.port()),
+            None,
+            None,
+            false,
+            None,
+            Some(&json!({ "connectivityCheckDisabled": "yes" })),
+            Duration::from_secs(2),
+        );
+        super::test_connection(&mut client, Duration::from_secs(2)).await.unwrap();
+        let response = client.get("/_cluster/health").send().await.unwrap();
+
+        assert!(response.status().is_success());
+        server.await.unwrap();
     }
 
     #[test]
@@ -3049,6 +3359,7 @@ mod tests {
             assert_eq!(query.get("path").map(String::as_str), Some("/missing/_doc/1?refresh=true"));
             assert_eq!(query.get("method").map(String::as_str), Some("DELETE"));
             assert!(headers.lines().any(|line| line.eq_ignore_ascii_case("kbn-xsrf: true")), "{headers}");
+            assert!(headers.lines().any(|line| line.eq_ignore_ascii_case("osd-xsrf: true")), "{headers}");
             assert!(headers.lines().any(|line| line.eq_ignore_ascii_case("authorization: Basic ZWxhc3RpYzpzZWNyZXQ=")));
             assert_eq!(serde_json::from_str::<serde_json::Value>(body).unwrap(), json!({ "reason": "cleanup" }));
 
@@ -3078,6 +3389,15 @@ mod tests {
 
         assert_eq!(result.rows[0][0], json!(404));
         assert_eq!(result.rows[0][1], json!(response_body));
+    }
+
+    #[test]
+    fn direct_transport_omits_proxy_xsrf_headers() {
+        let client = EsClient::new("http://localhost:9200", None, None, false, Duration::from_secs(1));
+        let request = client.get("/").build().unwrap();
+
+        assert!(!request.headers().contains_key("kbn-xsrf"));
+        assert!(!request.headers().contains_key("osd-xsrf"));
     }
 
     #[tokio::test]

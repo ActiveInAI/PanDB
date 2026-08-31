@@ -18,6 +18,7 @@ import {
   resolveInitialMqTab,
   resolveMqSystemKindFromConnection,
   resolveRabbitMqDefaultVhost,
+  resolveTopicSelectedTab,
   type MqTab,
 } from "@/lib/mq/mqConsoleDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,7 @@ import TenantsPanel from "./TenantsPanel.vue";
 import NamespacesPanel from "./NamespacesPanel.vue";
 import TopicsPanel from "./TopicsPanel.vue";
 import SubscriptionsPanel from "./SubscriptionsPanel.vue";
+import KafkaConsumerGroupsPanel from "./KafkaConsumerGroupsPanel.vue";
 import MonitoringPanel from "./MonitoringPanel.vue";
 import ProducerConsumerPanel from "./ProducerConsumerPanel.vue";
 import PoliciesPanel from "./PoliciesPanel.vue";
@@ -35,6 +37,7 @@ import MessageTracePanel from "./MessageTracePanel.vue";
 import RocketMqMessagesPanel from "./RocketMqMessagesPanel.vue";
 import SendMessagePanel from "./SendMessagePanel.vue";
 import MessageQueryPanel from "./MessageQueryPanel.vue";
+import KafkaMessagesPanel from "./KafkaMessagesPanel.vue";
 import BrokerPanel from "./BrokerPanel.vue";
 import RabbitMqClientsPanel from "./rabbitmq/RabbitMqClientsPanel.vue";
 import RabbitMqPermissionsPanel from "./rabbitmq/RabbitMqPermissionsPanel.vue";
@@ -103,6 +106,8 @@ const mqSystemKind = computed<MqSystemKind | undefined>(() => clusterInfo.value?
 const isFlatMqCluster = computed(() => isFlatMqSystemKind(mqSystemKind.value));
 const isRabbitMqCluster = computed(() => mqSystemKind.value === "rabbitmq");
 const isRocketMqCluster = computed(() => mqSystemKind.value === "rocketmq");
+const isKafkaCluster = computed(() => mqSystemKind.value === "kafka");
+const canBrowseKafkaMessages = computed(() => isKafkaCluster.value && canPeekMessages.value);
 const rocketmqClusterLabel = computed(() => {
   if (!isRocketMqCluster.value) return undefined;
   const fromOptions = clusterOptions.value[0];
@@ -170,6 +175,7 @@ function tabLabelKey(tab: MqTab): string {
     namespaces: "mqAdmin.tabNamespaces",
     topics: "mqAdmin.tabTopics",
     subscriptions: "mqAdmin.tabSubscriptions",
+    consumerGroups: "mqAdmin.tabConsumerGroups",
     monitoring: "mqAdmin.tabMonitoring",
     clients: "mqAdmin.tabClients",
     producers: "mqAdmin.tabProducers",
@@ -282,11 +288,7 @@ function handleNamespaceRolesSelected(namespace: string) {
 function handleTopicSelected(topic: TopicInfo) {
   selectedTopic.value = topic;
   selectedSubscriptionName.value = undefined;
-  if (isRocketMqCluster.value) {
-    activeTab.value = canManageSubscriptions.value ? "subscriptions" : "topics";
-  } else {
-    activeTab.value = isFlatMqCluster.value ? "monitoring" : canManageSubscriptions.value ? "subscriptions" : "monitoring";
-  }
+  activeTab.value = resolveTopicSelectedTab({ systemKind: mqSystemKind.value, capabilities: effectiveCapabilities.value });
 }
 
 function handleNavigateTab(payload: { tab: MqTab; topic?: TopicInfo; subscription?: string; preferDlqTopic?: boolean }) {
@@ -302,6 +304,17 @@ function handleNavigateTab(payload: { tab: MqTab; topic?: TopicInfo; subscriptio
     preferDlqTopic.value = payload.preferDlqTopic;
   }
   setActiveTab(payload.tab);
+}
+
+function handleKafkaConsumerGroupTopicSelected(topic: string) {
+  selectedTopic.value = {
+    name: topic,
+    shortName: topic,
+    partitioned: false,
+    persistent: true,
+  };
+  selectedSubscriptionName.value = undefined;
+  setActiveTab("subscriptions");
 }
 
 function handleSubscriptionSelected(subscription: string) {
@@ -472,8 +485,9 @@ onMounted(async () => {
         :supports-expire-messages="canExpireMessages"
         @subscription-selected="handleSubscriptionSelected"
       />
+      <KafkaConsumerGroupsPanel v-else-if="activeTab === 'consumerGroups' && isKafkaCluster" :connection-id="connectionId" @navigate-subscriptions="handleKafkaConsumerGroupTopicSelected" />
       <RabbitMqMonitoringPanel v-else-if="activeTab === 'monitoring' && isRabbitMqCluster && canClusterMonitor" :connection-id="connectionId" />
-      <MonitoringPanel v-else-if="activeTab === 'monitoring'" :connection-id="connectionId" :topic="selectedTopic" :tenant="effectiveTenant" :namespace="effectiveNamespace" :mq-system-kind="mqSystemKind" />
+      <MonitoringPanel v-else-if="activeTab === 'monitoring'" :connection-id="connectionId" :topic="selectedTopic" :tenant="effectiveTenant" :namespace="effectiveNamespace" :mq-system-kind="mqSystemKind" @navigate-tab="handleNavigateTab" />
       <RabbitMqClientsPanel v-else-if="activeTab === 'clients' && isRabbitMqCluster && canManageClientConnections" :connection-id="connectionId" :namespace="effectiveNamespace" :read-only="readOnly" />
       <ProducerConsumerPanel
         v-else-if="activeTab === 'clients'"
@@ -510,6 +524,16 @@ onMounted(async () => {
         :prefer-dlq-topic="preferDlqTopic"
       />
       <MessageTracePanel v-else-if="activeTab === 'trace' && isRocketMqCluster && canMessageTrace" :connection-id="connectionId" :tenant="effectiveTenant" :namespace="effectiveNamespace" :topic="selectedTopic" :read-only="readOnly" :mq-system-kind="mqSystemKind" />
+      <KafkaMessagesPanel
+        v-else-if="activeTab === 'messages' && canBrowseKafkaMessages"
+        :connection-id="connectionId"
+        :tenant="effectiveTenant"
+        :namespace="effectiveNamespace"
+        :topic="selectedTopic"
+        :read-only="readOnly"
+        :can-send-message="canSendMessage"
+        @topic-selected="handleProducerTopicSelected"
+      />
       <MessageQueryPanel v-else-if="activeTab === 'messages' && canMessageQuery && !isRocketMqCluster" :connection-id="connectionId" :tenant="effectiveTenant" :namespace="effectiveNamespace" :topic="selectedTopic" :read-only="readOnly" :mq-system-kind="mqSystemKind" />
       <SendMessagePanel
         v-else-if="activeTab === 'messages' && canSendMessage && !isRocketMqCluster && !canMessageQuery"

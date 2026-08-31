@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { filterNacosNamespacesForSidebar, normalizeNacosNamespaceSelection, normalizeNacosNamespacesForDisplay } from "@/lib/nacos/nacosNamespaceVisibility";
+import { describe, expect, it, vi } from "vitest";
+import { filterNacosNamespacesForSidebar, loadReadableNacosNamespaces, normalizeNacosNamespaceSelection, normalizeNacosNamespacesForDisplay } from "@/lib/nacos/nacosNamespaceVisibility";
+import { nacosVisibleNamespaceSummary } from "@/lib/sidebar/sidebarVisibleFilterSummary";
 
 const namespaces = [
   { namespace: "", namespaceShowName: "public" },
@@ -29,5 +30,23 @@ describe("filterNacosNamespacesForSidebar", () => {
   it("keeps only the concrete public namespace when both legacy forms are returned", () => {
     const duplicatePublic = [namespaces[0], { namespace: "public", namespaceShowName: "public" }, namespaces[1]];
     expect(normalizeNacosNamespacesForDisplay(duplicatePublic)).toEqual([duplicatePublic[1], duplicatePublic[2]]);
+  });
+
+  it("counts a legacy public selection as visible for a Nacos 3 endpoint", () => {
+    expect(nacosVisibleNamespaceSummary({ visible_databases: ["", "prod"] }, ["public", "dev", "prod"])).toEqual({
+      mode: "namespace",
+      isActive: true,
+      selected: 2,
+      total: 3,
+    });
+  });
+});
+
+describe("loadReadableNacosNamespaces", () => {
+  it("uses the backend-filtered list without per-namespace frontend probes", async () => {
+    const nacosListNamespaces = vi.fn().mockResolvedValue([namespaces[1]]);
+
+    await expect(loadReadableNacosNamespaces("nacos", { nacosListNamespaces })).resolves.toEqual([namespaces[1]]);
+    expect(nacosListNamespaces).toHaveBeenCalledTimes(1);
   });
 });

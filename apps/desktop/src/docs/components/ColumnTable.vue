@@ -17,16 +17,23 @@ const emit = defineEmits<{
   edit: [edit: DocsEdit];
 }>();
 
-/** Rebuild the declared type from the parts the snapshot reports separately. */
+/** Rebuild bare types from the parts the snapshot reports separately. */
 function typeLabel(column: ColumnInfo): string {
+  const base = column.data_type.trim();
+  // MySQL's COLUMN_TYPE and PostgreSQL's format_type already include type
+  // modifiers. The snapshot still carries the raw precision fields for
+  // engines that report a bare type, so only synthesize them in that case.
+  if (base.includes("(")) {
+    return base;
+  }
   if (column.character_maximum_length !== null) {
-    return `${column.data_type}(${column.character_maximum_length})`;
+    return `${base}(${column.character_maximum_length})`;
   }
   if (column.numeric_precision !== null) {
     const scale = column.numeric_scale === null ? "" : `,${column.numeric_scale}`;
-    return `${column.data_type}(${column.numeric_precision}${scale})`;
+    return `${base}(${column.numeric_precision}${scale})`;
   }
-  return column.data_type;
+  return base;
 }
 
 function settings(column: ColumnInfo): string[] {
@@ -68,10 +75,10 @@ function shadowedTitle(column: ColumnInfo): string | undefined {
     <table class="w-full text-xs">
       <thead>
         <tr class="bg-muted/30">
-          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">Column</th>
-          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">Type</th>
-          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">Settings</th>
-          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">Note</th>
+          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">{{ translate("docs.columnHeader") }}</th>
+          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">{{ translate("docs.typeHeader") }}</th>
+          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">{{ translate("docs.settingsHeader") }}</th>
+          <th class="px-2 py-1.5 text-left font-medium text-muted-foreground">{{ translate("docs.noteHeader") }}</th>
         </tr>
       </thead>
       <tbody>
@@ -87,7 +94,7 @@ function shadowedTitle(column: ColumnInfo): string | undefined {
           </td>
           <td class="px-2 py-1.5 text-muted-foreground">
             <div class="flex items-start gap-1">
-              <span v-if="noteOf(column)?.source === 'LOCAL'" class="mt-0.5 shrink-0 text-[10px] font-medium" :title="shadowedTitle(column)">⬤ LOCAL</span>
+              <span v-if="noteOf(column)?.source === 'LOCAL'" class="mt-0.5 shrink-0 text-[10px] font-medium" :title="shadowedTitle(column)">⬤ {{ translate("docs.localNote") }}</span>
               <!-- Merged note, for the same reason as TablePage: NoteEditor
                    renders and edits one value, and the local layer alone would
                    hide notes that came from the database. -->

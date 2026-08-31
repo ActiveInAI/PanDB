@@ -1,5 +1,6 @@
-import type { ShallowRef } from "vue";
+import { createApp, type ShallowRef } from "vue";
 import { useI18n } from "vue-i18n";
+import i18n from "@/i18n";
 import { useExportTracker, type ExportTask } from "@/composables/useExportTracker";
 import { useToast } from "@/composables/useToast";
 import type { useConnectionStore } from "@/stores/connectionStore";
@@ -9,10 +10,13 @@ import * as api from "@/lib/backend/api";
 import { isTauriRuntime } from "@/lib/backend/tauriRuntime";
 import { copyToClipboard } from "@/lib/common/clipboard";
 import { effectiveDatabaseTypeForConnection } from "@/lib/database/jdbcDialect";
+import { gaussdbMTypeDisplayName } from "@/lib/table/postgresDataTypeHelp";
 import { joinExportedDdls } from "@/lib/export/ddlExport";
 import { translateBackendError } from "@/i18n/backend-errors";
 import { sidebarStructureExportTargets } from "@/lib/sidebar/sidebarExportRuntime";
 import { fetchTableDataForExport } from "@/lib/table/tableDataExport";
+import XlsxHeaderDialog from "@/components/export/XlsxHeaderDialog.vue";
+import { buildXlsxHeaderOverrides, hasXlsxHeaderComments, type XlsxExportOptions, type XlsxHeaderMode } from "@/lib/export/xlsxHeader";
 import { isLoadingStructurePreview, showStructureDocCopyDialog, showStructurePreviewDialog, structureDocCopyText, structureDocCopyTitle, structurePreviewDefaultFileName, structurePreviewError, structurePreviewSql, structurePreviewTitle } from "@/components/sidebar/sidebarTreeDialogState";
 
 type StructureCopyFormat = "tsv" | "markdown";
@@ -22,6 +26,21 @@ interface SidebarTreeExportRuntimeOptions {
   connectionStore: ReturnType<typeof useConnectionStore>;
   settingsStore: ReturnType<typeof useSettingsStore>;
   acceptedSelectionIds: () => readonly string[] | null;
+}
+
+interface SidebarTableExportTarget {
+  connectionId: string;
+  database: string;
+  schema?: string;
+  metadataSchema: string;
+  catalog?: string;
+  tableName: string;
+  tableType?: string;
+  databaseType: ReturnType<typeof effectiveDatabaseTypeForConnection>;
+  loadColumnMetadata: boolean;
+  identifierQuote?: string;
+  batchSize: number;
+  rowLimit: number | null;
 }
 
 export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOptions) {
@@ -74,7 +93,7 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
       const parts: string[] = [];
       for (const target of targets) {
         await connectionStore.ensureConnected(target.connectionId);
-        const ddl = await api.getTableDdl(target.connectionId, target.database, target.schema || target.database, target.label, tableDdlObjectTypeForNode(target.type), target.catalog);
+        const ddl = await api.getTableDdl(target.connectionId, target.database, target.schema || target.database, target.label, tableDdlObjectTypeForNode(target.type), target.catalog, true);
         parts.push(ddl.trim());
       }
       structurePreviewSql.value = joinExportedDdls(parts);
@@ -107,8 +126,12 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
     return includeTable ? [t("contextMenu.structureDocTable"), ...headers] : headers;
   }
 
-  function columnDocCells(target: TreeNode, column: ColumnInfo, includeTable: boolean): unknown[] {
-    const cells = [column.name, column.data_type, column.is_primary_key ? t("contextMenu.structureDocYes") : t("contextMenu.structureDocNo"), column.is_nullable ? t("contextMenu.structureDocYes") : t("contextMenu.structureDocNo"), column.column_default, column.comment];
+  function columnDocCells(target: TreeNode & { connectionId: string }, column: ColumnInfo, includeTable: boolean): unknown[] {
+    const config = connectionStore.getConfig(target.connectionId);
+    const isGaussdbM = effectiveDatabaseTypeForConnection(config) === "gaussdb" && config?.driver_profile?.toLowerCase() === "gaussdb-m";
+    const sourceDataType = column.data_type;
+    const dataType = isGaussdbM && sourceDataType ? gaussdbMTypeDisplayName(sourceDataType) : sourceDataType;
+    const cells = [column.name, dataType, column.is_primary_key ? t("contextMenu.structureDocYes") : t("contextMenu.structureDocNo"), column.is_nullable ? t("contextMenu.structureDocYes") : t("contextMenu.structureDocNo"), column.column_default, column.comment];
     return includeTable ? [structureTargetName(target), ...cells] : cells;
   }
 
@@ -232,18 +255,63 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
     }
   }
 
-  async function exportTableData(format: "csv" | "xlsx" | "sql") {
+  function showSidebarTreeXlsxHeaderDialog(hasComments: boolean): Promise<XlsxExportOptions | null> {
+    if (typeof document === "undefined") return Promise.resolve({ headerMode: "name", autoFilter: false });
+
+    return new Promise((resolve) => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const app = createApp(XlsxHeaderDialog, {
+        open: true,
+        showHeaderOptions: hasComments,
+        onConfirm: (exportOptions: XlsxExportOptions) => {
+          resolve(exportOptions);
+          app.unmount();
+          document.body.removeChild(container);
+        },
+        onCancel: () => {
+          resolve(null);
+          app.unmount();
+          document.body.removeChild(container);
+        },
+      });
+      app.use(i18n);
+      app.mount(container);
+    });
+  }
+
+  function currentTableExportTarget(): SidebarTableExportTarget | null {
     const node = activeNode.value;
-    if (!node.connectionId || !node.database) return;
+    if (!node.connectionId || !node.database) return null;
     const connectionId = node.connectionId;
     const database = node.database;
     const config = connectionStore.getConfig(connectionId);
-    if (!config) return;
+    if (!config) return null;
+    const editorSettings = settingsStore.editorSettings;
+
+    return {
+      connectionId,
+      database,
+      schema: node.schema || undefined,
+      metadataSchema: node.schema || database,
+      catalog: node.catalog,
+      tableName: node.label,
+      tableType: node.tableType,
+      databaseType: effectiveDatabaseTypeForConnection(config),
+      loadColumnMetadata: config.db_type === "neo4j",
+      identifierQuote: connectionStore.connectionIdentifierQuote(connectionId),
+      batchSize: editorSettings.exportBatchSize,
+      rowLimit: editorSettings.exportRowLimitEnabled ? editorSettings.exportRowLimit : null,
+    };
+  }
+
+  async function exportTableData(target: SidebarTableExportTarget, format: "csv" | "xlsx" | "sql", columnInfos?: ColumnInfo[], headerMode: XlsxHeaderMode = "name", autoFilter = true) {
+    const { connectionId, database } = target;
 
     let task: ExportTask | null = null;
     try {
       // Choose the destination before registering a background task so cancellation creates no orphan tracker entry.
-      let outputPath = `${node.label}.${format}`;
+      let outputPath = `${target.tableName}.${format}`;
       if (isTauriRuntime()) {
         const { save } = await import("@tauri-apps/plugin-dialog");
         const filterName = format === "csv" ? "CSV" : format === "xlsx" ? "Excel" : "SQL";
@@ -256,21 +324,25 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
       }
 
       await connectionStore.ensureConnected(connectionId);
-      task = addExportTask(node.label, format, outputPath);
+      task = addExportTask(target.tableName, format, outputPath);
       const currentTask = task;
-      const effectiveDbType = effectiveDatabaseTypeForConnection(config);
-      if (effectiveDbType === "victoriametrics") {
+      const exportColumnInfos = columnInfos ?? (target.loadColumnMetadata ? await api.getColumns(connectionId, database, target.metadataSchema, target.tableName, target.catalog) : undefined);
+      const queryColumns = exportColumnInfos?.map((column) => column.name);
+      const primaryKeys = exportColumnInfos?.filter((column) => column.is_primary_key).map((column) => column.name);
+      if (target.databaseType === "victoriametrics") {
         const result = await fetchTableDataForExport({
-          databaseType: effectiveDbType,
-          schema: node.schema,
-          tableName: node.label,
-          tableType: node.tableType,
+          databaseType: target.databaseType,
+          schema: target.schema,
+          tableName: target.tableName,
+          tableType: target.tableType,
           executePage: (sql) => api.executeQuery(connectionId, database, sql),
         });
         if (format === "csv") {
           await api.exportQueryResultCsv(outputPath, result.columns, result.rows);
         } else {
-          await api.exportQueryResultXlsx(outputPath, node.label, result.columns, result.column_types ?? result.columns.map(() => ""), undefined, result.rows);
+          const comments = result.columns.map((name) => exportColumnInfos?.find((column) => column.name.toLocaleLowerCase() === name.toLocaleLowerCase())?.comment);
+          const headerOverrides = buildXlsxHeaderOverrides(result.columns, comments, headerMode);
+          await api.exportQueryResultXlsx(outputPath, target.tableName, result.columns, result.column_types ?? result.columns.map(() => ""), headerOverrides, result.rows, undefined, autoFilter);
         }
         currentTask.status = "Done";
         currentTask.rowsExported = result.rows.length;
@@ -278,21 +350,30 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
         toast(t("grid.exported"));
         return;
       }
-      const queryColumns = config.db_type === "neo4j" ? (await api.getColumns(connectionId, database, node.schema || database, node.label)).map((column) => column.name) : undefined;
-      const rowLimit = settingsStore.editorSettings.exportRowLimitEnabled ? settingsStore.editorSettings.exportRowLimit : null;
+      const columnComments =
+        format === "xlsx" && exportColumnInfos
+          ? buildXlsxHeaderOverrides(
+              exportColumnInfos.map((column) => column.name),
+              exportColumnInfos.map((column) => column.comment),
+              headerMode,
+            )
+          : undefined;
       const request: api.TableExportRequest = {
         exportId: currentTask.exportId,
         connectionId,
         database,
-        schema: node.schema || undefined,
-        identifierQuote: connectionStore.connectionIdentifierQuote(connectionId),
-        tableName: node.label,
+        schema: target.schema,
+        identifierQuote: target.identifierQuote,
+        tableName: target.tableName,
         filePath: outputPath,
         format,
         columns: queryColumns,
-        batchSize: settingsStore.editorSettings.exportBatchSize,
+        columnComments,
+        autoFilter: format === "xlsx" ? autoFilter : undefined,
+        primaryKeys,
+        batchSize: target.batchSize,
         skipCount: format === "sql",
-        rowLimit,
+        rowLimit: target.rowLimit,
       };
 
       await api.startTableExport(request, (progress) => {
@@ -311,11 +392,27 @@ export function useSidebarTreeExportRuntime(options: SidebarTreeExportRuntimeOpt
 
   async function exportData(format: "csv" | "json" | "sql") {
     if (format === "json") await exportDataLegacy(format);
-    else await exportTableData(format);
+    else {
+      const target = currentTableExportTarget();
+      if (target) await exportTableData(target, format);
+    }
   }
 
   async function exportDataXlsx() {
-    await exportTableData("xlsx");
+    const target = currentTableExportTarget();
+    if (!target) return;
+
+    let columnInfos: ColumnInfo[] | undefined;
+    try {
+      await connectionStore.ensureConnected(target.connectionId);
+      columnInfos = await api.getColumns(target.connectionId, target.database, target.metadataSchema, target.tableName, target.catalog);
+    } catch {
+      // Export still works with field-name headers when column metadata is unavailable.
+    }
+
+    const exportOptions = await showSidebarTreeXlsxHeaderDialog(hasXlsxHeaderComments(columnInfos?.map((column) => column.comment)));
+    if (exportOptions === null) return;
+    await exportTableData(target, "xlsx", columnInfos, exportOptions.headerMode, exportOptions.autoFilter);
   }
 
   return {

@@ -23,10 +23,38 @@ function selectStarToken(model: SqlSemanticModel): SqlSemanticToken | undefined 
   return model.tokens.find((token) => token.text === "*" && token.span.start === range.start && token.span.end === range.end);
 }
 
+export function sqlSemanticSelectStarTableSources(model: SqlSemanticModel): SqlSemanticRowSource[] {
+  const star = selectStarToken(model);
+  if (!star) return [];
+
+  if (model.cursorIntent.targetSourceId) {
+    const target = model.rowSources.find((source) => source.id === model.cursorIntent.targetSourceId);
+    return target?.kind === "table" ? [target] : [];
+  }
+  if (model.cursorIntent.qualifierParts.length > 0) return [];
+
+  let selectStart = -1;
+  for (let index = model.tokens.length - 1; index >= 0; index -= 1) {
+    const token = model.tokens[index];
+    if (!token || token.span.end > star.span.start || token.depth !== star.depth) continue;
+    if (token.kind === "word" && token.normalized === "select") {
+      selectStart = token.span.start;
+      break;
+    }
+  }
+  if (selectStart < 0) return [];
+
+  const blockSources = model.rowSources.filter((source) => {
+    if (source.sourceSpan.start < selectStart) return false;
+    const sourceToken = model.tokens.find((token) => token.span.start === source.sourceSpan.start);
+    return sourceToken?.depth === star.depth;
+  });
+  return blockSources.every((source) => source.kind === "table") ? blockSources : [];
+}
+
 export function sqlSemanticSelectStarTableSource(model: SqlSemanticModel): SqlSemanticRowSource | undefined {
-  if (model.cursorIntent.kind !== "star") return undefined;
-  const source = model.cursorIntent.targetSourceId ? model.rowSources.find((candidate) => candidate.id === model.cursorIntent.targetSourceId) : model.rowSources.length === 1 ? model.rowSources[0] : undefined;
-  return source?.kind === "table" ? source : undefined;
+  const sources = sqlSemanticSelectStarTableSources(model);
+  return sources.length === 1 ? sources[0] : undefined;
 }
 
 export function sqlSemanticSelectStarQualifierSql(model: SqlSemanticModel): string | undefined {
@@ -80,6 +108,7 @@ export function sqlSemanticReferencedTables(model: SqlSemanticModel): SqlComplet
         schema: source.qualifierParts[source.qualifierParts.length - 1],
         schemaQuoted: source.qualifierParts.length > 0 ? !!identifierParts[identifierParts.length - 2]?.quote : undefined,
         alias: source.alias,
+        aliasSql: source.aliasSpan ? model.sql.slice(source.aliasSpan.start, source.aliasSpan.end) : source.alias,
         columns: source.columns,
         columnAliases: source.columnAliases,
       };
@@ -230,11 +259,13 @@ function semanticMutationTarget(model: SqlSemanticModel): SqlSemanticRowSource |
 }
 
 export function sqlCompletionContextFromSemantic(model: SqlSemanticModel, base: SqlCompletionContext): SqlCompletionContext {
-  if (model.cursorIntent.confidence === "low" || model.cursorIntent.kind === "suppressed") {
+  if (model.cursorIntent.kind === "suppressed") {
     return base;
   }
+  const replacementRange = model.cursorIntent.replacementRange;
+  if (model.cursorIntent.confidence === "low") return { ...base, replacementRange };
   if ((base.suggestTables || base.exclusiveTableSuggestions) && model.cursorIntent.kind !== "table" && model.cursorIntent.kind !== "schema" && model.cursorIntent.kind !== "catalog" && model.cursorIntent.kind !== "delete_target") {
-    return base;
+    return { ...base, replacementRange };
   }
 
   const scope = sqlSemanticCompletionScope(model);
@@ -255,6 +286,7 @@ export function sqlCompletionContextFromSemantic(model: SqlSemanticModel, base: 
 
   return {
     ...base,
+    replacementRange,
     prefix,
     qualifier,
     qualifierParts,

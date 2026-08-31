@@ -234,6 +234,24 @@ impl BackendError {
         )
     }
 
+    /// Create a retryable envelope for a manual transaction session that DBX
+    /// already rolled back before the requested SQL was executed.
+    pub fn from_manual_transaction_session_expired(timeout_secs: u64) -> Self {
+        let entry = catalog_entry(CatalogCode::TransactionSessionExpired);
+        let mut params = BTreeMap::new();
+        params
+            .insert("timeoutSecs".to_string(), BackendMessageParam::Integer(timeout_secs.min(i64::MAX as u64) as i64));
+        Self::new(
+            entry,
+            BackendErrorSource::LegacyBackend,
+            BackendErrorOrigin::database(BackendErrorAdapter::Native),
+            BackendOperationOutcome::NotStarted,
+            params,
+            None,
+            Some(diagnostics_for_local("transaction", AgentErrorStage::Execute)),
+        )
+    }
+
     /// Create a SQL failure envelope while retaining bounded native driver detail.
     ///
     /// The caller must pass a typed SQL execution error, not a connection or
@@ -364,6 +382,7 @@ enum CatalogCode {
     ConnectionInterrupted,
     TimeoutNotStarted,
     TimeoutUnknown,
+    TransactionSessionExpired,
     Canceled,
     BusyRetryLater,
     RuntimeReplaced,
@@ -396,6 +415,7 @@ struct CatalogEntry {
 }
 
 const STAGE_PARAM: &[ParamSpec] = &[ParamSpec { name: "stage", kind: ParamKind::String }];
+const TRANSACTION_TIMEOUT_PARAM: &[ParamSpec] = &[ParamSpec { name: "timeoutSecs", kind: ParamKind::Integer }];
 const NO_PARAMS: &[ParamSpec] = &[];
 
 fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
@@ -403,7 +423,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::ConnectionFailed,
             CatalogEntry {
-                code: "PanDB-JDBC-1001",
+                code: "DBX-JDBC-1001",
                 message_key: "backendErrors.jdbc.connectionFailed",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -412,7 +432,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::ConnectionInterrupted,
             CatalogEntry {
-                code: "PanDB-JDBC-1002",
+                code: "DBX-JDBC-1002",
                 message_key: "backendErrors.jdbc.connectionInterrupted",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -421,7 +441,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::TimeoutNotStarted,
             CatalogEntry {
-                code: "PanDB-JDBC-2001",
+                code: "DBX-JDBC-2001",
                 message_key: "backendErrors.jdbc.operationTimedOut",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -430,16 +450,25 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::TimeoutUnknown,
             CatalogEntry {
-                code: "PanDB-JDBC-2002",
+                code: "DBX-JDBC-2002",
                 message_key: "backendErrors.jdbc.operationTimedOut",
                 params: STAGE_PARAM,
                 help_url: None,
             },
         ),
         (
+            CatalogCode::TransactionSessionExpired,
+            CatalogEntry {
+                code: "DBX-TXN-1001",
+                message_key: "backendErrors.transaction.sessionExpired",
+                params: TRANSACTION_TIMEOUT_PARAM,
+                help_url: None,
+            },
+        ),
+        (
             CatalogCode::Canceled,
             CatalogEntry {
-                code: "PanDB-JDBC-2003",
+                code: "DBX-JDBC-2003",
                 message_key: "backendErrors.jdbc.operationCanceled",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -448,7 +477,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::BusyRetryLater,
             CatalogEntry {
-                code: "PanDB-JDBC-3001",
+                code: "DBX-JDBC-3001",
                 message_key: "backendErrors.jdbc.busyRetryLater",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -457,7 +486,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::RuntimeReplaced,
             CatalogEntry {
-                code: "PanDB-JDBC-3002",
+                code: "DBX-JDBC-3002",
                 message_key: "backendErrors.jdbc.runtimeReplaced",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -466,7 +495,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::SqlFailed,
             CatalogEntry {
-                code: "PanDB-JDBC-4001",
+                code: "DBX-JDBC-4001",
                 message_key: "backendErrors.jdbc.sqlFailed",
                 params: STAGE_PARAM,
                 help_url: None,
@@ -475,7 +504,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::ProtocolFailed,
             CatalogEntry {
-                code: "PanDB-JDBC-5001",
+                code: "DBX-JDBC-5001",
                 message_key: "backendErrors.jdbc.protocolFailed",
                 params: NO_PARAMS,
                 help_url: None,
@@ -484,7 +513,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::ContractInvalid,
             CatalogEntry {
-                code: "PanDB-JDBC-5002",
+                code: "DBX-JDBC-5002",
                 message_key: "backendErrors.jdbc.contractInvalid",
                 params: NO_PARAMS,
                 help_url: None,
@@ -493,7 +522,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::JdbcLegacyFailure,
             CatalogEntry {
-                code: "PanDB-JDBC-9001",
+                code: "DBX-JDBC-9001",
                 message_key: "backendErrors.jdbc.legacyFailure",
                 params: NO_PARAMS,
                 help_url: None,
@@ -502,7 +531,7 @@ fn catalog_entry(code: CatalogCode) -> &'static CatalogEntry {
         (
             CatalogCode::LegacyBackend,
             CatalogEntry {
-                code: "PanDB-LEGACY-0001",
+                code: "DBX-LEGACY-0001",
                 message_key: "backendErrors.legacy",
                 params: NO_PARAMS,
                 help_url: None,
@@ -1027,18 +1056,19 @@ mod tests {
     #[test]
     fn catalog_owns_exact_code_and_message_key_pairs() {
         let cases = [
-            (CatalogCode::ConnectionFailed, "PanDB-JDBC-1001", "backendErrors.jdbc.connectionFailed"),
-            (CatalogCode::ConnectionInterrupted, "PanDB-JDBC-1002", "backendErrors.jdbc.connectionInterrupted"),
-            (CatalogCode::TimeoutNotStarted, "PanDB-JDBC-2001", "backendErrors.jdbc.operationTimedOut"),
-            (CatalogCode::TimeoutUnknown, "PanDB-JDBC-2002", "backendErrors.jdbc.operationTimedOut"),
-            (CatalogCode::Canceled, "PanDB-JDBC-2003", "backendErrors.jdbc.operationCanceled"),
-            (CatalogCode::BusyRetryLater, "PanDB-JDBC-3001", "backendErrors.jdbc.busyRetryLater"),
-            (CatalogCode::RuntimeReplaced, "PanDB-JDBC-3002", "backendErrors.jdbc.runtimeReplaced"),
-            (CatalogCode::SqlFailed, "PanDB-JDBC-4001", "backendErrors.jdbc.sqlFailed"),
-            (CatalogCode::ProtocolFailed, "PanDB-JDBC-5001", "backendErrors.jdbc.protocolFailed"),
-            (CatalogCode::ContractInvalid, "PanDB-JDBC-5002", "backendErrors.jdbc.contractInvalid"),
-            (CatalogCode::JdbcLegacyFailure, "PanDB-JDBC-9001", "backendErrors.jdbc.legacyFailure"),
-            (CatalogCode::LegacyBackend, "PanDB-LEGACY-0001", "backendErrors.legacy"),
+            (CatalogCode::ConnectionFailed, "DBX-JDBC-1001", "backendErrors.jdbc.connectionFailed"),
+            (CatalogCode::ConnectionInterrupted, "DBX-JDBC-1002", "backendErrors.jdbc.connectionInterrupted"),
+            (CatalogCode::TimeoutNotStarted, "DBX-JDBC-2001", "backendErrors.jdbc.operationTimedOut"),
+            (CatalogCode::TimeoutUnknown, "DBX-JDBC-2002", "backendErrors.jdbc.operationTimedOut"),
+            (CatalogCode::TransactionSessionExpired, "DBX-TXN-1001", "backendErrors.transaction.sessionExpired"),
+            (CatalogCode::Canceled, "DBX-JDBC-2003", "backendErrors.jdbc.operationCanceled"),
+            (CatalogCode::BusyRetryLater, "DBX-JDBC-3001", "backendErrors.jdbc.busyRetryLater"),
+            (CatalogCode::RuntimeReplaced, "DBX-JDBC-3002", "backendErrors.jdbc.runtimeReplaced"),
+            (CatalogCode::SqlFailed, "DBX-JDBC-4001", "backendErrors.jdbc.sqlFailed"),
+            (CatalogCode::ProtocolFailed, "DBX-JDBC-5001", "backendErrors.jdbc.protocolFailed"),
+            (CatalogCode::ContractInvalid, "DBX-JDBC-5002", "backendErrors.jdbc.contractInvalid"),
+            (CatalogCode::JdbcLegacyFailure, "DBX-JDBC-9001", "backendErrors.jdbc.legacyFailure"),
+            (CatalogCode::LegacyBackend, "DBX-LEGACY-0001", "backendErrors.legacy"),
         ];
         let mut codes = BTreeSet::new();
         for (kind, expected_code, expected_key) in cases {
@@ -1050,37 +1080,39 @@ mod tests {
     }
 
     #[test]
+    fn manual_transaction_session_expiry_is_retryable_before_execution() {
+        let error = BackendError::from_manual_transaction_session_expired(300);
+        let payload = serde_json::to_value(&error).unwrap();
+
+        assert_eq!(error.code(), "DBX-TXN-1001");
+        assert_eq!(error.operation_outcome(), BackendOperationOutcome::NotStarted);
+        assert_eq!(payload["messageKey"], "backendErrors.transaction.sessionExpired");
+        assert_eq!(payload["messageParams"]["timeoutSecs"], 300);
+        assert_eq!(payload["diagnostics"]["category"], "transaction");
+    }
+
+    #[test]
     fn catalog_maps_valid_variants_and_emits_allowlisted_params() {
         let cases = [
             (
                 AgentErrorCategory::Connection,
                 AgentErrorStage::Request,
                 AgentOperationOutcome::NotStarted,
-                "PanDB-JDBC-1001",
+                "DBX-JDBC-1001",
             ),
-            (
-                AgentErrorCategory::Connection,
-                AgentErrorStage::Execute,
-                AgentOperationOutcome::Unknown,
-                "PanDB-JDBC-1002",
-            ),
-            (
-                AgentErrorCategory::Timeout,
-                AgentErrorStage::Connect,
-                AgentOperationOutcome::NotStarted,
-                "PanDB-JDBC-2001",
-            ),
-            (AgentErrorCategory::Timeout, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "PanDB-JDBC-2002"),
-            (AgentErrorCategory::Canceled, AgentErrorStage::Cancel, AgentOperationOutcome::Unknown, "PanDB-JDBC-2003"),
+            (AgentErrorCategory::Connection, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "DBX-JDBC-1002"),
+            (AgentErrorCategory::Timeout, AgentErrorStage::Connect, AgentOperationOutcome::NotStarted, "DBX-JDBC-2001"),
+            (AgentErrorCategory::Timeout, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "DBX-JDBC-2002"),
+            (AgentErrorCategory::Canceled, AgentErrorStage::Cancel, AgentOperationOutcome::Unknown, "DBX-JDBC-2003"),
             (
                 AgentErrorCategory::Resource,
                 AgentErrorStage::Request,
                 AgentOperationOutcome::NotStarted,
-                "PanDB-JDBC-3001",
+                "DBX-JDBC-3001",
             ),
-            (AgentErrorCategory::Resource, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "PanDB-JDBC-5002"),
-            (AgentErrorCategory::Sql, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "PanDB-JDBC-4001"),
-            (AgentErrorCategory::Protocol, AgentErrorStage::Request, AgentOperationOutcome::Unknown, "PanDB-JDBC-5002"),
+            (AgentErrorCategory::Resource, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "DBX-JDBC-5002"),
+            (AgentErrorCategory::Sql, AgentErrorStage::Execute, AgentOperationOutcome::Unknown, "DBX-JDBC-4001"),
+            (AgentErrorCategory::Protocol, AgentErrorStage::Request, AgentOperationOutcome::Unknown, "DBX-JDBC-5002"),
         ];
         for (category, stage, outcome, expected_code) in cases {
             let error = AgentCallError::Structured {
@@ -1091,7 +1123,7 @@ mod tests {
             let envelope = BackendError::from_agent_call_error(&error);
             assert_eq!(envelope.code(), expected_code);
             assert_eq!(envelope.version(), 1);
-            if expected_code != "PanDB-JDBC-5002" {
+            if expected_code != "DBX-JDBC-5002" {
                 assert_eq!(
                     envelope.message_params().get("stage"),
                     Some(&BackendMessageParam::String(stage_name(stage).to_string()))
@@ -1117,7 +1149,7 @@ mod tests {
         ))
         .unwrap();
 
-        assert_eq!(payload["code"], "PanDB-JDBC-4001");
+        assert_eq!(payload["code"], "DBX-JDBC-4001");
         assert_eq!(payload["detail"], "Parser Error: syntax error at or near SELECT");
         assert_eq!(payload["origin"]["subsystem"], "database");
         assert_eq!(payload["origin"]["adapter"], "native");
@@ -1311,7 +1343,7 @@ mod tests {
                 message: "invalid combination".to_string(),
                 context: ctx,
             });
-            assert_eq!(envelope.code(), "PanDB-JDBC-5002");
+            assert_eq!(envelope.code(), "DBX-JDBC-5002");
             assert_eq!(envelope.operation_outcome(), BackendOperationOutcome::Unknown);
         }
     }
@@ -1323,9 +1355,9 @@ mod tests {
             message: "old agent".to_string(),
             hints: Default::default(),
         });
-        assert_eq!(legacy.code(), "PanDB-JDBC-9001");
+        assert_eq!(legacy.code(), "DBX-JDBC-9001");
         assert_eq!(legacy.source, BackendErrorSource::JdbcAgentLegacy);
-        assert_eq!(BackendError::from_legacy_backend("driver failed").code(), "PanDB-LEGACY-0001");
+        assert_eq!(BackendError::from_legacy_backend("driver failed").code(), "DBX-LEGACY-0001");
     }
 
     #[test]
@@ -1338,7 +1370,7 @@ mod tests {
         .into_legacy_string();
         let error = BackendError::from_legacy_string(&legacy);
 
-        assert_eq!(error.code(), "PanDB-JDBC-9001");
+        assert_eq!(error.code(), "DBX-JDBC-9001");
         assert_eq!(
             error.detail(),
             Some("ERROR: relation \"dbx_table_that_does_not_exist\" does not exist\n  Position: 15")
@@ -1355,7 +1387,7 @@ mod tests {
         .into_legacy_string();
         let error = BackendError::from_legacy_string(&legacy);
 
-        assert_eq!(error.code(), "PanDB-JDBC-9001");
+        assert_eq!(error.code(), "DBX-JDBC-9001");
         assert_eq!(error.detail(), Some("无效的表或视图名\n错误码: -2106"));
     }
 
@@ -1369,6 +1401,6 @@ mod tests {
         let legacy =
             crate::db::agent_driver::append_legacy_error_context(&error.into_legacy_string(), "SQL text omitted");
 
-        assert_eq!(BackendError::from_legacy_string(&legacy).code(), "PanDB-JDBC-1002");
+        assert_eq!(BackendError::from_legacy_string(&legacy).code(), "DBX-JDBC-1002");
     }
 }

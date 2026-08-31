@@ -28,11 +28,26 @@ const defaultMaxRows = 1000
 const defaultXuguPort = 5138
 const legacyAgentSessionID = "__legacy__"
 const maxAgentSessions = 256
+
+// xuguPublicSynonymScope is a protocol-only namespace for database-global
+// synonyms. It is deliberately not a real schema name (and must never be
+// interpreted as one by metadata queries).
+const xuguPublicSynonymScope = "\x00DBX_XUGU_PUBLIC_SYNONYMS"
 const xuguListDatabasesSQL = `
 SELECT DB_NAME
 FROM ALL_DATABASES
 ORDER BY DB_NAME`
 const xuguListSchemasSQL = `
+SELECT s.SCHEMA_NAME AS SCHEMA_NAME, FALSE AS IS_PUBLIC_SCOPE
+FROM ALL_SCHEMAS s
+WHERE s.DB_ID = CURRENT_DB_ID
+UNION
+SELECT '' AS SCHEMA_NAME, TRUE AS IS_PUBLIC_SCOPE
+FROM ALL_SYNONYMS y
+WHERE y.DB_ID = CURRENT_DB_ID
+  AND y.IS_PUBLIC = TRUE
+ORDER BY IS_PUBLIC_SCOPE, SCHEMA_NAME`
+const xuguListSchemasFallbackSQL = `
 SELECT SCHEMA_NAME
 FROM ALL_SCHEMAS
 WHERE DB_ID = CURRENT_DB_ID
@@ -48,12 +63,12 @@ JOIN ALL_SCHEMAS s ON s.DB_ID = q.DB_ID AND s.SCHEMA_ID = q.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND q.IS_SYS = FALSE`
 const xuguCatalogSynonymSelectSQL = `
-SELECT s.SCHEMA_NAME, y.SYNO_NAME, t.SCHEMA_NAME AS TARGET_SCHEMA, y.TARG_NAME
+SELECT s.SCHEMA_NAME,
+       y.SYNO_NAME, t.SCHEMA_NAME AS TARGET_SCHEMA, y.TARG_NAME, y.IS_PUBLIC
 FROM ALL_SYNONYMS y
-JOIN ALL_SCHEMAS s ON s.DB_ID = y.DB_ID AND s.SCHEMA_ID = y.SCHEMA_ID
+LEFT JOIN ALL_SCHEMAS s ON s.DB_ID = y.DB_ID AND s.SCHEMA_ID = y.SCHEMA_ID
 LEFT JOIN ALL_SCHEMAS t ON t.DB_ID = y.DB_ID AND t.SCHEMA_ID = y.TARG_SCHE_ID
-WHERE s.DB_ID = CURRENT_DB_ID
-  AND y.IS_PUBLIC = FALSE`
+WHERE y.DB_ID = CURRENT_DB_ID`
 const xuguPrimaryKeyColumnsSQL = `
 SELECT c.DEFINE
 FROM ALL_CONSTRAINTS c
@@ -92,6 +107,43 @@ WHERE s.DB_ID = CURRENT_DB_ID
   AND s.SCHEMA_NAME = ?
   AND t.TABLE_NAME = ?
 ORDER BY i.INDEX_NAME`
+
+// Index scope and partition metadata are queried separately from the stable
+// index listing query.  This keeps ordinary index discovery compatible with
+// older Xugu catalog versions while allowing newer versions to preserve
+// LOCAL/GLOBAL partition semantics in reconstructed DDL.
+const xuguIndexPartitionAttributesSQL = `
+SELECT i.INDEX_NAME, i.IS_LOCAL, i.PARTI_TYPE, i.PARTI_NUM, i.PARTI_KEY,
+       i.SUBPARTI_TYPE, i.SUBPARTI_NUM, i.SUBPARTI_KEY
+FROM ALL_INDEXES i
+JOIN ALL_TABLES t ON t.DB_ID = i.DB_ID AND t.TABLE_ID = i.TABLE_ID
+JOIN ALL_SCHEMAS s ON s.DB_ID = t.DB_ID AND s.SCHEMA_ID = t.SCHEMA_ID
+WHERE s.DB_ID = CURRENT_DB_ID
+  AND s.SCHEMA_NAME = ?
+  AND t.TABLE_NAME = ?
+ORDER BY i.INDEX_NAME`
+const xuguIndexPartitionsSQL = `
+SELECT i.INDEX_NAME, p.PARTI_NO, p.PARTI_NAME, p.PARTI_VAL
+FROM ALL_IDX_PARTIS p
+JOIN ALL_INDEXES i ON i.DB_ID = p.DB_ID AND i.INDEX_ID = p.INDEX_ID
+JOIN ALL_TABLES t ON t.DB_ID = i.DB_ID AND t.TABLE_ID = i.TABLE_ID
+JOIN ALL_SCHEMAS s ON s.DB_ID = t.DB_ID AND s.SCHEMA_ID = t.SCHEMA_ID
+WHERE s.DB_ID = CURRENT_DB_ID
+  AND s.SCHEMA_NAME = ?
+  AND t.TABLE_NAME = ?
+  AND i.IS_PRIMARY = FALSE
+ORDER BY i.INDEX_NAME, p.PARTI_NO`
+const xuguIndexSubpartitionsSQL = `
+SELECT i.INDEX_NAME, p.SUBPARTI_NO, p.SUBPARTI_NAME, p.SUBPARTI_VAL
+FROM ALL_IDX_SUBPARTIS p
+JOIN ALL_INDEXES i ON i.DB_ID = p.DB_ID AND i.INDEX_ID = p.INDEX_ID
+JOIN ALL_TABLES t ON t.DB_ID = i.DB_ID AND t.TABLE_ID = i.TABLE_ID
+JOIN ALL_SCHEMAS s ON s.DB_ID = t.DB_ID AND s.SCHEMA_ID = t.SCHEMA_ID
+WHERE s.DB_ID = CURRENT_DB_ID
+  AND s.SCHEMA_NAME = ?
+  AND t.TABLE_NAME = ?
+  AND i.IS_PRIMARY = FALSE
+ORDER BY i.INDEX_NAME, p.SUBPARTI_NO`
 const xuguTableMetadataSQL = `
 SELECT t.TEMP_TYPE, t.ON_COMMIT_DEL, t.PCTFREE, t.COPY_NUM,
        t.PARTI_TYPE, t.PARTI_NUM, t.PARTI_KEY,
@@ -168,33 +220,67 @@ WHERE s.DB_ID = CURRENT_DB_ID
 ORDER BY p.SUBPARTI_NO`
 
 var xuguDataTypes = []string{
-	"BOOLEAN",
-	"INTEGER",
-	"SMALLINT",
 	"BIGINT",
-	"FLOAT",
-	"NUMERIC",
-	"CHAR",
-	"VARCHAR",
-	"CLOB",
-	"DATE",
-	"TIME",
-	"TIMESTAMP",
 	"BINARY",
-	"VARBINARY",
+	"BIT",
 	"BLOB",
-	"XML",
 	"BOOL",
-	"INT",
-	"SHORT",
-	"LONGINT",
-	"LONG",
-	"REAL",
+	"BOOLEAN",
+	"CHAR",
+	"CHAR[]",
+	"CLOB",
+	"CLOB[]",
+	"DATE",
+	"DATETIME",
+	"DATETIME WITH TIME ZONE",
 	"DECIMAL",
-	"TEXT",
+	"DOUBLE",
+	"DOUBLE[]",
+	"FLOAT",
+	"GUID",
+	"GEOMETRY",
+	"GEOGRAPHY",
+	"BOX2D",
+	"BOX3D",
+	"SPHEROID",
+	"RASTER",
+	"INT",
+	"INTEGER",
+	"INTEGER[]",
+	"INTERVAL DAY",
+	"INTERVAL DAY TO HOUR",
+	"INTERVAL DAY TO MINUTE",
+	"INTERVAL DAY TO SECOND",
+	"INTERVAL HOUR",
+	"INTERVAL HOUR TO MINUTE",
+	"INTERVAL HOUR TO SECOND",
+	"INTERVAL MINUTE",
+	"INTERVAL MINUTE TO SECOND",
+	"INTERVAL MONTH",
+	"INTERVAL SECOND",
+	"INTERVAL YEAR",
+	"INTERVAL YEAR TO MONTH",
+	"JSON",
+	"LONG",
+	"LONGINT",
 	"NCHAR",
+	"NUMERIC",
 	"NVARCHAR",
 	"NVARCHAR2",
+	"REAL",
+	"ROWID",
+	"SHORT",
+	"SMALLINT",
+	"TEXT",
+	"TIME",
+	"TIME WITH TIME ZONE",
+	"TIMESTAMP",
+	"TIMESTAMP WITH TIME ZONE",
+	"TINYINT",
+	"VARBINARY",
+	"VARBIT",
+	"VARCHAR",
+	"XML",
 }
 
 type request struct {
@@ -208,11 +294,6 @@ type response struct {
 	ID      json.RawMessage `json:"id,omitempty"`
 	Result  any             `json:"result,omitempty"`
 	Error   *rpcError       `json:"error,omitempty"`
-}
-
-type rpcError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 type connectParams struct {
@@ -236,12 +317,14 @@ type queryOptions struct {
 }
 
 type queryResult struct {
-	Columns         []string `json:"columns"`
-	ColumnTypes     []string `json:"column_types"`
-	Rows            [][]any  `json:"rows"`
-	AffectedRows    int64    `json:"affected_rows"`
-	ExecutionTimeMS int64    `json:"execution_time_ms"`
-	Truncated       bool     `json:"truncated"`
+	Columns         []string        `json:"columns"`
+	ColumnTypes     []string        `json:"column_types"`
+	SpatialColumns  []spatialColumn `json:"spatial_columns,omitempty"`
+	SpatialValues   [][]*uint32     `json:"spatial_values,omitempty"`
+	Rows            [][]any         `json:"rows"`
+	AffectedRows    int64           `json:"affected_rows"`
+	ExecutionTimeMS int64           `json:"execution_time_ms"`
+	Truncated       bool            `json:"truncated"`
 }
 
 func (r queryResult) MarshalJSON() ([]byte, error) {
@@ -260,14 +343,16 @@ func (r queryResult) MarshalJSON() ([]byte, error) {
 }
 
 type queryPageResult struct {
-	Columns         []string `json:"columns"`
-	ColumnTypes     []string `json:"column_types"`
-	Rows            [][]any  `json:"rows"`
-	AffectedRows    int64    `json:"affected_rows"`
-	ExecutionTimeMS int64    `json:"execution_time_ms"`
-	Truncated       bool     `json:"truncated"`
-	SessionID       *string  `json:"session_id"`
-	HasMore         bool     `json:"has_more"`
+	Columns         []string        `json:"columns"`
+	ColumnTypes     []string        `json:"column_types"`
+	SpatialColumns  []spatialColumn `json:"spatial_columns,omitempty"`
+	SpatialValues   [][]*uint32     `json:"spatial_values,omitempty"`
+	Rows            [][]any         `json:"rows"`
+	AffectedRows    int64           `json:"affected_rows"`
+	ExecutionTimeMS int64           `json:"execution_time_ms"`
+	Truncated       bool            `json:"truncated"`
+	SessionID       *string         `json:"session_id"`
+	HasMore         bool            `json:"has_more"`
 }
 
 func (r queryPageResult) MarshalJSON() ([]byte, error) {
@@ -286,11 +371,13 @@ func (r queryPageResult) MarshalJSON() ([]byte, error) {
 }
 
 type querySession struct {
-	rows        *sql.Rows
-	columns     []string
-	columnTypes []string
-	pending     []any
-	remaining   int
+	rows           *sql.Rows
+	columns        []string
+	columnTypes    []string
+	scanner        *xuguRowScanner
+	pending        []any
+	pendingSpatial []*uint32
+	remaining      int
 }
 
 type databaseInfo struct {
@@ -304,11 +391,13 @@ type tableInfo struct {
 }
 
 type objectInfo struct {
-	Name       string  `json:"name"`
-	ObjectType string  `json:"object_type"`
-	Schema     string  `json:"schema"`
-	Comment    *string `json:"comment"`
-	Valid      *bool   `json:"valid,omitempty"`
+	Name                      string       `json:"name"`
+	ObjectType                string       `json:"object_type"`
+	Schema                    string       `json:"schema"`
+	Comment                   *string      `json:"comment"`
+	Valid                     *bool        `json:"valid,omitempty"`
+	Trigger                   *triggerInfo `json:"trigger,omitempty"`
+	XuguTypeMembersExpandable *bool        `json:"xugu_type_members_expandable,omitempty"`
 }
 
 type metadataListConstraints struct {
@@ -346,7 +435,20 @@ type indexInfo struct {
 	IndexType       *string  `json:"index_type"`
 	IncludedColumns []string `json:"included_columns"`
 	Comment         *string  `json:"comment"`
-	keys            []xuguIndexKey
+	// Partition fields are intentionally internal. The generic DBX index
+	// protocol does not yet model Xugu-specific index partition clauses, but
+	// the DDL exporter must retain them to avoid changing index semantics.
+	IsLocal             bool                `json:"-"`
+	PartitionType       int                 `json:"-"`
+	PartitionCount      int                 `json:"-"`
+	PartitionKey        string              `json:"-"`
+	SubpartitionType    int                 `json:"-"`
+	SubpartitionCount   int                 `json:"-"`
+	SubpartitionKey     string              `json:"-"`
+	PartitionRowsLoaded bool                `json:"-"`
+	IndexPartitions     []xuguPartitionInfo `json:"-"`
+	IndexSubpartitions  []xuguPartitionInfo `json:"-"`
+	keys                []xuguIndexKey
 }
 
 func (i indexInfo) MarshalJSON() ([]byte, error) {
@@ -455,6 +557,7 @@ type xuguCatalogSynonym struct {
 	Name         string
 	TargetSchema sql.NullString
 	TargetName   string
+	Public       bool
 }
 
 // xuguIndexKey preserves the catalog spelling and SQL semantics of an index
@@ -490,9 +593,16 @@ type xuguPartitionInfo struct {
 }
 
 type triggerInfo struct {
-	Name   string `json:"name"`
-	Event  string `json:"event"`
-	Timing string `json:"timing"`
+	Name      string  `json:"name"`
+	Event     string  `json:"event"`
+	Timing    string  `json:"timing"`
+	Level     string  `json:"level"`
+	Condition *string `json:"condition,omitempty"`
+	Language  *string `json:"language,omitempty"`
+	Enabled   *bool   `json:"enabled,omitempty"`
+	Valid     *bool   `json:"valid,omitempty"`
+	Comment   *string `json:"comment,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
 }
 
 type server struct {
@@ -514,6 +624,7 @@ type server struct {
 	activeRows        map[*sql.Rows]context.CancelFunc
 	activeTimer       *time.Timer
 	activeTimedOut    bool
+	activeCanceled    bool
 	// killSession, if non-nil, is called to force-kill the current
 	// statement on the database server. Tests may replace it with a
 	// stub. The real implementation is set during connectWithControl.
@@ -594,14 +705,14 @@ func newRuntimeServer() *runtimeServer {
 func (r *runtimeServer) handleLine(line string) (response, bool) {
 	var req request
 	if err := json.Unmarshal([]byte(line), &req); err != nil {
-		return errorResponse(nil, err), false
+		return errorResponse(nil, "", "", err), false
 	}
 	if len(req.ID) == 0 {
 		req.ID = json.RawMessage("1")
 	}
 	result, shutdown, err := r.dispatch(req.Method, req.Params)
 	if err != nil {
-		return errorResponse(req.ID, err), false
+		return errorResponse(req.ID, req.Method, stringParam(req.Params, "agentSessionId"), err), false
 	}
 	return response{JSONRPC: "2.0", ID: req.ID, Result: result}, shutdown
 }
@@ -612,7 +723,7 @@ func (r *runtimeServer) dispatch(method string, params map[string]json.RawMessag
 		return map[string]any{
 			"protocolVersion":      multiSessionProtocolVersion,
 			"agentProtocolVersion": multiSessionProtocolVersion,
-			"capabilities":         []string{"connect", "test_connection", "metadata", "query", "ddl", "multi_session"},
+			"capabilities":         []string{"connect", "test_connection", "metadata", "query", "ddl", "structured_error_v1", "multi_session"},
 		}, false, nil
 	case "open_session":
 		agentSessionID := stringParam(params, "agentSessionId")
@@ -686,7 +797,7 @@ func (r *runtimeServer) openSession(agentSessionID string, params connectParams)
 	}
 	if len(r.sessions) >= maxAgentSessions {
 		r.mu.Unlock()
-		return fmt.Errorf("agent session limit reached: %d", maxAgentSessions)
+		return fmt.Errorf("%w: %d", errAgentSessionLimit, maxAgentSessions)
 	}
 	r.mu.Unlock()
 
@@ -752,7 +863,7 @@ func (r *runtimeServer) registerSession(agentSessionID string, server *server, c
 	if len(r.sessions) >= maxAgentSessions {
 		_ = server.disconnect()
 		r.releaseControl(controlKey)
-		return fmt.Errorf("agent session limit reached: %d", maxAgentSessions)
+		return fmt.Errorf("%w: %d", errAgentSessionLimit, maxAgentSessions)
 	}
 	r.sessions[agentSessionID] = session
 	return nil
@@ -786,7 +897,7 @@ func (r *runtimeServer) session(agentSessionID string) (*agentSession, error) {
 	session := r.sessions[agentSessionID]
 	r.mu.RUnlock()
 	if session == nil {
-		return nil, fmt.Errorf("agent session not found: %s", agentSessionID)
+		return nil, fmt.Errorf("%w: %s", errAgentSessionNotFound, agentSessionID)
 	}
 	return session, nil
 }
@@ -872,14 +983,14 @@ func (r *runtimeServer) closeAllSessions() error {
 func (s *server) handleLine(line string) (response, bool) {
 	var req request
 	if err := json.Unmarshal([]byte(line), &req); err != nil {
-		return errorResponse(nil, err), false
+		return errorResponse(nil, "", "", err), false
 	}
 	if len(req.ID) == 0 {
 		req.ID = json.RawMessage("1")
 	}
 	result, shutdown, err := s.dispatch(req.Method, req.Params)
 	if err != nil {
-		return errorResponse(req.ID, err), false
+		return errorResponse(req.ID, req.Method, stringParam(req.Params, "agentSessionId"), err), false
 	}
 	return response{JSONRPC: "2.0", ID: req.ID, Result: result}, shutdown
 }
@@ -938,6 +1049,16 @@ func (s *server) dispatch(method string, params map[string]json.RawMessage) (any
 		}
 		schema := stringParam(params, "schema")
 		result, err := s.listObjects(schema, metadataListConstraintsFromParams(params))
+		return result, false, err
+	case "completion_assistant_search_v1":
+		var request completionAssistantRequest
+		if err := decodeParams(params, &request); err != nil {
+			return nil, false, err
+		}
+		if err := s.useDatabase(request.Database); err != nil {
+			return nil, false, err
+		}
+		result, err := s.completionAssistantSearch(request)
 		return result, false, err
 	case "list_data_types":
 		return xuguDataTypes, false, nil
@@ -1605,7 +1726,7 @@ func isXuguMetadataAccessError(err error) bool {
 	catalogObject := false
 	for _, object := range []string{
 		"DATABASES", "SCHEMAS", "TABLES", "VIEWS", "COLUMNS", "CONSTRAINTS", "INDEXES",
-		"TRIGGERS", "PARTIS", "SUBPARTIS", "SEQUENCES", "SYNONYMS", "PROCEDURES", "PACKAGES", "TYPES",
+		"TRIGGERS", "PARTIS", "SUBPARTIS", "IDX_PARTIS", "IDX_SUBPARTIS", "SEQUENCES", "SYNONYMS", "PROCEDURES", "PACKAGES", "TYPES",
 	} {
 		if strings.Contains(message, "ALL_"+object) || strings.Contains(message, "SYS_"+object) {
 			catalogObject = true
@@ -1670,21 +1791,60 @@ func xuguDSNValue(dsn string, key string) string {
 func (s *server) listSchemas() ([]string, error) {
 	rows, err := s.queryRows(xuguListSchemasSQL, nil)
 	if err != nil {
-		if fallback := strings.ToUpper(strings.TrimSpace(s.params.Username)); fallback != "" && isXuguMetadataUnavailableError(err) {
-			return []string{fallback}, nil
+		rows, err = s.queryRows(xuguListSchemasFallbackSQL, nil)
+		if err != nil {
+			if fallback := strings.ToUpper(strings.TrimSpace(s.params.Username)); fallback != "" && isXuguMetadataUnavailableError(err) {
+				return []string{fallback}, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		return s.scanXuguSchemaRows(rows, false)
 	}
+	return s.scanXuguSchemaRows(rows, true)
+}
+
+func (s *server) scanXuguSchemaRows(rows *sql.Rows, includesPublicScope bool) ([]string, error) {
 	defer s.closeRows(rows)
 	var result []string
 	for rows.Next() {
-		var schema string
-		if err := rows.Scan(&schema); err != nil {
+		var schema sql.NullString
+		var publicScope bool
+		var err error
+		if includesPublicScope {
+			err = rows.Scan(&schema, &publicScope)
+		} else {
+			err = rows.Scan(&schema)
+		}
+		if err != nil {
 			return nil, err
 		}
-		result = append(result, schema)
+		if publicScope {
+			result = append(result, xuguPublicSynonymScope)
+		} else if schema.Valid && schema.String != "" {
+			result = append(result, schema.String)
+		}
 	}
-	return emptyIfNil(result), rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return dedupeXuguSchemaNames(result), nil
+}
+
+func dedupeXuguSchemaNames(names []string) []string {
+	seen := make(map[string]struct{}, len(names))
+	result := make([]string, 0, len(names))
+	for _, name := range names {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		result = append(result, name)
+	}
+	return emptyIfNil(result)
+}
+
+func isXuguPublicSynonymScope(schema string) bool {
+	return strings.TrimSpace(schema) == xuguPublicSynonymScope
 }
 
 func (s *server) currentSchema() (string, error) {
@@ -1856,6 +2016,9 @@ func (s *server) listObjects(schema string, constraints metadataListConstraints)
 	if err != nil {
 		return nil, err
 	}
+	if isOnlyXuguObjectType(constraints, "TRIGGER") {
+		return s.listSchemaTriggers(schema, constraints)
+	}
 	query := xuguListObjectsQuery(schema, constraints)
 	rows, err := s.queryRows(query.SQL, query.Args)
 	if err != nil {
@@ -1926,18 +2089,77 @@ func (s *server) listObjects(schema string, constraints metadataListConstraints)
 	return readXuguObjectRows(rows, schema)
 }
 
+func isOnlyXuguObjectType(constraints metadataListConstraints, objectType string) bool {
+	objectTypes := normalizedXuguObjectTypes(constraints.ObjectTypes)
+	return len(objectTypes) == 1 && objectTypes[0] == objectType
+}
+
+func (s *server) listSchemaTriggers(schema string, constraints metadataListConstraints) ([]objectInfo, error) {
+	query := xuguSchemaTriggersQuery(schema, constraints)
+	rows, err := s.queryRows(query.SQL, query.Args)
+	if err != nil {
+		if isXuguMetadataUnavailableError(err) {
+			return []objectInfo{}, nil
+		}
+		return nil, err
+	}
+	defer s.closeRows(rows)
+
+	var result []objectInfo
+	for rows.Next() {
+		var item objectInfo
+		var event, timing, level, condition, language, enabled, valid, comment, createdAt any
+		if err := rows.Scan(&item.Name, &item.ObjectType, &comment, &valid, &event, &timing, &level, &condition, &language, &enabled, &createdAt); err != nil {
+			return nil, err
+		}
+		item.Schema = schema
+		item.Comment = optionalString(xuguString(comment))
+		item.Valid = optionalBool(valid)
+		item.Trigger = &triggerInfo{
+			Name:      item.Name,
+			Event:     triggerEventName(event),
+			Timing:    triggerTimingName(timing),
+			Level:     triggerLevelName(level),
+			Condition: optionalString(xuguString(condition)),
+			Language:  optionalString(xuguString(language)),
+			Enabled:   optionalBool(enabled),
+			Valid:     item.Valid,
+			Comment:   item.Comment,
+			CreatedAt: optionalString(xuguString(createdAt)),
+		}
+		result = append(result, item)
+	}
+	return emptyIfNil(result), rows.Err()
+}
+
+func xuguSchemaTriggersQuery(schema string, constraints metadataListConstraints) xuguMetadataListQuery {
+	return xuguConstrainedMetadataListQuery(`
+SELECT tr.TRIG_NAME AS OBJECT_NAME, 'TRIGGER' AS OBJECT_TYPE, tr.COMMENTS, tr.VALID,
+       tr.TRIG_EVENT, tr.TRIG_TIME, tr.TRIG_TYPE, tr.TRIG_COND, tr.LANGUAGE, tr.ENABLE, tr.CREATE_TIME
+FROM ALL_TRIGGERS tr
+JOIN ALL_SCHEMAS s ON s.DB_ID = tr.DB_ID AND s.SCHEMA_ID = tr.SCHEMA_ID
+WHERE s.DB_ID = CURRENT_DB_ID
+  AND UPPER(s.SCHEMA_NAME) = UPPER(?)`,
+		"OBJECT_NAME, OBJECT_TYPE, COMMENTS, VALID, TRIG_EVENT, TRIG_TIME, TRIG_TYPE, TRIG_COND, LANGUAGE, ENABLE, CREATE_TIME",
+		"OBJECT_NAME", "OBJECT_TYPE", []any{schema}, constraints)
+}
+
 func readXuguObjectRows(rows *sql.Rows, schema string) ([]objectInfo, error) {
 	var result []objectInfo
 	for rows.Next() {
 		var item objectInfo
-		var valid any
+		var valid, xuguTypeMembersExpandable any
 		item.Schema = schema
-		if err := rows.Scan(&item.Name, &item.ObjectType, &item.Comment, &valid); err != nil {
+		if err := rows.Scan(&item.Name, &item.ObjectType, &item.Comment, &valid, &xuguTypeMembersExpandable); err != nil {
 			return nil, err
 		}
 		if valid != nil {
 			value := truthy(valid)
 			item.Valid = &value
+		}
+		if normalizeValue(xuguTypeMembersExpandable) != nil {
+			value := truthy(xuguTypeMembersExpandable)
+			item.XuguTypeMembersExpandable = &value
 		}
 		result = append(result, item)
 	}
@@ -2079,19 +2301,37 @@ WHERE s.DB_ID = CURRENT_DB_ID
 }
 
 func xuguListObjectsQuery(schema string, constraints metadataListConstraints) xuguMetadataListQuery {
+	// Public synonyms have no owning schema in Xugu. They are queried only
+	// through the reserved protocol scope; a real schema named GUEST remains
+	// a normal private-synonym namespace.
+	publicSynonymScope := isXuguPublicSynonymScope(schema)
+	synonymSQL := `
+SELECT y.SYNO_NAME AS OBJECT_NAME, 'SYNONYM' AS OBJECT_TYPE, NULL AS COMMENTS, y.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
+FROM ALL_SYNONYMS y
+WHERE y.DB_ID = CURRENT_DB_ID
+  AND y.IS_PUBLIC = TRUE`
+	if !publicSynonymScope {
+		synonymSQL = `
+SELECT y.SYNO_NAME AS OBJECT_NAME, 'SYNONYM' AS OBJECT_TYPE, NULL AS COMMENTS, y.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
+FROM ALL_SYNONYMS y
+JOIN ALL_SCHEMAS s ON s.DB_ID = y.DB_ID AND s.SCHEMA_ID = y.SCHEMA_ID
+WHERE y.DB_ID = CURRENT_DB_ID
+  AND UPPER(s.SCHEMA_NAME) = UPPER(?)
+  AND y.IS_PUBLIC = FALSE`
+	}
 	type objectSource struct {
 		objectTypes []string
 		sql         string
 	}
 	sources := []objectSource{
 		{objectTypes: []string{"TABLE"}, sql: `
-SELECT t.TABLE_NAME AS OBJECT_NAME, 'TABLE' AS OBJECT_TYPE, t.COMMENTS, NULL AS VALID
+SELECT t.TABLE_NAME AS OBJECT_NAME, 'TABLE' AS OBJECT_TYPE, t.COMMENTS, NULL AS VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_TABLES t
 JOIN ALL_SCHEMAS s ON s.DB_ID = t.DB_ID AND s.SCHEMA_ID = t.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)`},
 		{objectTypes: []string{"VIEW"}, sql: `
-SELECT v.VIEW_NAME AS OBJECT_NAME, 'VIEW' AS OBJECT_TYPE, v.COMMENTS, NULL AS VALID
+SELECT v.VIEW_NAME AS OBJECT_NAME, 'VIEW' AS OBJECT_TYPE, v.COMMENTS, v.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_VIEWS v
 JOIN ALL_SCHEMAS s ON s.DB_ID = v.DB_ID AND s.SCHEMA_ID = v.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
@@ -2099,52 +2339,47 @@ WHERE s.DB_ID = CURRENT_DB_ID
 		{objectTypes: []string{"PROCEDURE", "FUNCTION"}, sql: `
 		SELECT p.PROC_NAME AS OBJECT_NAME,
 		       CASE WHEN p.RET_TYPE IS NULL THEN 'PROCEDURE' ELSE 'FUNCTION' END AS OBJECT_TYPE,
-		       p.COMMENTS, p.VALID
+		       p.COMMENTS, p.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 		FROM ALL_PROCEDURES p
 		JOIN ALL_SCHEMAS s ON s.DB_ID = p.DB_ID AND s.SCHEMA_ID = p.SCHEMA_ID
 		WHERE s.DB_ID = CURRENT_DB_ID
 		  AND UPPER(s.SCHEMA_NAME) = UPPER(?)`},
 		{objectTypes: []string{"PACKAGE"}, sql: `
-SELECT p.PACK_NAME AS OBJECT_NAME, 'PACKAGE' AS OBJECT_TYPE, p.COMMENTS, p.VALID
+SELECT p.PACK_NAME AS OBJECT_NAME, 'PACKAGE' AS OBJECT_TYPE, p.COMMENTS, p.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_PACKAGES p
 JOIN ALL_SCHEMAS s ON s.DB_ID = p.DB_ID AND s.SCHEMA_ID = p.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)`},
 		{objectTypes: []string{"PACKAGE_BODY"}, sql: `
-SELECT p.PACK_NAME AS OBJECT_NAME, 'PACKAGE_BODY' AS OBJECT_TYPE, p.COMMENTS, p.ALL_OK
+SELECT p.PACK_NAME AS OBJECT_NAME, 'PACKAGE_BODY' AS OBJECT_TYPE, p.COMMENTS, p.ALL_OK, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_PACKAGES p
 JOIN ALL_SCHEMAS s ON s.DB_ID = p.DB_ID AND s.SCHEMA_ID = p.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)
   AND p.BODY IS NOT NULL`},
 		{objectTypes: []string{"TRIGGER"}, sql: `
-SELECT tr.TRIG_NAME AS OBJECT_NAME, 'TRIGGER' AS OBJECT_TYPE, tr.COMMENTS, tr.VALID
+SELECT tr.TRIG_NAME AS OBJECT_NAME, 'TRIGGER' AS OBJECT_TYPE, tr.COMMENTS, tr.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_TRIGGERS tr
 JOIN ALL_SCHEMAS s ON s.DB_ID = tr.DB_ID AND s.SCHEMA_ID = tr.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)`},
 		{objectTypes: []string{"SEQUENCE"}, sql: `
-		SELECT q.SEQ_NAME AS OBJECT_NAME, 'SEQUENCE' AS OBJECT_TYPE, NULL AS COMMENTS, NULL AS VALID
+		SELECT q.SEQ_NAME AS OBJECT_NAME, 'SEQUENCE' AS OBJECT_TYPE, NULL AS COMMENTS, NULL AS VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_SEQUENCES q
 JOIN ALL_SCHEMAS s ON s.DB_ID = q.DB_ID AND s.SCHEMA_ID = q.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)
   AND q.IS_SYS = FALSE`},
-		{objectTypes: []string{"SYNONYM"}, sql: `
-SELECT y.SYNO_NAME AS OBJECT_NAME, 'SYNONYM' AS OBJECT_TYPE, NULL AS COMMENTS, y.VALID
-FROM ALL_SYNONYMS y
-JOIN ALL_SCHEMAS s ON s.DB_ID = y.DB_ID AND s.SCHEMA_ID = y.SCHEMA_ID
-WHERE s.DB_ID = CURRENT_DB_ID
-  AND UPPER(s.SCHEMA_NAME) = UPPER(?)
-	AND y.IS_PUBLIC = FALSE`},
+		{objectTypes: []string{"SYNONYM"}, sql: synonymSQL},
 		{objectTypes: []string{"TYPE"}, sql: `
-SELECT u.TYPE_NAME AS OBJECT_NAME, 'TYPE' AS OBJECT_TYPE, u.COMMENTS, u.VALID
+SELECT u.TYPE_NAME AS OBJECT_NAME, 'TYPE' AS OBJECT_TYPE, u.COMMENTS, u.VALID,
+	       CASE WHEN u.UDT_TYPE = 1001 THEN TRUE ELSE FALSE END AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_TYPES u
 JOIN ALL_SCHEMAS s ON s.DB_ID = u.DB_ID AND s.SCHEMA_ID = u.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
   AND UPPER(s.SCHEMA_NAME) = UPPER(?)`},
 		{objectTypes: []string{"TYPE_BODY"}, sql: `
-SELECT u.TYPE_NAME AS OBJECT_NAME, 'TYPE_BODY' AS OBJECT_TYPE, u.COMMENTS, u.VALID
+SELECT u.TYPE_NAME AS OBJECT_NAME, 'TYPE_BODY' AS OBJECT_TYPE, u.COMMENTS, u.VALID, NULL AS XUGU_TYPE_MEMBERS_EXPANDABLE
 FROM ALL_TYPES u
 JOIN ALL_SCHEMAS s ON s.DB_ID = u.DB_ID AND s.SCHEMA_ID = u.SCHEMA_ID
 WHERE s.DB_ID = CURRENT_DB_ID
@@ -2181,11 +2416,13 @@ WHERE s.DB_ID = CURRENT_DB_ID
 	baseArgs := make([]any, 0, len(baseSources))
 	for _, source := range baseSources {
 		baseSQLParts = append(baseSQLParts, source.sql)
-		baseArgs = append(baseArgs, schema)
+		if !(publicSynonymScope && len(source.objectTypes) == 1 && source.objectTypes[0] == "SYNONYM") {
+			baseArgs = append(baseArgs, schema)
+		}
 	}
 	return xuguConstrainedMetadataListQuery(
 		strings.Join(baseSQLParts, "\nUNION ALL\n"),
-		"OBJECT_NAME, OBJECT_TYPE, COMMENTS, VALID",
+		"OBJECT_NAME, OBJECT_TYPE, COMMENTS, VALID, XUGU_TYPE_MEMBERS_EXPANDABLE",
 		"OBJECT_NAME",
 		"OBJECT_TYPE",
 		baseArgs,
@@ -2473,7 +2710,88 @@ func (s *server) listIndexes(schema, table string) ([]indexInfo, error) {
 		item.IncludedColumns = []string{}
 		result = append(result, item)
 	}
+	// LOCAL/GLOBAL attributes are best-effort metadata. Keep the stable index
+	// listing usable when an older Xugu catalog does not expose these columns.
+	s.loadIndexPartitionMetadata(catalogSchema, catalogTable, result)
 	return emptyIfNil(result), rows.Err()
+}
+
+// loadIndexPartitionMetadata enriches the stable index list with Xugu's
+// partition scope and partition definitions. The generic DBX index payload
+// does not expose these Xugu-specific fields, so they remain internal and are
+// consumed by table DDL reconstruction only.
+func (s *server) loadIndexPartitionMetadata(schema, table string, indexes []indexInfo) {
+	if len(indexes) == 0 {
+		return
+	}
+	byName := make(map[string]*indexInfo, len(indexes))
+	for i := range indexes {
+		byName[indexes[i].Name] = &indexes[i]
+	}
+
+	rows, err := s.queryRows(xuguTableCatalogQuery(xuguIndexPartitionAttributesSQL, schema, table), nil)
+	if err != nil {
+		return
+	}
+	func() {
+		defer s.closeRows(rows)
+		for rows.Next() {
+			var name, local, partitionType, partitionCount, partitionKey any
+			var subpartitionType, subpartitionCount, subpartitionKey any
+			if err := rows.Scan(&name, &local, &partitionType, &partitionCount, &partitionKey,
+				&subpartitionType, &subpartitionCount, &subpartitionKey); err != nil {
+				return
+			}
+			item := byName[xuguString(name)]
+			if item == nil {
+				continue
+			}
+			item.IsLocal = truthy(local)
+			item.PartitionType = xuguInt(partitionType)
+			item.PartitionCount = xuguInt(partitionCount)
+			item.PartitionKey = xuguString(partitionKey)
+			item.SubpartitionType = xuguInt(subpartitionType)
+			item.SubpartitionCount = xuguInt(subpartitionCount)
+			item.SubpartitionKey = xuguString(subpartitionKey)
+		}
+	}()
+
+	rows, err = s.queryRows(xuguTableCatalogQuery(xuguIndexPartitionsSQL, schema, table), nil)
+	if err != nil {
+		return
+	}
+	func() {
+		defer s.closeRows(rows)
+		for rows.Next() {
+			var name, position, partitionName, partitionValue any
+			if err := rows.Scan(&name, &position, &partitionName, &partitionValue); err != nil {
+				return
+			}
+			if item := byName[xuguString(name)]; item != nil {
+				item.IndexPartitions = append(item.IndexPartitions, xuguPartitionInfo{
+					Name: xuguString(partitionName), Value: xuguString(partitionValue),
+				})
+				item.PartitionRowsLoaded = true
+			}
+		}
+	}()
+
+	rows, err = s.queryRows(xuguTableCatalogQuery(xuguIndexSubpartitionsSQL, schema, table), nil)
+	if err != nil {
+		return
+	}
+	defer s.closeRows(rows)
+	for rows.Next() {
+		var name, position, partitionName, partitionValue any
+		if err := rows.Scan(&name, &position, &partitionName, &partitionValue); err != nil {
+			return
+		}
+		if item := byName[xuguString(name)]; item != nil {
+			item.IndexSubpartitions = append(item.IndexSubpartitions, xuguPartitionInfo{
+				Name: xuguString(partitionName), Value: xuguString(partitionValue),
+			})
+		}
+	}
 }
 
 func (s *server) listForeignKeys(schema, table string) ([]foreignKeyInfo, error) {
@@ -2515,7 +2833,8 @@ func (s *server) listTriggers(schema, table string) ([]triggerInfo, error) {
 	}
 	table = strings.ToUpper(strings.TrimSpace(table))
 	rows, err := s.queryRows(`
-SELECT tr.TRIG_NAME, tr.TRIG_EVENT, tr.TRIG_TIME
+SELECT tr.TRIG_NAME, tr.TRIG_EVENT, tr.TRIG_TIME, tr.TRIG_TYPE,
+       tr.TRIG_COND, tr.LANGUAGE, tr.ENABLE, tr.VALID, tr.COMMENTS, tr.CREATE_TIME
 FROM ALL_TRIGGERS tr
 JOIN ALL_TABLES t ON t.DB_ID = tr.DB_ID AND t.TABLE_ID = tr.OBJ_ID
 JOIN ALL_SCHEMAS s ON s.DB_ID = t.DB_ID AND s.SCHEMA_ID = t.SCHEMA_ID
@@ -2533,12 +2852,19 @@ ORDER BY tr.TRIG_NAME`, []any{schema, table})
 	var result []triggerInfo
 	for rows.Next() {
 		var item triggerInfo
-		var event, timing any
-		if err := rows.Scan(&item.Name, &event, &timing); err != nil {
+		var event, timing, level, condition, language, enabled, valid, comment, createdAt any
+		if err := rows.Scan(&item.Name, &event, &timing, &level, &condition, &language, &enabled, &valid, &comment, &createdAt); err != nil {
 			return nil, err
 		}
 		item.Event = triggerEventName(event)
 		item.Timing = triggerTimingName(timing)
+		item.Level = triggerLevelName(level)
+		item.Condition = optionalString(xuguString(condition))
+		item.Language = optionalString(xuguString(language))
+		item.Enabled = optionalBool(enabled)
+		item.Valid = optionalBool(valid)
+		item.Comment = optionalString(xuguString(comment))
+		item.CreatedAt = optionalString(xuguString(createdAt))
 		result = append(result, item)
 	}
 	return emptyIfNil(result), rows.Err()
@@ -2839,9 +3165,9 @@ func renderXuguSequenceDDL(sequence xuguSequenceMetadata) string {
 	return builder.String()
 }
 
-// getSynonymSource reconstructs private synonym DDL from ALL_SYNONYMS. Public
-// synonyms deliberately remain outside schema groups: their catalog rows have
-// no owning schema and showing them in every schema would duplicate objects.
+// getSynonymSource reconstructs synonym DDL from ALL_SYNONYMS. Public
+// synonyms are exposed in the reserved database-global scope and therefore
+// use PUBLIC syntax without a schema qualifier.
 func (s *server) getSynonymSource(schema, name string) (map[string]any, error) {
 	synonym, err := s.resolveCatalogSynonym(schema, name)
 	if err != nil {
@@ -2852,10 +3178,15 @@ func (s *server) getSynonymSource(schema, name string) (map[string]any, error) {
 	}
 
 	var builder strings.Builder
-	builder.WriteString("CREATE SYNONYM ")
-	builder.WriteString(quoteIdentifier(synonym.Schema))
-	builder.WriteByte('.')
-	builder.WriteString(quoteIdentifier(synonym.Name))
+	if synonym.Public {
+		builder.WriteString("CREATE PUBLIC SYNONYM ")
+		builder.WriteString(quoteIdentifier(synonym.Name))
+	} else {
+		builder.WriteString("CREATE SYNONYM ")
+		builder.WriteString(quoteIdentifier(synonym.Schema))
+		builder.WriteByte('.')
+		builder.WriteString(quoteIdentifier(synonym.Name))
+	}
 	builder.WriteString("\nFOR ")
 	if targetSchema := strings.TrimSpace(synonym.TargetSchema.String); targetSchema != "" {
 		builder.WriteString(quoteIdentifier(targetSchema))
@@ -2906,13 +3237,20 @@ func (s *server) resolveCatalogSynonym(schema, name string) (xuguCatalogSynonym,
 func xuguCatalogSynonymQuery(schema, name string, caseInsensitive bool) string {
 	schemaExpr := quoteStringLiteral(schema)
 	nameExpr := quoteStringLiteral(name)
+	publicScope := isXuguPublicSynonymScope(schema)
 	if caseInsensitive {
-		schemaExpr = quoteStringLiteral(strings.ToUpper(schema))
 		nameExpr = quoteStringLiteral(strings.ToUpper(name))
-		return xuguCatalogSynonymSelectSQL + "\n  AND UPPER(s.SCHEMA_NAME) = " + schemaExpr +
+		if publicScope {
+			return xuguCatalogSynonymSelectSQL + "\n  AND y.IS_PUBLIC = TRUE\n  AND UPPER(y.SYNO_NAME) = " + nameExpr
+		}
+		schemaExpr = quoteStringLiteral(strings.ToUpper(schema))
+		return xuguCatalogSynonymSelectSQL + "\n  AND y.IS_PUBLIC = FALSE\n  AND UPPER(s.SCHEMA_NAME) = " + schemaExpr +
 			"\n  AND UPPER(y.SYNO_NAME) = " + nameExpr
 	}
-	return xuguCatalogSynonymSelectSQL + "\n  AND s.SCHEMA_NAME = " + schemaExpr +
+	if publicScope {
+		return xuguCatalogSynonymSelectSQL + "\n  AND y.IS_PUBLIC = TRUE\n  AND y.SYNO_NAME = " + nameExpr
+	}
+	return xuguCatalogSynonymSelectSQL + "\n  AND y.IS_PUBLIC = FALSE\n  AND s.SCHEMA_NAME = " + schemaExpr +
 		"\n  AND y.SYNO_NAME = " + nameExpr
 }
 
@@ -2926,8 +3264,14 @@ func (s *server) catalogSynonymCandidates(query string) ([]xuguCatalogSynonym, e
 	var candidates []xuguCatalogSynonym
 	for rows.Next() {
 		var candidate xuguCatalogSynonym
-		if err := rows.Scan(&candidate.Schema, &candidate.Name, &candidate.TargetSchema, &candidate.TargetName); err != nil {
+		var schema sql.NullString
+		if err := rows.Scan(&schema, &candidate.Name, &candidate.TargetSchema, &candidate.TargetName, &candidate.Public); err != nil {
 			return nil, err
+		}
+		if candidate.Public {
+			candidate.Schema = xuguPublicSynonymScope
+		} else {
+			candidate.Schema = schema.String
 		}
 		candidates = append(candidates, candidate)
 	}
@@ -3134,7 +3478,7 @@ func (s *server) getExplainInfo(sqlText string) (string, error) {
 	return strings.TrimSpace(builder.String()), rows.Err()
 }
 
-func (s *server) executeTransaction(params map[string]json.RawMessage) (queryResult, error) {
+func (s *server) executeTransaction(params map[string]json.RawMessage) (result queryResult, err error) {
 	var payload struct {
 		Statements []string `json:"statements"`
 		Schema     string   `json:"schema"`
@@ -3147,7 +3491,9 @@ func (s *server) executeTransaction(params map[string]json.RawMessage) (queryRes
 		return queryResult{}, err
 	}
 	ctx, cancel := s.beginActiveOperation()
-	defer s.endActiveOperation(cancel)
+	defer func() {
+		err = s.finishActiveOperation(cancel, 0, err)
+	}()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return queryResult{}, err
@@ -3165,12 +3511,12 @@ func (s *server) executeTransaction(params map[string]json.RawMessage) (queryRes
 		if statement == "" {
 			continue
 		}
-		result, err := tx.ExecContext(ctx, statement)
+		execResult, err := tx.ExecContext(ctx, statement)
 		if err != nil {
 			tx.Rollback()
 			return queryResult{}, err
 		}
-		count, _ := result.RowsAffected()
+		count, _ := execResult.RowsAffected()
 		affected += count
 	}
 	if err := tx.Commit(); err != nil {
@@ -3201,6 +3547,8 @@ func (s *server) executeQueryPage(opts queryOptions, pageSize int) (queryPageRes
 		return queryPageResult{
 			Columns:         result.Columns,
 			ColumnTypes:     result.ColumnTypes,
+			SpatialColumns:  result.SpatialColumns,
+			SpatialValues:   result.SpatialValues,
 			Rows:            result.Rows,
 			AffectedRows:    result.AffectedRows,
 			ExecutionTimeMS: result.ExecutionTimeMS,
@@ -3219,11 +3567,19 @@ func (s *server) executeQueryPage(opts queryOptions, pageSize int) (queryPageRes
 		return queryPageResult{}, err
 	}
 	columnTypes := columnTypeNames(rows)
+	rowScanner := newXuguRowScanner(len(columns), columnTypes)
+	columnTypes = rowScanner.spatial.columnTypes
 	maxRows := opts.MaxRows
 	if maxRows <= 0 {
 		maxRows = defaultMaxRows
 	}
-	session := &querySession{rows: rows, columns: columns, columnTypes: columnTypes, remaining: maxRows}
+	session := &querySession{
+		rows:        rows,
+		columns:     columns,
+		columnTypes: columnTypes,
+		scanner:     rowScanner,
+		remaining:   maxRows,
+	}
 	result, err := readQuerySessionPage(session, pageSize)
 	result.ExecutionTimeMS = time.Since(start).Milliseconds()
 	if err != nil {
@@ -3285,37 +3641,42 @@ func readQuerySessionPage(session *querySession, pageSize int) (queryPageResult,
 		pageSize = defaultMaxRows
 	}
 	result := queryPageResult{Columns: session.columns, ColumnTypes: session.columnTypes, Rows: [][]any{}, SessionID: nil, HasMore: false}
+	spatialValues := make([][]*uint32, 0, pageSize)
 	for len(result.Rows) < pageSize && session.remaining > 0 {
 		if session.pending != nil {
 			result.Rows = append(result.Rows, session.pending)
+			spatialValues = append(spatialValues, session.pendingSpatial)
 			session.pending = nil
+			session.pendingSpatial = nil
 			session.remaining--
 			continue
 		}
 		if !session.rows.Next() {
-			return result, session.rows.Err()
+			return finishXuguSpatialPage(result, session.scanner, spatialValues), session.rows.Err()
 		}
-		row, err := scanRow(session.rows, len(session.columns))
+		row, rowSpatial, err := session.scanner.scan(session.rows)
 		if err != nil {
 			return queryPageResult{}, err
 		}
 		result.Rows = append(result.Rows, row)
+		spatialValues = append(spatialValues, rowSpatial)
 		session.remaining--
 	}
 	if session.remaining <= 0 {
 		result.Truncated = true
-		return result, nil
+		return finishXuguSpatialPage(result, session.scanner, spatialValues), nil
 	}
 	if session.rows.Next() {
-		row, err := scanRow(session.rows, len(session.columns))
+		row, rowSpatial, err := session.scanner.scan(session.rows)
 		if err != nil {
 			return queryPageResult{}, err
 		}
 		session.pending = row
+		session.pendingSpatial = rowSpatial
 		result.HasMore = true
-		return result, nil
+		return finishXuguSpatialPage(result, session.scanner, spatialValues), nil
 	}
-	return result, session.rows.Err()
+	return finishXuguSpatialPage(result, session.scanner, spatialValues), session.rows.Err()
 }
 
 func (s *server) executeQuery(opts queryOptions) (queryResult, error) {
@@ -3343,8 +3704,8 @@ func (s *server) executeQuery(opts queryOptions) (queryResult, error) {
 		return queryResult{}, err
 	}
 	ctx, cancel := s.beginActiveOperationWithTimeout(opts.TimeoutSecs)
-	defer s.endActiveOperation(cancel)
 	execResult, err := db.ExecContext(ctx, sqlText)
+	err = s.finishActiveOperation(cancel, opts.TimeoutSecs, err)
 	if err != nil {
 		return queryResult{}, err
 	}
@@ -3362,18 +3723,24 @@ func (s *server) executeSelect(sqlText string, maxRows int, timeoutSecs int) (qu
 	if err != nil {
 		return queryResult{}, err
 	}
-	result := queryResult{Columns: columns, ColumnTypes: columnTypeNames(rows), Rows: [][]any{}}
+	columnTypes := columnTypeNames(rows)
+	scanner := newXuguRowScanner(len(columns), columnTypes)
+	columnTypes = scanner.spatial.columnTypes
+	result := queryResult{Columns: columns, ColumnTypes: columnTypes, Rows: [][]any{}}
+	spatialValues := make([][]*uint32, 0)
 	for rows.Next() {
 		if len(result.Rows) >= maxRows {
 			result.Truncated = true
 			break
 		}
-		values, err := scanRow(rows, len(columns))
+		values, rowSpatial, err := scanner.scan(rows)
 		if err != nil {
 			return queryResult{}, err
 		}
 		result.Rows = append(result.Rows, values)
+		spatialValues = append(spatialValues, rowSpatial)
 	}
+	result.SpatialColumns, result.SpatialValues = xuguSpatialResultMetadata(scanner, spatialValues)
 	return result, rows.Err()
 }
 
@@ -3441,18 +3808,20 @@ func (s *server) queryRowsWithTimeoutOnce(sqlText string, args []any, timeoutSec
 		s.activeTimer = nil
 	}
 	timedOut := s.activeTimedOut
-	if queryErr != nil {
-		cancel()
-	} else if timedOut {
-		cancel()
-		if rows != nil {
-			rows.Close()
-		}
-		queryErr = fmt.Errorf("query timed out after %ds", timeoutSecs)
-	} else {
+	canceled := s.activeCanceled
+	s.activeTimedOut = false
+	s.activeCanceled = false
+	if queryErr == nil && !timedOut && !canceled {
 		s.activeRows[rows] = cancel
 	}
 	s.activeCancelMu.Unlock()
+	if queryErr != nil || timedOut || canceled {
+		cancel()
+		if rows != nil {
+			_ = rows.Close()
+		}
+		queryErr = xuguOperationResultError(timedOut, canceled, timeoutSecs, queryErr)
+	}
 	return rows, queryErr
 }
 
@@ -3482,7 +3851,7 @@ func (s *server) execWithReconnect(statement string) error {
 	}
 	ctx, cancel := s.beginActiveOperation()
 	_, execErr := db.ExecContext(ctx, statement)
-	s.endActiveOperation(cancel)
+	execErr = s.finishActiveOperation(cancel, 0, execErr)
 	if execErr == nil || !isXuguConnectionClosedError(execErr) {
 		return execErr
 	}
@@ -3495,7 +3864,7 @@ func (s *server) execWithReconnect(statement string) error {
 	}
 	ctx, cancel = s.beginActiveOperation()
 	_, execErr = db.ExecContext(ctx, statement)
-	s.endActiveOperation(cancel)
+	execErr = s.finishActiveOperation(cancel, 0, execErr)
 	return execErr
 }
 
@@ -3525,25 +3894,60 @@ func (s *server) beginActiveOperationWithTimeout(timeoutSecs int) (context.Conte
 	s.activeCancel = cancel
 	s.activeTimer = timer
 	s.activeTimedOut = false
+	s.activeCanceled = false
 	s.activeCancelMu.Unlock()
 	return ctx, cancel
 }
 
 func (s *server) endActiveOperation(cancel context.CancelFunc) {
-	cancel()
+	_ = s.finishActiveOperation(cancel, 0, nil)
+}
+
+func (s *server) finishActiveOperation(cancel context.CancelFunc, timeoutSecs int, operationErr error) error {
 	s.activeCancelMu.Lock()
 	s.activeCancel = nil
 	if s.activeTimer != nil {
 		s.activeTimer.Stop()
 		s.activeTimer = nil
 	}
+	timedOut := s.activeTimedOut
+	canceled := s.activeCanceled
+	s.activeTimedOut = false
+	s.activeCanceled = false
 	s.activeCancelMu.Unlock()
+	cancel()
+	return xuguOperationResultError(timedOut, canceled, timeoutSecs, operationErr)
+}
+
+func xuguOperationResultError(timedOut, canceled bool, timeoutSecs int, operationErr error) error {
+	if timedOut {
+		if operationErr != nil {
+			return fmt.Errorf("%w after %ds: %v", errXuguOperationTimeout, timeoutSecs, operationErr)
+		}
+		return fmt.Errorf("%w after %ds", errXuguOperationTimeout, timeoutSecs)
+	}
+	if canceled {
+		if operationErr != nil {
+			return fmt.Errorf("%w: %v", errXuguOperationCanceled, operationErr)
+		}
+		return errXuguOperationCanceled
+	}
+	return operationErr
 }
 
 func (s *server) cancelActiveQuery() {
 	s.activeCancelMu.Lock()
 	cancels := make([]context.CancelFunc, 0, len(s.activeRows)+1)
 	if s.activeCancel != nil {
+		if !s.activeTimedOut {
+			s.activeCanceled = true
+			// Explicit cancellation won the race. Disable the watchdog so a
+			// slow driver return cannot relabel this operation as a timeout.
+			if s.activeTimer != nil {
+				s.activeTimer.Stop()
+				s.activeTimer = nil
+			}
+		}
 		cancels = append(cancels, s.activeCancel)
 	}
 	for _, cancel := range s.activeRows {
@@ -4249,6 +4653,14 @@ func optionalString(value string) *string {
 	return &value
 }
 
+func optionalBool(value any) *bool {
+	if normalizeValue(value) == nil {
+		return nil
+	}
+	result := truthy(value)
+	return &result
+}
+
 func xuguPartitionType(value int) string {
 	switch value {
 	case 1:
@@ -4307,16 +4719,132 @@ func (s *server) appendTableIndexDDL(schema, table, ddl string) string {
 			builder.WriteString(renderXuguIndexKey(key))
 		}
 		builder.WriteByte(')')
-		if index.IndexType != nil && strings.TrimSpace(*index.IndexType) != "" {
-			builder.WriteString(" INDEXTYPE IS ")
-			builder.WriteString(strings.TrimSpace(*index.IndexType))
-		}
+		appendXuguIndexOptions(&builder, index)
 		builder.WriteByte(';')
 	}
 	if builder.Len() == 0 {
 		return ddl
 	}
 	return appendDDLStatement(ddl, builder.String())
+}
+
+func appendXuguIndexOptions(builder *strings.Builder, index indexInfo) {
+	if index.IndexType != nil && strings.TrimSpace(*index.IndexType) != "" {
+		builder.WriteString(" INDEXTYPE IS ")
+		builder.WriteString(strings.TrimSpace(*index.IndexType))
+	}
+	if index.IsLocal {
+		builder.WriteString(" LOCAL")
+		return
+	}
+	if index.PartitionType == 0 || !index.PartitionRowsLoaded {
+		return
+	}
+	partitionDDL := renderXuguIndexPartitionDDL(index)
+	if partitionDDL != "" {
+		builder.WriteString(" GLOBAL")
+		builder.WriteString(partitionDDL)
+	}
+}
+
+func renderXuguIndexPartitionDDL(index indexInfo) string {
+	typeName := xuguPartitionType(index.PartitionType)
+	key := strings.TrimSpace(index.PartitionKey)
+	if typeName == "" || key == "" {
+		return ""
+	}
+
+	var builder strings.Builder
+	builder.WriteString(" PARTITION BY ")
+	builder.WriteString(typeName)
+	builder.WriteString(" (")
+	builder.WriteString(key)
+	builder.WriteByte(')')
+	if index.PartitionType == 3 {
+		if index.PartitionCount <= 0 {
+			return ""
+		}
+		builder.WriteString(fmt.Sprintf(" PARTITIONS %d", index.PartitionCount))
+	} else if len(index.IndexPartitions) > 0 {
+		for _, partition := range index.IndexPartitions {
+			if strings.TrimSpace(partition.Name) == "" || strings.TrimSpace(partition.Value) == "" {
+				return ""
+			}
+		}
+		builder.WriteString(" PARTITIONS (\n")
+		for i, partition := range index.IndexPartitions {
+			if i > 0 {
+				builder.WriteString(",\n")
+			}
+			builder.WriteString("  ")
+			builder.WriteString(quoteIdentifier(partition.Name))
+			builder.WriteByte(' ')
+			if index.PartitionType == 1 {
+				builder.WriteString("VALUES LESS THAN (")
+			} else {
+				builder.WriteString("VALUES (")
+			}
+			builder.WriteString(strings.TrimSpace(partition.Value))
+			builder.WriteByte(')')
+		}
+		builder.WriteString("\n)")
+	} else {
+		return ""
+	}
+
+	subType := xuguPartitionType(index.SubpartitionType)
+	subKey := strings.TrimSpace(index.SubpartitionKey)
+	if subType == "" || subKey == "" {
+		return builder.String()
+	}
+	builder.WriteString(" SUBPARTITION BY ")
+	builder.WriteString(subType)
+	builder.WriteString(" (")
+	builder.WriteString(subKey)
+	builder.WriteByte(')')
+	if index.SubpartitionType == 3 {
+		if index.SubpartitionCount <= 0 {
+			return builderWithoutSubpartitionDDL(index, builder)
+		}
+		builder.WriteString(fmt.Sprintf(" SUBPARTITIONS %d", index.SubpartitionCount))
+	} else if len(index.IndexSubpartitions) > 0 {
+		for _, partition := range index.IndexSubpartitions {
+			if strings.TrimSpace(partition.Name) == "" || strings.TrimSpace(partition.Value) == "" {
+				return builderWithoutSubpartitionDDL(index, builder)
+			}
+		}
+		builder.WriteString(" SUBPARTITIONS (\n")
+		for i, partition := range index.IndexSubpartitions {
+			if i > 0 {
+				builder.WriteString(",\n")
+			}
+			builder.WriteString("  ")
+			builder.WriteString(quoteIdentifier(partition.Name))
+			builder.WriteByte(' ')
+			if index.SubpartitionType == 1 {
+				builder.WriteString("VALUES LESS THAN (")
+			} else {
+				builder.WriteString("VALUES (")
+			}
+			builder.WriteString(strings.TrimSpace(partition.Value))
+			builder.WriteByte(')')
+		}
+		builder.WriteString("\n)")
+	}
+	return builder.String()
+}
+
+// builderWithoutSubpartitionDDL returns the complete first-level definition
+// when Xugu exposes a subpartition marker but not enough detail to replay it.
+// Emitting an incomplete SUBPARTITION clause is worse than preserving a valid
+// global index DDL without that optional detail.
+func builderWithoutSubpartitionDDL(index indexInfo, builder strings.Builder) string {
+	firstLevel := index
+	firstLevel.SubpartitionType = 0
+	firstLevel.SubpartitionKey = ""
+	firstLevel.SubpartitionCount = 0
+	firstLevel.IndexSubpartitions = nil
+	return renderXuguIndexPartitionDDL(firstLevel)
 }
 
 // uniqueKeyColumnSets returns column lists for PRIMARY KEY and UNIQUE constraints.
@@ -4462,17 +4990,31 @@ func columnTypeDDL(column columnInfo) string {
 	if column.CharacterMaximumLength != nil {
 		return fmt.Sprintf("%s(%d)", dataType, *column.CharacterMaximumLength)
 	}
-	if column.NumericPrecision != nil && column.NumericScale != nil {
-		return fmt.Sprintf("%s(%d,%d)", dataType, *column.NumericPrecision, *column.NumericScale)
+	if column.NumericPrecision != nil {
+		if column.NumericScale != nil {
+			return fmt.Sprintf("%s(%d,%d)", dataType, *column.NumericPrecision, *column.NumericScale)
+		}
+		return xuguSingleParameterTypeDDL(dataType, *column.NumericPrecision)
 	}
 	return dataType
+}
+
+func xuguSingleParameterTypeDDL(dataType string, parameter int) string {
+	switch dataType {
+	case "TIME WITH TIME ZONE":
+		return fmt.Sprintf("TIME(%d) WITH TIME ZONE", parameter)
+	case "TIMESTAMP WITH TIME ZONE":
+		return fmt.Sprintf("TIMESTAMP(%d) WITH TIME ZONE", parameter)
+	default:
+		return fmt.Sprintf("%s(%d)", dataType, parameter)
+	}
 }
 
 func decodeXuguScale(dataType string, scale *int) (*int, *int, *int) {
 	if scale == nil || *scale < 0 {
 		return nil, nil, nil
 	}
-	upper := strings.ToUpper(dataType)
+	upper := strings.Join(strings.Fields(strings.ToUpper(dataType)), " ")
 	if strings.Contains(upper, "CHAR") || strings.Contains(upper, "BINARY") {
 		length := *scale
 		return nil, nil, &length
@@ -4481,6 +5023,10 @@ func decodeXuguScale(dataType string, scale *int) (*int, *int, *int) {
 		precision := *scale / 65536
 		numericScale := *scale % 65536
 		return &precision, &numericScale, nil
+	}
+	if upper == "BIT" || upper == "VARBIT" || upper == "TIME" || upper == "TIME WITH TIME ZONE" || upper == "TIMESTAMP" || upper == "TIMESTAMP WITH TIME ZONE" {
+		precision := *scale
+		return &precision, nil, nil
 	}
 	return nil, nil, nil
 }
@@ -4853,6 +5399,17 @@ func triggerTimingName(value any) string {
 	}
 }
 
+func triggerLevelName(value any) string {
+	switch fmt.Sprint(normalizeValue(value)) {
+	case "1":
+		return "FOR EACH ROW"
+	case "2":
+		return "FOR STATEMENT"
+	default:
+		return fmt.Sprint(normalizeValue(value))
+	}
+}
+
 func joinValues(values []any, sep string) string {
 	parts := make([]string, len(values))
 	for i, value := range values {
@@ -4909,8 +5466,8 @@ func stringSliceParam(params map[string]json.RawMessage, key string) []string {
 	return nil
 }
 
-func errorResponse(id json.RawMessage, err error) response {
-	return response{JSONRPC: "2.0", ID: id, Error: &rpcError{Code: -1, Message: err.Error()}}
+func errorResponse(id json.RawMessage, method, agentSessionID string, err error) response {
+	return response{JSONRPC: "2.0", ID: id, Error: classifyRPCError(method, agentSessionID, err)}
 }
 
 func trimStatementSQL(sqlText string) string {

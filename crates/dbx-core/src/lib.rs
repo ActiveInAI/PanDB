@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 pub mod agent_catalog;
 pub mod agent_connection;
 pub mod agent_events;
@@ -5,6 +7,7 @@ pub mod agent_explain;
 pub mod agent_kv;
 pub mod agent_loop;
 pub mod agent_manager;
+pub mod agent_offline_export;
 pub mod agent_recovery;
 pub mod agent_runtime;
 pub mod agent_service;
@@ -12,16 +15,22 @@ pub mod agent_tools;
 pub mod ai;
 pub mod ai_claude_code_cli;
 pub mod ai_cli_agent;
+pub mod ai_codebuddy_cli;
 pub mod ai_codex_cli;
+pub mod ai_cursor_cli;
 pub mod ai_effort;
+pub mod ai_grok_cli;
 mod ai_model_filter;
+pub mod ai_opencode_cli;
 pub mod ai_pi_agent_cli;
+pub mod ai_qoder_cli;
 pub mod backend_error;
 pub mod changelog;
 pub mod cloud_sync;
 pub mod config;
 pub mod connection;
 pub mod connection_secrets;
+pub mod consul;
 pub mod correction;
 pub mod csv_export;
 pub mod data_compare;
@@ -29,6 +38,7 @@ pub mod data_grid_extractors;
 pub mod data_grid_sql;
 pub mod database_capabilities;
 pub mod database_export;
+pub mod database_manifest;
 pub mod database_search_sql;
 pub mod db;
 pub mod db_admin_sql;
@@ -41,6 +51,7 @@ pub mod hbase_ops;
 pub mod history;
 pub mod jdbc;
 pub mod models;
+pub mod mongo_oidc;
 pub mod mongo_ops;
 pub mod mongo_shell;
 #[cfg(feature = "mq-admin")]
@@ -48,6 +59,7 @@ pub mod mq;
 #[cfg(feature = "mq-admin")]
 pub mod mqtt;
 pub(crate) mod mysql_ddl_normalize;
+pub mod mysql_event_sql;
 pub mod nacos;
 #[cfg(all(target_os = "windows", target_env = "gnu"))]
 mod nanosleep_stub;
@@ -64,10 +76,12 @@ pub mod query_result_export;
 pub mod query_result_sql;
 pub mod redis_ops;
 pub mod risk_metrics;
+pub mod runtime_config;
 pub mod saved_sql;
 pub mod schema;
 pub mod schema_diff;
 pub mod script_generator;
+pub mod session_credentials;
 pub mod sql;
 pub mod sql_analysis;
 pub mod sql_diagnostics;
@@ -92,6 +106,7 @@ pub mod transfer;
 pub mod two_phase_commit;
 pub mod types;
 pub mod update;
+pub mod write_unlock;
 pub mod xlsx_export;
 
 /// Makes PanDB-prefixed runtime configuration available to legacy DBX readers without
@@ -125,7 +140,7 @@ pub fn install_pandb_environment_aliases() {
     }
 }
 
-pub const R2_CDN_BASE: &str = "https://dl.dbxio.com/";
+pub const R2_CDN_BASE: &str = "https://github.com/ActiveInAI/PanDB/releases/latest/download/";
 pub const GITHUB_RELEASE_DOWNLOAD_PREFIX: &str = "https://github.com/ActiveInAI/PanDB/releases/download/";
 pub const CNB_RELEASE_DOWNLOAD_PREFIX: &str = "https://cnb.cool/dbxio.com/dbx/-/releases/download/";
 

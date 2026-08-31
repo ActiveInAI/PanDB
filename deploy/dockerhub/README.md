@@ -1,6 +1,6 @@
-# PanDB
+# DBX
 
-PanDB is a lightweight, self-hosted database client for the browser. It supports 70+ databases, including MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHouse, SQL Server, Oracle, and Elasticsearch.
+DBX is a lightweight, self-hosted database client for the browser. It supports 90+ databases, including MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHouse, SQL Server, Oracle, and Elasticsearch.
 
 - Official website: https://dbxio.com
 - Documentation: https://dbxio.com/en/docs/getting-started
@@ -9,7 +9,7 @@ PanDB is a lightweight, self-hosted database client for the browser. It supports
 
 ## Quick Start
 
-Set a strong access password and start PanDB:
+Set a strong access password and start DBX:
 
 ```bash
 docker run -d \
@@ -55,19 +55,19 @@ docker compose up -d --pull always
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `DBX_PASSWORD` | Not set | Access password for the PanDB Web login page. Set a strong value for server deployments. |
+| `DBX_PASSWORD` | Not set | Access password for the DBX Web login page. Set a strong value for server deployments. |
 | `DBX_DISABLE_PASSWORD` | `false` | Disables login protection when set to `true`. Do not use this on an untrusted network. |
-| `DBX_DATA_DIR` | `/app/data` | Directory containing the PanDB database, plugins, drivers, and other persistent data. |
+| `DBX_DATA_DIR` | `/app/data` | Directory containing the DBX database, plugins, drivers, and other persistent data. |
 | `DBX_PORT` | `4224` | HTTP port inside the container. |
 | `DBX_PUBLIC_BASE_PATH` | `/` | URL prefix for reverse-proxy deployments, for example `/dbx`. |
 
-Persist `/app/data` with a named volume or bind mount. Removing this data removes saved connections and other PanDB application data.
+Persist `/app/data` with a named volume or bind mount. Removing this data removes saved connections and other DBX application data.
 
 DuckDB is delivered as a standalone native driver instead of being embedded in `dbx-web`. Install the DuckDB driver from Driver Manager after the first launch. It is stored under `/app/data/agents` and remains available across container upgrades when `/app/data` is persisted.
 
 ## Reverse Proxy
 
-To publish PanDB under a path such as `https://example.com/dbx`, set:
+To publish DBX under a path such as `https://example.com/dbx`, set:
 
 ```yaml
 environment:
@@ -86,15 +86,15 @@ docker.cnb.cool/dbxio.com/dbx:latest
 
 ## 1Panel
 
-PanDB is available from the 1Panel app store. See the official installation guide for port, password, persistence, and access instructions:
+DBX is available from the 1Panel app store. See the official installation guide for port, password, persistence, and access instructions:
 
 - 中文教程: https://dbxio.com/cn/docs/1panel
 - English guide: https://dbxio.com/en/docs/1panel
 
 ## Tags
 
-- `latest`: latest stable PanDB release
-- `<version>`: a specific PanDB release
+- `latest`: latest stable DBX release
+- `<version>`: a specific DBX release
 - `dev`: current development image
 
 For production deployments, pin a version tag when you need controlled upgrades.

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const SITE_URL = "https://dbxio.com";
-export const SITE_NAME = "PanDB";
-export const DEFAULT_DESCRIPTION = "70+ databases in 20 MB. Desktop & Docker self-hosting, with built-in AI assistant.";
+export const SITE_NAME = "DBX";
+export const DEFAULT_DESCRIPTION = "90+ databases in 20 MB. Desktop & Docker self-hosting, with built-in AI assistant.";
 export const DEFAULT_OG_IMAGE = "/logo.png";
 
 const LOCALE_MAP: Record<string, string> = {

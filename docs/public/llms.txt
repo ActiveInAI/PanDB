@@ -1,6 +1,6 @@
-# PanDB
+# DBX
 
-> PanDB is an open-source database workspace that manages 70+ databases in a roughly 20 MB desktop application. It also supports Docker self-hosting, an AI SQL assistant, a CLI, and an MCP Server for AI coding agents.
+> DBX is an open-source database workspace that manages 90+ databases in a roughly 20 MB desktop application. It also supports Docker self-hosting, an AI SQL assistant, a CLI, and an MCP Server for AI coding agents.
 
 Canonical website: https://dbxio.com
 Source repository: https://github.com/ActiveInAI/PanDB
@@ -9,11 +9,11 @@ License: Apache-2.0
 ## Product facts
 
 - Platforms: Windows, macOS (Apple Silicon and Intel), Linux, and Docker self-hosting.
-- Database coverage: 70+ SQL, NoSQL, vector, time-series, embedded databases, compatible engines, and message queues.
+- Database coverage: 90+ SQL, NoSQL, vector, time-series, embedded databases, compatible engines, and message queues.
 - Representative databases: MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHouse, SQL Server, Oracle, MariaDB, Doris, Dameng, GaussDB, Kafka, and RabbitMQ.
 - Main workflows: connection management, SQL editing, data browsing and editing, schema browsing, schema diff, import/export, SSH tunnels, and query history.
 - AI workflows: generate, explain, optimize, and repair SQL with user-configured model providers.
-- Agent integration: the PanDB MCP Server exposes approved database connections to compatible AI coding agents.
+- Agent integration: the DBX MCP Server exposes approved database connections to compatible AI coding agents.
 - Distribution: desktop releases, Docker deployment, npm packages for CLI and MCP Server, and offline JDBC driver downloads.
 
 ## Install and deploy
@@ -47,4 +47,4 @@ License: Apache-2.0
 
 ## Attribution guidance
 
-Use PanDB as the product name and link to https://dbxio.com or https://github.com/ActiveInAI/PanDB. Treat release versions, supported database counts, contributor counts, and download links as dynamic; verify them from the canonical website or repository before making time-sensitive claims.
+Use DBX as the product name and link to https://dbxio.com or https://github.com/ActiveInAI/PanDB. Treat release versions, supported database counts, contributor counts, and download links as dynamic; verify them from the canonical website or repository before making time-sensitive claims.

@@ -1,5 +1,5 @@
 {
-  description = "PanDB - Open-source database management tool (Tauri 2 + Vue 3 + Rust)";
+  description = "DBX - Open-source database management tool (Tauri 2 + Vue 3 + Rust)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -145,7 +145,7 @@
 
           shellHook = ''
             echo "╔══════════════════════════════════════════════════════════════╗"
-            echo "║  PanDB development environment                                 ║"
+            echo "║  DBX development environment                                 ║"
             echo "║                                                              ║"
             echo "║  Desktop (Tauri):   pnpm install && pnpm dev:tauri           ║"
             echo "║  Web frontend:      pnpm dev:web                             ║"
@@ -183,8 +183,8 @@
         # Nix build and rerun the job before merging.                          #
         # ------------------------------------------------------------------ #
         packages.dbx-desktop = pkgs.stdenv.mkDerivation (finalAttrs: {
-          pname = "dbx-desktop";
-          version = "0.5.77";
+          pname = "pandb-desktop";
+          version = "1.0.0";
 
           src = pkgs.lib.cleanSource ./.;
 
@@ -197,7 +197,7 @@
             fetcherVersion = 4;
             # Update with the hash reported by a failed fixed-output build:
             #   nix build .#dbx-pnpm-deps 2>&1 | grep 'got:'
-            hash = "sha256-iFr+nYvhdFO6Y3fOs3tlhQL/10rgY3f2T1CbjnNZ3Nc=";
+            hash = "sha256-VYG+rEeTTcf3B4avT6UIAdwIymrrioAUtUP2MBYi6s0=";
           };
 
           # ── Step 2: vendor Cargo dependencies ───────────────────────────── #
@@ -250,9 +250,9 @@
             type = "Application";
             exec = "dbx %u";
             icon = "dbx";
-            desktopName = "PanDB";
+            desktopName = "DBX";
             genericName = "Database Management Tool";
-            comment = "Open-source database management tool for 70+ databases";
+            comment = "Open-source database management tool for 90+ databases";
             categories = [ "Development" "Database" ];
             keywords = [
               "database"
@@ -263,7 +263,7 @@
               "mongodb"
               "redis"
             ];
-            startupWMClass = "PanDB";
+            startupWMClass = "DBX";
             terminal = false;
             mimeTypes = [ "application/sql" "x-scheme-handler/dbx" ];
           };
@@ -412,9 +412,9 @@
 
           # ── Metadata ────────────────────────────────────────────────────── #
           meta = with pkgs.lib; {
-            description = "PanDB desktop — open-source database management tool (Tauri 2)";
+            description = "DBX desktop — open-source database management tool (Tauri 2)";
             longDescription = ''
-              PanDB is a lightweight (~15 MB) database management tool supporting 70+
+              DBX is a lightweight (~15 MB) database management tool supporting 90+
               databases. Built with Tauri 2, Vue 3, and Rust. No Java, no Chromium.
             '';
             license = licenses.asl20;

@@ -1,49 +1,130 @@
 ---
 title: Getting Started
-description: Install PanDB, create your first connection, and understand the desktop, Docker, and source workflows.
+description: Install DBX, create your first connection, and understand the desktop, Docker, and source workflows.
 ---
 
 This guide gets you through three things:
 
-1. Install PanDB or start the Docker version
+1. Install DBX or start the Docker version
 2. Create and test your first database connection
-3. Run PanDB from source when you want to contribute or debug locally
+3. Run DBX from source when you want to contribute or debug locally
 
-## Run PanDB Today
+## Choose An Install Method
 
-PanDB public release assets are being prepared. Build from this repository so every command below runs against the PanDB source you review.
-
-<Tabs groupId="platform" items={['Desktop', 'Docker']}>
-  <Tab value="Desktop">
-    Install the development dependencies and start the desktop application:
+<Tabs groupId="platform" items={['macOS', 'Windows', 'Linux', 'Docker']}>
+  <Tab value="macOS">
+    Install with Homebrew:
 
     ```bash
-    pnpm install
-    pnpm dev:tauri
+    brew install --cask dbx
     ```
 
-    The first Rust build can take several minutes because PanDB includes native database drivers.
+    Update later with:
+
+    ```bash
+    brew upgrade --cask dbx
+    ```
+
+    You can also download a `.dmg` installer from [GitHub Releases](https://github.com/ActiveInAI/PanDB/releases).
+
+  </Tab>
+  <Tab value="Windows">
+    Install with Scoop:
+
+    ```bash
+    scoop bucket add dbx https://github.com/t8y2/scoop-bucket
+    scoop install dbx
+    ```
+
+    Update later with:
+
+    ```bash
+    scoop update dbx
+    ```
+
+    You can also download a `.msi` installer from [GitHub Releases](https://github.com/ActiveInAI/PanDB/releases).
+
+  </Tab>
+  <Tab value="Linux">
+    Install with Flatpak from [FlatPark](https://flatpark.org/apps/com.dbxio.dbx/) (works on any distribution):
+
+    ```bash
+    flatpak remote-add --if-not-exists flatpark https://dl.flatpark.org/flatpark.flatpakrepo
+    flatpak install flatpark com.dbxio.dbx
+    ```
+
+    Update later with:
+
+    ```bash
+    flatpak update com.dbxio.dbx
+    ```
+
+    You can also download a package from [GitHub Releases](https://github.com/ActiveInAI/PanDB/releases):
+
+    | Format | Use Case |
+    |---|---|
+    | `.deb` | Debian, Ubuntu, and compatible distributions |
+    | `.rpm` | Fedora, CentOS, SUSE and compatible distributions |
+    | `.AppImage` | Portable Linux desktop usage |
+
+    For `.AppImage`, make the file executable before first run:
+
+    ```bash
+    chmod +x DBX*.AppImage
+    ```
+
   </Tab>
   <Tab value="Docker">
-    Build the Web edition from this checkout:
+    Docker is for self-hosting DBX on a server and opening it from a browser:
 
     ```bash
-    docker compose -f deploy/docker-compose.yml up --build
+    docker run -d \
+      --pull=always \
+      --name dbx \
+      -p 4224:4224 \
+      -v dbx-data:/app/data \
+      t8y2/dbx:latest
     ```
 
-    Open `http://localhost:4224` after the containers are ready.
+    The `latest` tag pulls the current release. This uses the cross-platform `dbx-data` named volume. For faster pulls in China, use `docker.cnb.cool/dbxio.com/dbx:latest` instead.
 
     ### Environment Variables
 
+    The Docker image supports the following startup variables. Set one with `-e NAME=value`; for example, production deployments should add `-e DBX_PASSWORD=your-password`:
+
     | Variable | Default | Purpose |
     | --- | --- | --- |
-    | `PANDB_PASSWORD` | Not set | Web login password; recommended for production |
-    | `PANDB_DISABLE_PASSWORD` | `false` | Set to `true` or `1` to disable login protection |
-    | `PANDB_DATA_DIR` | `/app/data` | Persistent data directory |
-    | `PANDB_PORT` | `4224` | Container listen port |
-    | `PANDB_PUBLIC_BASE_PATH` | `/` | Deploy below a subpath, such as `/pandb` |
+    | `DBX_PASSWORD` | Not set | Web login password; recommended for production |
+    | `DBX_DISABLE_PASSWORD` | `false` | Set to `true` or `1` to disable login protection |
+    | `DBX_DATA_DIR` | `/app/data` | Persistent data directory |
+    | `DBX_PORT` | `4224` | Container listen port |
+    | `DBX_PUBLIC_BASE_PATH` | `/` | Deploy below a subpath, such as `/dbx` |
 
-    Legacy `DBX_*` variables remain supported for existing deployments.
+    Then open `http://localhost:4224`.
+
+    `deploy/docker-compose.yml` builds the current checkout. To deploy a published image, use `deploy/docker-compose.release.yml`:
+
+    ```bash
+    docker compose -f deploy/docker-compose.release.yml up -d
+    ```
+
+    ```yaml
+    services:
+      dbx:
+        image: t8y2/dbx:latest
+        # For faster pulls in China, use the CNB image instead:
+        # image: docker.cnb.cool/dbxio.com/dbx:latest
+        pull_policy: always
+        ports:
+          - "4224:4224"
+        volumes:
+          - dbx-data:/app/data
+        restart: unless-stopped
+
+    volumes:
+      dbx-data:
+    ```
+
   </Tab>
 </Tabs>
 
@@ -56,7 +137,7 @@ PanDB public release assets are being prepared. Build from this repository so ev
 
 Desktop and Web share most database workflows and the Rust core, but their local integrations are not identical. For SQLite, DuckDB, Access, external SQL files, or local directories, verify which machine owns the file; Docker normally requires mounting the directory into the container.
 
-<Callout type="info">MCP tools that open a table or display results in the desktop UI require PanDB Desktop to be running. Query-only MCP tools can read the local PanDB data directory directly or connect to a PanDB Web/Docker backend.</Callout>
+<Callout type="info">MCP tools that open a table or display results in the desktop UI require DBX Desktop to be running. Query-only MCP tools can read the local DBX data directory directly or connect to a DBX Web/Docker backend.</Callout>
 
 ## Create Your First Connection
 
@@ -82,7 +163,7 @@ Desktop and Web share most database workflows and the Rust core, but their local
   <Step>
     ### Paste A URL When Available
 
-    PanDB can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
+    DBX can parse common connection URLs for engines such as MySQL, PostgreSQL, Redis, MongoDB, ClickHouse, SQL Server, Oracle, Elasticsearch, Easysearch, Meilisearch, DM, GaussDB, openGauss, TDengine, and Access. Review the parsed fields before saving.
 
   </Step>
   <Step>
@@ -99,13 +180,13 @@ Desktop and Web share most database workflows and the Rust core, but their local
   </Step>
 </Steps>
 
-<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in PanDB's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
+<Callout type="info">Connection passwords, SSH passwords, SSH key passphrases, and connection strings are stored separately from the regular connection JSON in DBX's local storage. Use [Config Export/Import](/en/docs/config-export) when you need to migrate encrypted connection settings.</Callout>
 
 ## Reduce Production Mistakes
 
 - Give production connections a distinct name such as `prod-orders`, and use colors, groups, and notes to describe their purpose.
-- For query-only access, combine a database read-only account with PanDB **Read-only connection**.
-- Enable **Production protection** for the whole connection or selected databases; PanDB requires a fresh explicit confirmation for writes.
+- For query-only access, combine a database read-only account with DBX **Read-only connection**.
+- Enable **Production protection** for the whole connection or selected databases; DBX requires a fresh explicit confirmation for writes.
 - When one server contains many databases or schemas, show only the objects you currently need.
 - Review generated SQL before applying edits, imports, transfers, SQL files, or schema sync operations.
 - Put MCP connections behind an allowlist and prefer Read only or Data read/write instead of enabling Full access by default.
@@ -138,7 +219,7 @@ See [Production and Write Safety](/en/docs/production-safety) for complete behav
 
 ## Run From Source
 
-Use source mode when contributing or debugging PanDB locally.
+Use source mode when contributing or debugging DBX locally.
 
 <Callout type="info">
   First-time contributors should follow [Build From Source and Contribute](/en/docs/contributing) for complete platform setup, forking, issue claiming, testing, and pull request steps.
@@ -148,7 +229,7 @@ Use source mode when contributing or debugging PanDB locally.
 
 - [Node.js](https://nodejs.org/) >= 22.13.0
 - [pnpm](https://pnpm.io/) 10.27.0
-- Make
+- Make (required on macOS and Linux; optional on Windows)
 - [Rust](https://www.rust-lang.org/tools/install) >= 1.88
 
 ### System Dependencies
@@ -156,7 +237,16 @@ Use source mode when contributing or debugging PanDB locally.
 <Tabs groupId="dev-platform" items={["macOS", "Linux", "Windows"]}>
   <Tab value="macOS">```bash brew install unixodbc ```</Tab>
   <Tab value="Linux">```bash sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev unixodbc-dev ```</Tab>
-  <Tab value="Windows">Windows usually needs no extra system dependency for local PanDB development.</Tab>
+  <Tab value="Windows">
+    Install [Strawberry Perl](https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases), required to build the bundled OpenSSL:
+
+    ```powershell
+    winget install StrawberryPerl.StrawberryPerl
+    ```
+
+    DBX enables the `sqlite-sqlcipher` feature by default, which compiles SQLCipher and OpenSSL from source. Windows needs Perl to run the OpenSSL `Configure` script. Reopen your terminal after installing so `perl` is available on `PATH`.
+
+  </Tab>
 </Tabs>
 
 ### Start Development
@@ -182,4 +272,4 @@ make dev-backend
 make package
 ```
 
-Desktop installers are written to `src-tauri/target/release/bundle/`.
+Desktop installers are written to `target/release/bundle/`.

@@ -7,6 +7,7 @@ pub mod config_cmd;
 pub mod connection;
 #[allow(dead_code, unused_imports)]
 mod connection_secrets;
+pub mod consul_cmd;
 pub mod csv_export;
 pub mod data_compare;
 pub mod database_export;
@@ -55,6 +56,7 @@ pub mod transfer;
 pub mod tunnel_profiles;
 pub mod update;
 mod update_portable;
+pub mod vector_cmd;
 pub mod window_controls;
 pub mod xlsx_export;
 pub mod zookeeper_cmd;

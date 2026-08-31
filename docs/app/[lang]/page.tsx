@@ -1,21 +1,19 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import { HeroProductStage } from "@/components/aceternity/HeroProductStage";
 import { InfiniteMovingCards } from "@/components/aceternity/InfiniteMovingCards";
 import { Spotlight } from "@/components/aceternity/Spotlight";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { InstallTabs } from "@/components/landing/InstallTabs";
-import { LandingLatestUpdates } from "@/components/landing/LandingLatestUpdates";
 import { RevealSection } from "@/components/landing/RevealSection";
 import { ContributorsWallContent } from "@/components/landing/ContributorsWall";
-import { ExpandableDatabaseGrid } from "@/components/landing/ExpandableDatabaseGrid";
+import { DatabasePillMarquee } from "@/components/landing/DatabasePillMarquee";
 import contributorSnapshot from "@/data/contributors.json";
+import { databaseSupport } from "@/data/databaseSupport";
 import type { ContributorActivityData } from "@/lib/contributorActivity";
 import { contributorsFromActivity } from "@/lib/contributors";
 import { getAppVersion } from "@/lib/appVersion";
-import { fetchChangelog } from "@/lib/changelog";
 import { fetchLatestReleaseInfo } from "@/lib/latestRelease";
 import { buildMetadata, getHtmlLang } from "@/lib/metadata";
 import { buildSoftwareApplicationStructuredData } from "@/lib/structuredData";
@@ -33,102 +31,18 @@ function metrics(starLabel: string) {
   return {
     en: [
       { value: "~20 MB", label: "desktop installer" },
-      { value: "70+", label: "database engines" },
+      { value: "90+", label: "database engines" },
       { value: "2 modes", label: "desktop and Docker" },
       { value: starLabel, label: "GitHub stars, fully open-source" },
     ],
     cn: [
       { value: "~20 MB", label: "桌面安装包" },
-      { value: "70+", label: "数据库引擎" },
+      { value: "90+", label: "数据库引擎" },
       { value: "2 种模式", label: "桌面与 Docker" },
       { value: starLabel, label: "GitHub Star，完全开源" },
     ],
   };
 }
-
-const databaseSupport = [
-  { name: "MySQL", icon: "/icons/database/mysql.svg", tone: "#4479a1" },
-  { name: "PostgreSQL", icon: "/icons/database/postgres.svg", tone: "#4169e1" },
-  { name: "Cloudberry", icon: "/icons/database/cloudberry.svg", tone: "#ff5900" },
-  { name: "SQLite", icon: "/icons/database/sqlite.svg", tone: "#5aa6d6" },
-  { name: "Redis", icon: "/icons/database/redis.svg", tone: "#ff4438" },
-  { name: "DuckDB", icon: "/icons/database/duckdb.svg", tone: "#fff000" },
-  { name: "ClickHouse", icon: "/icons/database/clickhouse.svg", tone: "#ffcc01" },
-  { name: "SQL Server", icon: "/icons/database/sqlserver.svg", tone: "#9ca3af" },
-  { name: "MongoDB", icon: "/icons/database/mongodb.svg", tone: "#47a248" },
-  { name: "Oracle", icon: "/icons/database/oracle.svg", tone: "#f80000" },
-  { name: "Elasticsearch", icon: "/icons/database/elasticsearch.svg", tone: "#00bfb3" },
-  { name: "Easysearch", icon: "/icons/database/easysearch.svg", tone: "#231815" },
-  { name: "Qdrant", icon: "/icons/database/qdrant.svg", tone: "#dc244c" },
-  { name: "Milvus", icon: "/icons/database/milvus.png", tone: "#00a1ea" },
-  { name: "Weaviate", icon: "/icons/database/weaviate.svg", tone: "#00b894" },
-  { name: "ChromaDB", icon: "/icons/database/chromadb.svg", tone: "#ff7a59" },
-  { name: "Cloudflare D1", icon: "/icons/database/cloudflare-d1.svg", tone: "#f6821f" },
-  { name: "MariaDB", icon: "/icons/database/mariadb.svg", tone: "#003545" },
-  { name: "Doris", icon: "/icons/database/doris.svg", tone: "#5b7cfa" },
-  { name: "StarRocks", icon: "/icons/database/starrocks.svg", tone: "#6750ff" },
-  { name: "Manticore", icon: "/icons/database/manticoresearch.png", tone: "#b8e646" },
-  { name: "Redshift", icon: "/icons/database/redshift.svg", tone: "#8c4fff" },
-  { name: "Dameng", icon: "/icons/database/dm.svg", tone: "#3857ff" },
-  { name: "GaussDB", icon: "/icons/database/gaussdb.svg", tone: "#ff5a3d" },
-  { name: "openGauss", icon: "/icons/database/opengauss.svg", tone: "#1488c9" },
-  { name: "KingBase", icon: "/icons/database/kingbase.svg", tone: "#e1212d" },
-  { name: "HighGo", icon: "/icons/database/highgo.png", tone: "#005bac" },
-  { name: "UXDB", icon: "/icons/database/uxdb.svg", tone: "#142b8c" },
-  { name: "TiDB", icon: "/icons/database/tidb.svg", tone: "#e60012" },
-  { name: "OceanBase", icon: "/icons/database/oceanbase.svg", tone: "#2285ff" },
-  { name: "TDSQL", icon: "/icons/database/tdsql.svg", tone: "#0080ff" },
-  { name: "PolarDB", icon: "/icons/database/polardb.webp", tone: "#1890ff" },
-  { name: "GreatSQL", icon: "/icons/database/greatsql.webp", tone: "#0066b3" },
-  { name: "SelectDB", icon: "/icons/database/selectdb.svg", tone: "#22c1c3" },
-  { name: "TDengine", icon: "/icons/database/tdengine.svg", tone: "#2f6fff" },
-  { name: "CockroachDB", icon: "/icons/database/cockroachdb.svg", tone: "#6933ff" },
-  { name: "RQLite", icon: "/icons/database/rqlite.png", tone: "#5a67d8" },
-  { name: "Turso", icon: "/icons/database/turso.png", tone: "#10b981" },
-  { name: "Databend", icon: "/icons/database/databend.svg", tone: "#f59e0b" },
-  { name: "Databricks", icon: "/icons/database/databricks.svg", tone: "#ff5a1f" },
-  { name: "Snowflake", icon: "/icons/database/snowflake.svg", tone: "#29b5e8" },
-  { name: "BigQuery", icon: "/icons/database/bigquery.svg", tone: "#4285f4" },
-  { name: "Trino", icon: "/icons/database/trino.svg", tone: "#dd00a1" },
-  { name: "PrestoSQL", icon: "/icons/database/presto.svg", tone: "#5890ff" },
-  { name: "Hive", icon: "/icons/database/hive.svg", tone: "#fdcb00" },
-  { name: "HBase", icon: "/icons/database/hbase.svg", tone: "#ba160c" },
-  { name: "Spark", icon: "/icons/database/spark-logo.png", tone: "#e25a1c" },
-  { name: "DB2", icon: "/icons/database/db2.svg", tone: "#054ada" },
-  { name: "SAP HANA", icon: "/icons/database/saphana.svg", tone: "#008fd3" },
-  { name: "Teradata", icon: "/icons/database/teradata.svg", tone: "#f37440" },
-  { name: "Vertica", icon: "/icons/database/vertica.webp", tone: "#007dc5" },
-  { name: "Exasol", icon: "/icons/database/exasol.svg", tone: "#002b45" },
-  { name: "Firebird", icon: "/icons/database/firebird.svg", tone: "#e17000" },
-  { name: "Informix", icon: "/icons/database/informix.svg", tone: "#0178c8" },
-  { name: "Neo4j", icon: "/icons/database/neo4j.svg", tone: "#018bff" },
-  { name: "Cassandra", icon: "/icons/database/cassandra.svg", tone: "#1287b1" },
-  { name: "Kylin", icon: "/icons/database/apache_kylin.svg", tone: "#fb8c00" },
-  { name: "Dremio", icon: "/icons/database/dremio.svg", tone: "#30bdbe" },
-  { name: "OSCAR", icon: "/icons/database/oscar.png", tone: "#1b8dff" },
-  { name: "InfluxDB", icon: "/icons/database/influxdb.svg", tone: "#22adf6" },
-  { name: "QuestDB", icon: "/icons/database/questdb.svg", tone: "#dc2626" },
-  { name: "IoTDB", icon: "/icons/database/iotdb.svg", tone: "#3cb371" },
-  { name: "KWDB", icon: "/icons/database/kwdb.svg", tone: "#6366f1" },
-  { name: "Vastbase", icon: "/icons/database/vastbase.svg", tone: "#2563eb" },
-  { name: "GoldenDB", icon: "/icons/database/goldendb.png", tone: "#eab308" },
-  { name: "YashanDB", icon: "/icons/database/yashandb.png", tone: "#dc2626" },
-  { name: "SunDB", icon: "/icons/database/sundb.svg", tone: "#f97316" },
-  { name: "XuguDB", icon: "/icons/database/xugu.png", tone: "#84cc16" },
-  { name: "GBase", icon: "/icons/database/gbase.png", tone: "#06b6d4" },
-  { name: "Access", icon: "/icons/database/access.png", tone: "#a53346" },
-  { name: "H2", icon: "/icons/database/h2.svg", tone: "#f7a81b" },
-  { name: "Etcd", icon: "/icons/database/etcd.svg", tone: "#419eda" },
-  { name: "ZooKeeper", icon: "/icons/database/zookeeper.svg", tone: "#3b82f6" },
-  { name: "Pulsar", icon: "/icons/database/pulsar.svg", tone: "#188fff" },
-  { name: "Kafka", icon: "/icons/database/kafka.svg", tone: "#231f20" },
-  { name: "RocketMQ", icon: "/icons/database/rocketmq.svg", tone: "#f97316" },
-  { name: "RabbitMQ", icon: "/icons/database/rabbitmq.svg", tone: "#f97316" },
-  { name: "Nacos", icon: "/icons/database/nacos.png", tone: "#2f80ed" },
-  { name: "IRIS", icon: "/icons/database/iris.svg", tone: "#0085ca" },
-  { name: "JDBC", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff" },
-  { name: "Your DB?", icon: "/icons/database/jdbcx.svg", tone: "#6ea8ff", href: "https://github.com/ActiveInAI/PanDB/discussions", cta: true },
-];
 
 const workflows = {
   en: [
@@ -210,13 +124,13 @@ const testimonials = {
       name: "@cyano",
       role: "PostgreSQL and Redis workflows",
       avatar: "/avatars/cyano.jpg",
-      quote: "PanDB keeps query work, schema checks, and Redis inspection in one small app. It feels focused instead of overloaded.",
+      quote: "DBX keeps query work, schema checks, and Redis inspection in one small app. It feels focused instead of overloaded.",
     },
     {
       name: "eryajf",
       role: "Database management",
       avatar: "/avatars/eryajf.jpg",
-      quote: "Try it once and you can feel it: PanDB is the database management client that ends the competition.",
+      quote: "Try it once and you can feel it: DBX is the database management client that ends the competition.",
     },
     {
       name: "@vbvb",
@@ -290,13 +204,13 @@ const testimonials = {
       name: "不剪发的Tony老师",
       role: "PostgreSQL 与 Redis 工作流",
       avatar: "/avatars/dongxuyang85.jpg",
-      quote: "PanDB 把查询、结构检查和 Redis 查看放在一个轻量工具里，日常数据库工作不会被复杂界面打断。",
+      quote: "DBX 把查询、结构检查和 Redis 查看放在一个轻量工具里，日常数据库工作不会被复杂界面打断。",
     },
     {
       name: "二丫讲梵",
       role: "数据库管理",
       avatar: "/avatars/eryajf.jpg",
-      quote: "只需体验一次你就能感受到，PanDB是一个杀死数据库管理客户端比赛的软件",
+      quote: "只需体验一次你就能感受到，DBX是一个杀死数据库管理客户端比赛的软件",
     },
     {
       name: "Husky明夋",
@@ -369,25 +283,25 @@ const testimonials = {
 
 const i18nText = {
   en: {
-    heroTitle: "20 MB to manage 70+ databases!",
-    heroSubtitle: "PanDB brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
-    download: "Download PanDB",
-    downloadName: "Download PanDB",
+    heroTitle: "20 MB to manage 90+ databases!",
+    heroSubtitle: "DBX brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
+    download: "Download DBX",
+    downloadName: "Download DBX",
     readDocs: "Read the docs",
     docsStart: "Start here",
-    docsStartDesc: "Install PanDB, create your first connection, and learn the main workflow.",
+    docsStartDesc: "Install DBX, create your first connection, and learn the main workflow.",
     workflowsTitle: "Core workflows",
     workflowsDesc: "The docs are organized around what you actually do in a database client.",
-    supportTitle: "Supports 70+ databases",
+    supportTitle: "Supports 90+ databases",
     supportDesc: "Connect SQL, NoSQL, vector, time-series, and embedded databases, message queues, and compatible engines in one place.",
     supportLink: "View all",
-    testimonialsTitle: "What PanDB is good at",
-    testimonialsDesc: "A closer look at the everyday database workflows PanDB is built to make smoother.",
+    testimonialsTitle: "What DBX is good at",
+    testimonialsDesc: "A closer look at the everyday database workflows DBX is built to make smoother.",
     capabilitiesTitle: "Built for real database work",
     contributorsTitle: "Built by the community",
-    contributorsDesc: "PanDB is fully open-source. Every feature, fix, and driver starts with a contributor.",
+    contributorsDesc: "DBX is fully open-source. Every feature, fix, and driver starts with a contributor.",
     sponsorLabel: "Sponsors & Partners",
-    qiniuSponsorDesc: "Qiniu Cloud provides PanDB with object storage, CDN, and other cloud infrastructure resources.",
+    qiniuSponsorDesc: "Qiniu Cloud provides DBX with object storage, CDN, and other cloud infrastructure resources.",
     qiniuSponsorAction: "Visit Qiniu Cloud",
     rainyunSponsorDesc: "RainYun is a cloud service provider offering cloud servers, physical servers, game hosting, and developer-friendly infrastructure services.",
     rainyunSponsorAction: "Visit RainYun",
@@ -395,31 +309,33 @@ const i18nText = {
     easysearchSponsorAction: "Visit Easysearch",
     atlasCloudSponsorDesc: "Atlas Cloud gives developers one unified API for 400+ AI models across chat, image, video, and audio.",
     atlasCloudSponsorAction: "Visit Atlas Cloud",
-    footerTitle: "Ready to try PanDB?",
+    trustasiaSponsorDesc: "TrustAsia provides cloud-based code signing service for DBX, enabling trusted software through automated CI/CD builds.",
+    trustasiaSponsorAction: "Visit TrustAsia",
+    footerTitle: "Ready to try DBX?",
     footerDesc: "Use the desktop app for local work, or deploy the Docker version for browser-based access.",
     release: "Latest release",
     docker: "Docker setup",
   },
   cn: {
-    heroTitle: "20MB，管理70+种数据库！",
-    heroSubtitle: "PanDB 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
-    download: "下载 PanDB",
-    downloadName: "下载 PanDB",
+    heroTitle: "20MB，管理90+种数据库！",
+    heroSubtitle: "DBX 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
+    download: "下载 DBX",
+    downloadName: "下载 DBX",
     readDocs: "查看文档",
     docsStart: "从这里开始",
-    docsStartDesc: "安装 PanDB、创建第一个连接，并了解主要工作流。",
+    docsStartDesc: "安装 DBX、创建第一个连接，并了解主要工作流。",
     workflowsTitle: "核心工作流",
     workflowsDesc: "文档围绕数据库客户端里的真实任务组织，而不是堆功能清单。",
-    supportTitle: "支持70+种数据库",
+    supportTitle: "支持90+种数据库",
     supportDesc: "统一连接和管理 SQL、NoSQL、向量、时序、嵌入式数据库、消息队列及兼容引擎。",
     supportLink: "查看全部",
-    testimonialsTitle: "PanDB 适合什么样的工作",
-    testimonialsDesc: "从连接管理、数据浏览到 AI 辅助，PanDB 围绕高频数据库工作流打磨体验。",
+    testimonialsTitle: "DBX 适合什么样的工作",
+    testimonialsDesc: "从连接管理、数据浏览到 AI 辅助，DBX 围绕高频数据库工作流打磨体验。",
     capabilitiesTitle: "面向真实数据库工作的能力",
     contributorsTitle: "社区共建",
-    contributorsDesc: "PanDB 因每一位贡献者而生长",
+    contributorsDesc: "DBX 因每一位贡献者而生长",
     sponsorLabel: "赞助商与合作伙伴",
-    qiniuSponsorDesc: "七牛云为 PanDB 提供对象存储、CDN 等云基础设施资源支持。",
+    qiniuSponsorDesc: "七牛云为 DBX 提供对象存储、CDN 等云基础设施资源支持。",
     qiniuSponsorAction: "访问七牛云",
     rainyunSponsorDesc: "雨云是面向开发者和站长的云服务提供商，提供云服务器、物理服务器、游戏云和配套基础设施服务。",
     rainyunSponsorAction: "访问雨云",
@@ -427,7 +343,9 @@ const i18nText = {
     easysearchSponsorAction: "访问 Easysearch",
     atlasCloudSponsorDesc: "Atlas Cloud 为开发者提供统一的多模态 AI API，可通过一个接口访问聊天、图像、视频和音频等 400+ 模型。",
     atlasCloudSponsorAction: "访问 Atlas Cloud",
-    footerTitle: "准备试试 PanDB？",
+    trustasiaSponsorDesc: "由 TrustAsia 提供代码签名云签服务，实现 CICD 自动化构建可信软件。",
+    trustasiaSponsorAction: "访问 TrustAsia",
+    footerTitle: "准备试试 DBX？",
     footerDesc: "本地工作使用桌面版，需要浏览器访问时部署 Docker 版。",
     release: "最新版本",
     docker: "Docker 部署",
@@ -436,12 +354,12 @@ const i18nText = {
 
 const landingMeta = {
   en: {
-    title: "PanDB - 20 MB to manage 70+ databases!",
-    description: "PanDB brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
+    title: "DBX - 20 MB to manage 90+ databases!",
+    description: "DBX brings connections, SQL editing, data grids, schema tools, AI assistance, and self-hosted access into one lightweight product.",
   },
   cn: {
-    title: "PanDB - 20MB，管理70+种数据库！",
-    description: "PanDB 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
+    title: "DBX - 20MB，管理90+种数据库！",
+    description: "DBX 将连接管理、SQL 编辑、数据表格、结构工具、AI 助手和自托管访问放进一个轻量产品里。",
   },
 };
 
@@ -469,7 +387,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
   const starLabel = formatStars(contributorData.stars);
   const metricItems = metrics(starLabel)[l];
   const appVersion = getAppVersion();
-  const [initialChangelog, initialLatestRelease] = await Promise.all([fetchChangelog(l), fetchLatestReleaseInfo()]);
+  const initialLatestRelease = await fetchLatestReleaseInfo();
   const contributors = contributorsFromActivity(contributorData.contributors);
   const initialDownloadVersion = initialLatestRelease?.version ?? appVersion;
   const testimonialItems = testimonials[l];
@@ -507,6 +425,14 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
       description: t.atlasCloudSponsorDesc,
       action: t.atlasCloudSponsorAction,
     },
+    {
+      name: "TrustAsia",
+      href: "https://www.trustasia.com/ssl/trustasia/code-signing",
+      logo: "/sponsors/trustasia.png",
+      logoClass: "w-full max-w-[120px] object-contain",
+      description: t.trustasiaSponsorDesc,
+      action: t.trustasiaSponsorAction,
+    },
   ];
 
   return (
@@ -520,7 +446,9 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
         <Spotlight />
         <div className="relative z-[1] max-w-[1180px] mx-auto px-7 max-[1040px]:max-w-[920px] max-[760px]:px-[18px]">
           <div className="landing-hero-copy relative z-[6] grid justify-items-center max-w-[900px] mx-auto text-center max-[1040px]:max-w-[760px]">
-            <h1 id="landing-title" className="min-w-0 m-0 text-[clamp(36px,4.2vw,56px)] font-[820] leading-[1.06] text-landing-ink whitespace-nowrap max-[760px]:max-w-[12ch] max-[760px]:whitespace-normal max-[760px]:text-balance max-[760px]:text-[clamp(29px,8.7vw,38px)] max-[760px]:leading-[1.08]">{t.heroTitle}</h1>
+            <h1 id="landing-title" className="min-w-0 m-0 text-[clamp(36px,4.2vw,56px)] font-[820] leading-[1.06] text-landing-ink whitespace-nowrap max-[760px]:max-w-[12ch] max-[760px]:whitespace-normal max-[760px]:text-balance max-[760px]:text-[clamp(29px,8.7vw,38px)] max-[760px]:leading-[1.08]">
+              {t.heroTitle}
+            </h1>
             <p className="landing-hero-subtitle min-w-0 mt-5 mx-auto text-[17px] font-[460] leading-[1.8] whitespace-nowrap max-[900px]:max-w-[680px] max-[900px]:whitespace-normal max-[760px]:max-w-[320px] max-[760px]:text-[15px] max-[760px]:leading-[1.68]">{t.heroSubtitle}</p>
             <div className="w-full max-w-[520px] mt-10 max-[760px]:mt-7">
               <InstallTabs lang={l} version={initialDownloadVersion} />
@@ -531,7 +459,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
       </section>
 
       {/* Metrics */}
-      <RevealSection className="grid grid-cols-4 gap-3 max-w-[1180px] mx-auto px-7 pt-6 pb-11 [animation:landing-rise_0.72s_ease-out_0.1s_both] max-[760px]:grid-cols-2 max-[760px]:gap-2.5 max-[760px]:px-[18px] max-[760px]:pb-7" aria-label={l === "cn" ? "PanDB 核心指标" : "PanDB key metrics"}>
+      <RevealSection className="grid grid-cols-4 gap-3 max-w-[1180px] mx-auto px-7 pt-6 pb-11 [animation:landing-rise_0.72s_ease-out_0.1s_both] max-[760px]:grid-cols-2 max-[760px]:gap-2.5 max-[760px]:px-[18px] max-[760px]:pb-7" aria-label={l === "cn" ? "DBX 核心指标" : "DBX key metrics"}>
         {metricItems.map((item) => (
           <div key={item.label} data-stagger className="landing-glass-card min-h-[118px] rounded-[10px] p-[22px] max-[760px]:min-h-[88px] max-[760px]:p-4">
             <strong className="block text-landing-ink text-2xl font-[720]">{item.value}</strong>
@@ -546,7 +474,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
           <h2 className="m-0 text-[25px] font-[720] text-landing-ink">{t.docsStart}</h2>
           <p className="mt-2 text-landing-muted text-sm leading-[1.65]">{t.docsStartDesc}</p>
         </div>
-        <Link href={`/${l}/docs/getting-started`} className="landing-inline-link flex shrink-0 items-center gap-[7px] text-sm font-[650] max-[760px]:mt-4" target="_blank">
+        <Link href={`/${l}/docs/getting-started`} prefetch={false} className="landing-inline-link flex shrink-0 items-center gap-[7px] text-sm font-[650] max-[760px]:mt-4" target="_blank">
           {t.readDocs}
           <ArrowRight size={15} />
         </Link>
@@ -560,13 +488,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
         </div>
         <div className="landing-workflow-grid grid grid-cols-4 rounded-[10px] overflow-hidden max-[1040px]:grid-cols-2 max-[760px]:grid-cols-2 max-[360px]:grid-cols-1">
           {workflowItems.map((item, i) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className={`landing-workflow-card min-h-[250px] p-6 border-r border-r-landing-line max-[760px]:min-h-0 max-[760px]:p-[18px] ${i === workflowItems.length - 1 ? "border-r-0" : ""}`}
-              target="_blank"
-              data-stagger
-            >
+            <Link key={item.title} href={item.href} prefetch={false} className={`landing-workflow-card min-h-[250px] p-6 border-r border-r-landing-line max-[760px]:min-h-0 max-[760px]:p-[18px] ${i === workflowItems.length - 1 ? "border-r-0" : ""}`} target="_blank" data-stagger>
               <item.icon size={20} className="text-landing-blue" />
               <h3 className="mt-[18px] text-base font-bold">{item.title}</h3>
               <p className="mt-2.5 text-landing-muted text-[13px] leading-[1.62]">{item.desc}</p>
@@ -585,36 +507,13 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
           <h2 className="m-0 text-[25px] font-[720] text-landing-ink">{t.supportTitle}</h2>
           <div className="flex items-center justify-end gap-5 justify-self-end max-w-[760px] text-right max-[760px]:block max-[760px]:max-w-none max-[760px]:text-left">
             <p className="m-0 text-landing-muted text-sm leading-[1.65]">{t.supportDesc}</p>
-            <Link href={`/${l}/databases`} className="landing-inline-link inline-flex shrink-0 items-center gap-[7px] text-sm font-[650] max-[760px]:mt-3">
+            <Link href={`/${l}/databases`} prefetch={false} className="landing-inline-link inline-flex shrink-0 items-center gap-[7px] text-sm font-[650] max-[760px]:mt-3">
               {t.supportLink}
               <ArrowRight size={15} />
             </Link>
           </div>
         </div>
-        <ExpandableDatabaseGrid lang={l}>
-          {databaseSupport.map((db) => {
-            const isCta = "href" in db && db.href;
-            const CardTag = isCta ? "a" : "div";
-            return (
-            <CardTag
-              className={`landing-db-card grid place-items-center aspect-square rounded-[10px] px-2.5 py-[18px] max-[760px]:px-1.5 max-[760px]:py-2.5 ${isCta ? "border-2 border-dashed border-[color-mix(in_srgb,var(--color-landing-blue)_40%,transparent)] hover:border-[color-mix(in_srgb,var(--color-landing-blue)_70%,transparent)] transition-colors cursor-pointer" : ""}`}
-              key={db.name}
-              {...(isCta ? { href: db.href, target: "_blank", rel: "noopener noreferrer" } : {})}
-              style={{ "--db-tone": db.tone } as CSSProperties}
-              data-stagger
-            >
-              <div className="landing-db-icon grid place-items-center w-12 h-12 mb-[15px] max-[760px]:size-8 max-[760px]:mb-2">
-                {isCta ? (
-                  <span className="grid place-items-center w-10 h-10 rounded-full border-2 border-dashed text-landing-blue border-landing-blue text-2xl leading-none">+</span>
-                ) : (
-                  <img src={db.icon} alt="" width={38} height={38} loading="lazy" decoding="async" className="block w-[38px] h-[38px] object-contain max-[760px]:size-7" />
-                )}
-              </div>
-              <strong className={`text-sm font-[650] leading-[1.2] text-center max-[760px]:text-[11px] ${isCta ? "text-landing-blue" : "text-[color-mix(in_srgb,var(--color-landing-ink)_92%,var(--color-landing-muted))]"}`}>{db.name}</strong>
-            </CardTag>
-            );
-          })}
-        </ExpandableDatabaseGrid>
+        <DatabasePillMarquee items={databaseSupport.filter((db) => !db.href)} />
       </RevealSection>
 
       {/* Testimonials */}
@@ -671,9 +570,6 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
         </div>
       </RevealSection>
 
-      {/* Updates */}
-      <LandingLatestUpdates lang={l} fallbackVersion={appVersion} initialRelease={initialChangelog.releases[0]} initialLatestRelease={initialLatestRelease} />
-
       {/* Final CTA */}
       <RevealSection className="flex items-center justify-between gap-6 max-w-[1180px] mx-auto px-7 border border-landing-line rounded-[10px] bg-landing-panel mt-[72px] mb-14 py-[30px] max-[760px]:block max-[760px]:px-[18px]">
         <div>
@@ -684,7 +580,7 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
           <Link href="https://github.com/ActiveInAI/PanDB/releases/latest" target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
             {t.release}
           </Link>
-          <Link href={`/${l}/docs/getting-started#docker`} target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
+          <Link href={`/${l}/docs/getting-started#docker`} prefetch={false} target="_blank" className="landing-final-link inline-flex items-center justify-center min-h-[42px] rounded-[7px] px-[15px] text-sm font-[650]">
             {t.docker}
           </Link>
         </div>

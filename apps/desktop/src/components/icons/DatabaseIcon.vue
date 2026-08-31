@@ -5,7 +5,7 @@ import { useTheme } from "@/composables/useTheme";
 import { webPath } from "@/lib/common/webPath";
 
 const props = defineProps<{
-  dbType: string;
+  dbType?: string;
 }>();
 const { isDark } = useTheme();
 
@@ -14,6 +14,7 @@ const assetIcons: Record<string, string> = {
   postgres: "postgres",
   postgresql: "postgres",
   cloudberry: "cloudberry",
+  opentenbase: "opentenbase",
   sqlite: "sqlite",
   rqlite: "rqlite.png",
   turso: "turso.png",
@@ -21,12 +22,14 @@ const assetIcons: Record<string, string> = {
   redis: "redis",
   mongodb: "mongodb",
   mongodb_legacy: "mongodb",
+  dynamodb: "dynamodb",
   clickhouse: "clickhouse",
   duckdb: "duckdb",
   mariadb: "mariadb",
   tidb: "tidb",
   elasticsearch: "elasticsearch",
   easysearch: "easysearch",
+  meilisearch: "meilisearch",
   oracle: "oracle",
   "oracle-10g": "oracle",
   "oracle-legacy": "oracle",
@@ -54,17 +57,23 @@ const assetIcons: Record<string, string> = {
   presto: "presto",
   prestosql: "presto",
   hive: "hive",
+  kyuubi: "kyuubi.png",
+  impala: "impala",
   hbase: "hbase",
   phoenix: "phoenix",
   spark: "spark-logo.png",
   apache_kylin: "apache_kylin",
+  apache_ignite: "apache_ignite",
   sundb: "sundb",
   trino: "trino",
   kylin: "apache_kylin",
+  ignite: "apache_ignite",
+  ignite3: "apache_ignite",
   cockroachdb: "cockroachdb",
   db2: "db2",
   dremio: "dremio",
   bigquery: "bigquery",
+  spanner: "spanner",
   cassandra: "cassandra",
   doris: "doris",
   manticoresearch: "manticoresearch.png",
@@ -99,6 +108,7 @@ const assetIcons: Record<string, string> = {
   rocketmq: "rocketmq",
   rabbitmq: "rabbitmq",
   nacos: "nacos.png",
+  consul: "consul",
   iris: "iris",
   influxdb: "influxdb",
   victoriametrics: "victoriametrics.png",
@@ -106,9 +116,10 @@ const assetIcons: Record<string, string> = {
   oscar: "oscar.png",
   jdbcx: "jdbcx",
   mqtt: "mqtt",
+  dolt: "dolt",
 };
 
-const normalizedType = computed(() => props.dbType.toLowerCase().replace(/[\s-]+/g, "_"));
+const normalizedType = computed(() => (props.dbType || "").toLowerCase().replace(/[\s-]+/g, "_"));
 const assetName = computed(() => assetIcons[normalizedType.value]);
 const useLightIconInDarkMode = computed(() => normalizedType.value === "easysearch" && isDark.value);
 const assetSrc = computed(() => {
@@ -119,7 +130,7 @@ const assetSrc = computed(() => {
 </script>
 
 <template>
-  <img v-if="assetName" :src="assetSrc" alt="" class="database-logo object-contain" :class="{ 'database-logo-light': useLightIconInDarkMode }" aria-hidden="true" />
+  <img v-if="assetName" :src="assetSrc" alt="" class="database-logo object-contain" :class="{ 'database-logo-light': useLightIconInDarkMode, 'database-logo-impala': normalizedType === 'impala' }" aria-hidden="true" />
   <Database v-else class="text-blue-400" />
 </template>
 
@@ -131,5 +142,9 @@ const assetSrc = computed(() => {
 
 .database-logo-light {
   filter: brightness(0) invert(82%);
+}
+
+.database-logo-impala {
+  transform: scale(1.55);
 }
 </style>
