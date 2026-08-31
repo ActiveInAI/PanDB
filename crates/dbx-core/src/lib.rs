@@ -109,6 +109,11 @@ pub mod update;
 pub mod write_unlock;
 pub mod xlsx_export;
 
+#[cfg(feature = "dynamodb")]
+compile_error!(
+    "DynamoDB support has been retired from PanDB; use a maintained external driver or service integration."
+);
+
 /// Makes PanDB-prefixed runtime configuration available to legacy DBX readers without
 /// overwriting an explicitly supplied legacy value. Call this once at process startup.
 pub fn install_pandb_environment_aliases() {

@@ -122,14 +122,6 @@ version = "0.3"
 version = "1.6"
 optional = true
 
-[dependencies.rustls-native-certs]
-version = "0.6"
-optional = true
-
-[dependencies.rustls-pemfile]
-version = "1"
-optional = true
-
 [dependencies.thiserror]
 version = "1.0"
 
@@ -143,11 +135,6 @@ features = [
     "net",
     "time",
 ]
-optional = true
-
-[dependencies.tokio-rustls]
-version = "0.24.0"
-features = ["dangerous_configuration"]
 optional = true
 
 [dependencies.tokio-util]
@@ -241,12 +228,8 @@ default = [
 docs = []
 integrated-auth-gssapi = ["libgssapi"]
 native-tls = ["async-native-tls"]
-rustls = [
-    "tokio-rustls",
-    "tokio-util",
-    "rustls-pemfile",
-    "rustls-native-certs",
-]
+# Retained only to emit a clear migration error in `src/lib.rs`.
+rustls = []
 sql-browser-async-std = ["async-std"]
 sql-browser-smol = [
     "async-io",

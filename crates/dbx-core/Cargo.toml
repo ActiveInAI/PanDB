@@ -7,7 +7,8 @@ license = "Apache-2.0"
 [features]
 default = ["duckdb-sidecar", "sqlite-sqlcipher", "system-fonts"]
 duckdb-sidecar = []
-dynamodb = ["dep:aws-sdk-dynamodb"]
+# Retained only to emit a clear migration error in `src/lib.rs`.
+dynamodb = []
 mq-admin = ["dep:rumqttc"]
 sqlite-sqlcipher = ["rusqlite/bundled-sqlcipher-vendored-openssl"]
 sqlite-multiple-ciphers = ["dep:libsqlite3-hotbundle"]
@@ -58,7 +59,6 @@ reqwest = { version = "0.12", default-features = false, features = ["cookies", "
 prometheus-parse = "=0.2.5"
 futures = "0.3"
 mongodb = { version = "3.2.5", features = ["socks5-proxy"] }
-aws-sdk-dynamodb = { version = "=1.123.0", optional = true }
 rumqttc = { version = "0.24", features = ["websocket"], optional = true }
 russh = "0.62.5"
 pageant = "0.2"

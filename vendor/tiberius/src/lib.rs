@@ -250,6 +250,9 @@
 #![doc(test(attr(deny(rust_2018_idioms, warnings))))]
 #![doc(test(attr(allow(unused_extern_crates, unused_variables))))]
 
+#[cfg(feature = "rustls")]
+compile_error!("The Tiberius Rustls backend has been retired; use the vendored-openssl feature instead.");
+
 #[cfg(feature = "bigdecimal")]
 pub(crate) extern crate bigdecimal_ as bigdecimal;
 
