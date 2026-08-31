@@ -95,6 +95,9 @@
 //! address and use that name in your code.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "use-rustls")]
+compile_error!("The Rumqttc Rustls backend has been retired; use the native TLS backend instead.");
+
 #[macro_use]
 extern crate log;
 
