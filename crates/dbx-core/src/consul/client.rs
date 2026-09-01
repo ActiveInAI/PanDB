@@ -67,6 +67,9 @@ impl ConsulClient {
                 .base_url
                 .set_port(Some(override_port))
                 .map_err(|_| "Consul server address cannot use the transport override port".to_string())?;
+            // A tunnel target is already an explicit direct transport route. Do not
+            // send it through an ambient HTTP proxy before the resolved IP is used.
+            builder = builder.no_proxy();
             builder = builder.resolve(&original_host, SocketAddr::new(ip, override_port));
         }
         let http = builder.build().map_err(|error| format!("Failed to initialize Consul HTTP client: {error}"))?;

@@ -272,13 +272,15 @@ async fn write_external_sql_file_checked_async(
 
     if !force {
         match external_sql_file_version_async(&path).await? {
-            Some(current_version) => {
+            Some(current_version)
                 if expected_missing
-                    || expected_content_hash.as_deref().is_some_and(|expected| expected != current_version.content_hash)
-                {
-                    return Ok(ExternalSqlFileWriteResult::Conflict { current_version });
-                }
+                    || expected_content_hash
+                        .as_deref()
+                        .is_some_and(|expected| expected != current_version.content_hash) =>
+            {
+                return Ok(ExternalSqlFileWriteResult::Conflict { current_version });
             }
+            Some(_) => {}
             None if expected_content_hash.is_some() => return Ok(ExternalSqlFileWriteResult::Missing),
             None => {}
         }

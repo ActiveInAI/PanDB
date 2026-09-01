@@ -419,16 +419,29 @@ fn spawn_plugin_child(plugin: &InstalledPlugin, env: &PluginRuntimeEnv) -> Resul
         .ok_or_else(|| format!("Plugin '{}' does not declare an executable", plugin.manifest.id))?;
     let executable_path = resolve_plugin_executable(&plugin.path, executable);
 
-    let mut command = crate::process::new_tokio_command(&executable_path);
-    command
-        .current_dir(&plugin.path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .kill_on_drop(true);
-    env.apply_to(&mut command);
+    let spawn = || {
+        let mut command = crate::process::new_tokio_command(&executable_path);
+        command
+            .current_dir(&plugin.path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        env.apply_to(&mut command);
+        command.spawn()
+    };
 
-    command.spawn().map_err(|err| format!("Failed to start plugin '{}': {err}", plugin.manifest.id))
+    match spawn() {
+        Ok(child) => Ok(child),
+        // A just-updated executable can still be momentarily open for writing
+        // on Linux. Retry this one transient OS condition once; all other
+        // spawn errors remain immediate and visible to the caller.
+        Err(error) if error.kind() == std::io::ErrorKind::ExecutableFileBusy => {
+            std::thread::sleep(Duration::from_millis(25));
+            spawn().map_err(|error| format!("Failed to start plugin '{}': {error}", plugin.manifest.id))
+        }
+        Err(error) => Err(format!("Failed to start plugin '{}': {error}", plugin.manifest.id)),
+    }
 }
 
 async fn read_plugin_line<R>(reader: &mut R, context: &str) -> Result<String, String>

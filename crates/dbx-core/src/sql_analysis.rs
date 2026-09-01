@@ -1209,16 +1209,14 @@ impl Analyzer {
 
     fn visit_table_factor(&mut self, factor: &TableFactor) {
         match factor {
-            TableFactor::Table { name, alias, args, .. } => {
+            TableFactor::Table { name, alias, args, .. } if args.is_none() && !self.is_visible_cte(name) => {
                 // Qualified names remain physical objects even when their final component matches a visible CTE.
-                if args.is_none() && !self.is_visible_cte(name) {
-                    if let Some(table) = table_reference_from_name(
-                        name,
-                        alias.as_ref().map(|a| a.name.value.clone()),
-                        self.current_scope_id(),
-                    ) {
-                        self.tables.push(table);
-                    }
+                if let Some(table) = table_reference_from_name(
+                    name,
+                    alias.as_ref().map(|a| a.name.value.clone()),
+                    self.current_scope_id(),
+                ) {
+                    self.tables.push(table);
                 }
             }
             TableFactor::Derived { subquery, .. } => self.visit_child_query(subquery),
@@ -1241,12 +1239,10 @@ impl Analyzer {
     fn visit_expr(&mut self, expr: &Expr) {
         match expr {
             Expr::Identifier(ident) => self.push_column(None, ident),
-            Expr::CompoundIdentifier(idents) => {
-                if idents.len() >= 2 {
-                    let column = idents.last().expect("checked length");
-                    let qualifier = idents.get(idents.len() - 2).map(|ident| ident.value.clone());
-                    self.push_column(qualifier, column);
-                }
+            Expr::CompoundIdentifier(idents) if idents.len() >= 2 => {
+                let column = idents.last().expect("checked length");
+                let qualifier = idents.get(idents.len() - 2).map(|ident| ident.value.clone());
+                self.push_column(qualifier, column);
             }
             Expr::CompoundFieldAccess { root, .. } | Expr::JsonAccess { value: root, .. } => self.visit_expr(root),
             Expr::IsFalse(expr)

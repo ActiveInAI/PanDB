@@ -5793,7 +5793,7 @@ async fn list_objects_once(
     let db_config = connection_config(state, connection_id).await;
     let force_local_table_name_filter = table_name_filter.is_some_and(|filter| !filter.is_empty());
     let (mysql_limit, mysql_offset) = if filter.is_none_or(|value| value.trim().is_empty())
-        && !table_name_filter.is_some_and(|filter| !filter.is_empty())
+        && table_name_filter.is_none_or(|filter| filter.is_empty())
     {
         (limit, offset)
     } else {

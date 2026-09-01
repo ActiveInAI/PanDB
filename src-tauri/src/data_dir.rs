@@ -70,6 +70,7 @@ pub fn alternative_data_dir(resolution: &DataDirResolution) -> Option<PathBuf> {
 
 /// Returns the pre-PanDB installed-app directory only for a normal installed launch.
 /// Custom and portable directories are already explicit user choices and must not import from it.
+#[cfg(test)]
 pub fn legacy_app_data_dir(resolution: &DataDirResolution) -> Option<PathBuf> {
     if !matches!(resolution.mode, DataDirMode::Default) {
         return None;
@@ -161,16 +162,13 @@ mod tests {
     #[test]
     fn installed_pandb_app_uses_dbx_directory_as_one_time_import_source() {
         let resolution = resolve_data_dir_from_inputs(
-            PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.activeinai.pandb"),
+            PathBuf::from("app-data").join("com.activeinai.pandb"),
             None,
             false,
             false,
             None,
         );
-        assert_eq!(
-            legacy_app_data_dir(&resolution),
-            Some(PathBuf::from(r"C:\Users\Administrator\AppData\Roaming\com.dbx.app"))
-        );
+        assert_eq!(legacy_app_data_dir(&resolution), Some(PathBuf::from("app-data").join("com.dbx.app")));
     }
 
     #[test]

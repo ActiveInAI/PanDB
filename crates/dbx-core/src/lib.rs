@@ -233,7 +233,7 @@ pub async fn race_download_urls(
 
 #[cfg(test)]
 mod tests {
-    use super::{download_candidate_urls, DownloadSource};
+    use super::{download_candidate_urls, DownloadSource, R2_CDN_BASE};
 
     #[test]
     fn download_candidates_exclude_third_party_github_proxy() {
@@ -245,8 +245,8 @@ mod tests {
         assert_eq!(
             urls,
             vec![
-                "https://dl.dbxio.com/releases/latest/latest.json",
-                "https://github.com/ActiveInAI/PanDB/releases/latest/download/latest.json",
+                format!("{R2_CDN_BASE}releases/latest/latest.json"),
+                "https://github.com/ActiveInAI/PanDB/releases/latest/download/latest.json".to_string(),
             ]
         );
     }
@@ -257,8 +257,8 @@ mod tests {
         assert_eq!(
             DownloadSource::Cnb.download_candidate_urls(github_url, "agents/agent-registry.json").unwrap(),
             vec![
-                "https://cnb.cool/dbxio.com/dbx/-/releases/download/agents-latest/agent-registry.json",
-                "https://dl.dbxio.com/agents/agent-registry.json",
+                "https://cnb.cool/dbxio.com/dbx/-/releases/download/agents-latest/agent-registry.json".to_string(),
+                format!("{R2_CDN_BASE}agents/agent-registry.json"),
             ]
         );
     }

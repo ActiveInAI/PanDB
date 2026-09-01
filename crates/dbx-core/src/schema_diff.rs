@@ -5416,10 +5416,8 @@ fn generate_schema_sync_sql_inner(
                             lines.push(create_index_sql(&diff.name, source, db_type, schema));
                         }
                     }
-                    "removed" => {
-                        if db_type != DatabaseType::SqlServer {
-                            lines.push(drop_index_sql(&diff.name, &index.name, db_type, schema));
-                        }
+                    "removed" if db_type != DatabaseType::SqlServer => {
+                        lines.push(drop_index_sql(&diff.name, &index.name, db_type, schema));
                     }
                     "modified" => {
                         if let Some(source) = &index.source {

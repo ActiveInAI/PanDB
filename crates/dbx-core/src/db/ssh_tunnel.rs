@@ -1889,7 +1889,7 @@ mod tests {
     use russh::server::{self, Auth, Response, Server};
     use russh::MethodKind;
     use russh::MethodSet;
-    use russh::{Channel, ChannelId};
+    use russh::{Channel, ChannelId, ChannelOpenFailure};
     use std::borrow::Cow;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::Arc;
@@ -2681,10 +2681,12 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
             port_to_connect: u32,
             _originator_address: &str,
             _originator_port: u32,
+            reply: server::ChannelOpenHandle,
             _session: &mut server::Session,
-        ) -> Result<bool, Self::Error> {
+        ) -> Result<(), Self::Error> {
             *self.target.lock().unwrap() = Some((host_to_connect.to_string(), port_to_connect));
-            Ok(true)
+            reply.accept().await;
+            Ok(())
         }
 
         async fn data(
@@ -2814,17 +2816,21 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
             _port_to_connect: u32,
             _originator_address: &str,
             _originator_port: u32,
+            reply: server::ChannelOpenHandle,
             _session: &mut server::Session,
-        ) -> Result<bool, Self::Error> {
-            Ok(false)
+        ) -> Result<(), Self::Error> {
+            reply.reject(ChannelOpenFailure::AdministrativelyProhibited).await;
+            Ok(())
         }
 
         async fn channel_open_session(
             &mut self,
             _channel: Channel<server::Msg>,
+            reply: server::ChannelOpenHandle,
             _session: &mut server::Session,
-        ) -> Result<bool, Self::Error> {
-            Ok(true)
+        ) -> Result<(), Self::Error> {
+            reply.accept().await;
+            Ok(())
         }
 
         async fn exec_request(
@@ -3154,7 +3160,8 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
         let server_key = decode_secret_key(TEST_SERVER_KEY_PEM, None).expect("decode test server key");
         // Advertise password auth so it *would* be attempted if the handshake
         // ever reached the authentication phase.
-        let server_config = server::Config { keys: vec![server_key], methods: MethodSet::all(), ..Default::default() };
+        let server_config =
+            server::Config { keys: vec![server_key], methods: MethodSet::server_supported(), ..Default::default() };
 
         let port = portpicker::pick_unused_port().expect("no free port");
         let mut server = MitmServer { password_attempted: password_attempted.clone() };
@@ -3248,11 +3255,13 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
             _port_to_connect: u32,
             _originator_address: &str,
             _originator_port: u32,
+            reply: server::ChannelOpenHandle,
             session: &mut server::Session,
-        ) -> Result<bool, Self::Error> {
+        ) -> Result<(), Self::Error> {
             // Simulate the SSH session dying while the tunnel is in use.
             let _ = session.disconnect(russh::Disconnect::ByApplication, "simulated session drop", "");
-            Ok(false)
+            reply.reject(ChannelOpenFailure::AdministrativelyProhibited).await;
+            Ok(())
         }
     }
 

@@ -203,11 +203,11 @@ mod tests {
 
     #[test]
     fn rejects_non_git_directory() {
-        let tmp = std::env::temp_dir().join("dbx_test_not_a_repo");
-        let _ = std::fs::create_dir_all(&tmp);
-        let result = GitDiffScanner::new(&tmp, "HEAD~1", "HEAD");
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("not-a-repository");
+        std::fs::create_dir(&path).unwrap();
+        let result = GitDiffScanner::new(&path, "HEAD~1", "HEAD");
         assert!(result.is_err());
-        let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[test]

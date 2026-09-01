@@ -325,7 +325,7 @@ impl DbxMcpServer {
         Parameters(ListConnectionsRequest {}): Parameters<ListConnectionsRequest>,
     ) -> CallToolResult {
         match self.load_scoped_connections().await {
-            Ok(connections) if connections.is_empty() => text("No connections configured in DBX."),
+            Ok(connections) if connections.is_empty() => text("No connections configured in PanDB."),
             Ok(connections) => {
                 let group_paths = self.backend.load_connection_group_paths().await.unwrap_or_default();
                 let rows = connections

@@ -742,20 +742,21 @@ mod tests {
     }
 
     #[test]
-    fn rewrites_github_asset_url_to_cnb() {
+    fn accepts_configured_cnb_asset_url() {
         let download_url = UpdateDownloadSource::Cnb
             .rewrite_download_url(
-                "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg",
+                "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.39/PanDB_0.5.39_aarch64.dmg",
             )
-            .unwrap()
             .unwrap();
-        assert_eq!(download_url, "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg");
+        assert_eq!(download_url, None);
     }
 
     #[test]
     fn accepts_existing_cnb_asset_url() {
         let download_url = UpdateDownloadSource::Cnb
-            .rewrite_download_url("https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.39/DBX_0.5.39_aarch64.dmg")
+            .rewrite_download_url(
+                "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.39/PanDB_0.5.39_aarch64.dmg",
+            )
             .unwrap();
         assert_eq!(download_url, None);
     }
@@ -766,11 +767,11 @@ mod tests {
         assert_eq!(candidates.len(), 2);
         assert_eq!(
             candidates[0].archive_url,
-            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_x64-portable.zip")
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}PanDB_0.5.64_x64-portable.zip")
         );
         assert_eq!(
             candidates[1].archive_url,
-            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_x64-portable.zip")
+            format!("{GITHUB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/PanDB_0.5.64_x64-portable.zip")
         );
         assert!(candidates.iter().all(|candidate| candidate.signature_url == format!("{}.sig", candidate.archive_url)));
     }
@@ -780,40 +781,39 @@ mod tests {
         let candidates = UpdateDownloadSource::Cnb.portable_asset_candidates("v0.5.64", "aarch64").unwrap();
         assert_eq!(
             candidates[0].archive_url,
-            format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/DBX_0.5.64_arm64-portable.zip")
+            format!("{CNB_RELEASE_DOWNLOAD_PREFIX}v0.5.64/PanDB_0.5.64_arm64-portable.zip")
         );
         assert_eq!(
             candidates[1].archive_url,
-            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_arm64-portable.zip")
+            format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}PanDB_0.5.64_arm64-portable.zip")
         );
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_cnb_source() {
         let candidates = UpdateDownloadSource::Cnb.installer_asset_candidates(
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
-        assert_eq!(candidates.len(), 3);
-        assert_eq!(candidates[0], "https://cnb.cool/dbxio.com/dbx/-/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg");
-        assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
+        assert_eq!(candidates.len(), 2);
         assert_eq!(
-            candidates[2],
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg"
+            candidates[0],
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg"
         );
+        assert_eq!(candidates[1], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}PanDB_0.5.64_aarch64.dmg"));
     }
 
     #[test]
     fn builds_installer_asset_candidates_for_official_source() {
         let candidates = UpdateDownloadSource::Official.installer_asset_candidates(
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg",
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg",
             Some("0.5.64"),
         );
         assert_eq!(candidates.len(), 2);
-        assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}DBX_0.5.64_aarch64.dmg"));
+        assert_eq!(candidates[0], format!("{R2_LATEST_RELEASE_DOWNLOAD_PREFIX}PanDB_0.5.64_aarch64.dmg"));
         assert_eq!(
             candidates[1],
-            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/DBX_0.5.64_aarch64.dmg"
+            "https://github.com/ActiveInAI/PanDB/releases/download/v0.5.64/PanDB_0.5.64_aarch64.dmg"
         );
         assert!(!candidates.iter().any(|url| url.contains("cnb.cool")));
     }

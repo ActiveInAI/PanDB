@@ -117,11 +117,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, connection_id: S
     let ws_read = tokio::spawn(async move {
         while let Some(Ok(msg)) = ws_receiver.next().await {
             match msg {
-                Message::Text(text) => {
-                    if cmd_tx.send(text.to_string()).is_err() {
-                        break;
-                    }
-                }
+                Message::Text(text) if cmd_tx.send(text.to_string()).is_err() => break,
                 Message::Close(_) => break,
                 _ => {}
             }

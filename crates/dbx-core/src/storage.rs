@@ -1547,10 +1547,10 @@ fn merge_missing_tunnel_profile_secrets(profile: &mut TransportLayerConfig, prev
                 current.key_passphrase = previous.key_passphrase.clone();
             }
         }
-        (TransportLayerConfig::Proxy(current), TransportLayerConfig::Proxy(previous)) => {
-            if current.password.is_empty() {
-                current.password = previous.password.clone();
-            }
+        (TransportLayerConfig::Proxy(current), TransportLayerConfig::Proxy(previous))
+            if current.password.is_empty() =>
+        {
+            current.password = previous.password.clone();
         }
         (TransportLayerConfig::HttpTunnel(current), TransportLayerConfig::HttpTunnel(previous))
             if current.token.is_empty() =>
