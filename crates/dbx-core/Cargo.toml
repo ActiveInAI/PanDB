@@ -60,7 +60,7 @@ prometheus-parse = "=0.2.5"
 futures = "0.3"
 mongodb = { version = "3.2.5", features = ["socks5-proxy"] }
 rumqttc = { version = "0.24", features = ["websocket"], optional = true }
-russh = "0.62.5"
+russh = "0.63.2"
 pageant = "0.2"
 portpicker = "0.1.1"
 csv = "1"
