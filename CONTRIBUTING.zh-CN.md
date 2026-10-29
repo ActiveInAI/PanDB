@@ -139,9 +139,8 @@ make docs
 - 非平凡逻辑的测试补充
 - CLI、MCP、Docker、Web API 的使用示例
 
-## 社区
+## 项目资源
 
-- [Discord](https://discord.gg/W7NyVDRt6a)
 - [GitHub Issues](https://github.com/ActiveInAI/PanDB/issues)
 - [文档源码](https://github.com/ActiveInAI/PanDB/tree/main/docs)
 

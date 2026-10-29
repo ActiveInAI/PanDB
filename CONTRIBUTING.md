@@ -139,9 +139,8 @@ Small PRs are easier to review and merge.
 - Tests for non-trivial logic changes
 - Examples that show CLI, MCP, Docker, or Web API usage
 
-## Community
+## Project Resources
 
-- [Discord](https://discord.gg/W7NyVDRt6a)
 - [GitHub Issues](https://github.com/ActiveInAI/PanDB/issues)
 - [Documentation source](https://github.com/ActiveInAI/PanDB/tree/main/docs)
 

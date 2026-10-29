@@ -261,13 +261,6 @@ The installer will be in `src-tauri/target/release/bundle/`.
 - [Web API reference](docs/content/docs/web-api.mdx) — HTTP API for Docker/Web deployments
 - [Examples](examples/) — CLI, MCP, Docker, and API samples
 
-## Community
-
-<a href="https://discord.gg/W7NyVDRt6a" target="_blank"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-<a href="https://qm.qq.com/q/1087880322" target="_blank"><img src="https://img.shields.io/badge/QQ%20群-1087880322-EB1923?logo=tencentqq&logoColor=white" alt="QQ Group" /></a>
-<a href="https://docs.qq.com/doc/DVVhMY0h1ekJqc0tz" target="_blank"><img src="https://img.shields.io/badge/微信群-Join-07C160?logo=wechat&logoColor=white" alt="WeChat Group" /></a>
-[![LINUX DO](https://img.shields.io/badge/LINUX%20DO-Community-blue)](https://linux.do)
-
 ## Support PanDB
 
 PanDB is free and open source, but ongoing maintenance, database compatibility testing, infrastructure, and release work require sustained time and resources.

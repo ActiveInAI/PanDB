@@ -17,5 +17,3 @@ Supported databases: MySQL, PostgreSQL, SQLite, Redis, MongoDB, DuckDB, ClickHou
 ## Links
 
 - GitHub: https://github.com/ActiveInAI/PanDB
-- Discord: https://discord.gg/W7NyVDRt6a
-- QQ 群: 1087880322
