@@ -25,9 +25,8 @@
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        # Rust toolchain — lock to the minimum required version (1.88)
-        # while allowing newer stable releases to satisfy all crate deps.
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+        # Use the same verified Rust toolchain as local development and CI.
+        rustToolchain = pkgs.rust-bin.stable."1.99.1".default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
@@ -75,10 +74,43 @@
           ]
         );
 
+        # pnpm 12 ships a native executable; the pnpm 10 JavaScript recipe
+        # cannot be upgraded by overriding its version alone. Pin both the
+        # official wrapper payload (node-gyp) and each platform executable.
+        pnpmNativeSources = {
+          x86_64-linux = { url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.16.1.tgz"; hash = "sha512-RK//8ZLcXGW8A2k8bQOXZDBN1Qu92zN4dYnG1bzj1zoQ1fkZ6jNzZ1AvXtsfGVma795CJtvoaF5bLXf4l/FIUw=="; };
+          aarch64-linux = { url = "https://registry.npmjs.org/@pnpm/exe.linux-arm64/-/exe.linux-arm64-12.16.1.tgz"; hash = "sha512-JaRd5gNxwdNGBBkrZFt8bknrK4YmHVJBW0JMhUQ0fJ0dEYp6C2GT9ExaCqOO8EwYEyqM+jpKgJIK+8WFaJy3ew=="; };
+          x86_64-darwin = { url = "https://registry.npmjs.org/@pnpm/exe.darwin-x64/-/exe.darwin-x64-12.16.1.tgz"; hash = "sha512-xZvQBFqcZjO7vFKTK3XsJpqY6lnBL9EWSLCzVUPq3kZ94+D96gwJCa76xxGNK8Cj32f4eeM91Qg+yNRR4sRpDw=="; };
+          aarch64-darwin = { url = "https://registry.npmjs.org/@pnpm/exe.darwin-arm64/-/exe.darwin-arm64-12.16.1.tgz"; hash = "sha512-pVbmIIbhixiLvADLu1WA3TaW8FZy/D72R1De27WbbFx8/2mxvnsTyFVm4fO9kjpjMY7RzJd48CiQ96p8fO3ebQ=="; };
+        };
+        pnpmTool = pkgs.stdenvNoCC.mkDerivation {
+          pname = "pnpm";
+          version = "12.16.1";
+          src = pkgs.fetchurl {
+            url = "https://registry.npmjs.org/pnpm/-/pnpm-12.16.1.tgz";
+            hash = "sha512-CR0d7nknV1Zhsl2rPCrjHK/BxU1rce1qZgDPDByxBDSkR+rhQBXxsj4ua+3u1535SpMuIWTSgyKA3OP7MvZW0Q==";
+          };
+          nativeArchive = pkgs.fetchurl pnpmNativeSources.${system};
+          nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.autoPatchelfHook ];
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.stdenv.cc.cc.lib ];
+          dontBuild = true;
+          installPhase = ''
+            runHook preInstall
+            mkdir -p "$out/libexec/pnpm" "$out/bin" native-package
+            cp -R . "$out/libexec/pnpm/"
+            tar -xzf "$nativeArchive" -C native-package
+            install -m755 native-package/package/pnpm "$out/libexec/pnpm/pnpm"
+            ln -s "$out/libexec/pnpm/pnpm" "$out/bin/pnpm"
+            runHook postInstall
+          '';
+          passthru = { nodejs-slim = pkgs.nodejs-slim_26; majorVersion = "12"; };
+          meta.mainProgram = "pnpm";
+        };
+
         # Node / frontend tooling
         nodeDeps = with pkgs; [
-          nodejs_22
-          pnpm
+          nodejs_26
+          pnpmTool
           # Optional: for building native node addons (better-sqlite3 etc.)
           python3
           gnumake
@@ -162,6 +194,8 @@
 
         # Fast fixed-output target used by CI to validate pnpm dependency hashes
         # without compiling the frontend and Rust desktop application.
+        packages.pandb-pnpm = pnpmTool;
+
         packages.dbx-pnpm-deps = self.packages.${system}.dbx-desktop.pnpmDeps;
 
         # Fast dependency target used by CI to validate Cargo vendoring without
@@ -193,11 +227,11 @@
           # a content-addressed store path so the build sandbox has no network. #
           pnpmDeps = pkgs.fetchPnpmDeps {
             inherit (finalAttrs) pname version src;
-            # `fetcherVersion = 4` is supported for `pnpm_11`
+            pnpm = pnpmTool;
             fetcherVersion = 4;
             # Update with the hash reported by a failed fixed-output build:
             #   nix build .#dbx-pnpm-deps 2>&1 | grep 'got:'
-            hash = "sha256-VYG+rEeTTcf3B4avT6UIAdwIymrrioAUtUP2MBYi6s0=";
+            hash = "sha256-9HEZQTnW4mqLoZJPRn7Vh2GJ3UkD7ySrbBWU8aqLASg=";
           };
 
           # ── Step 2: vendor Cargo dependencies ───────────────────────────── #
@@ -207,12 +241,12 @@
             # package-name/version keys, these remain stable when a package
             # version inside the same checkout changes.
             outputHashes = {
-              "git+https://github.com/t8y2/rust_mysql_common.git?rev=77085e91e5081309d585153e3b656ce33bc1fe74#77085e91e5081309d585153e3b656ce33bc1fe74" =
-                "sha256-8lWgsdTuLTgOmzP7tXmA9LnomOE0wjxXsCBw9NEMt2o=";
-              "git+https://github.com/t8y2/mysql_async.git?rev=2be6e392eb9b06d20dcd2d8ed8eae748d413c9ec#2be6e392eb9b06d20dcd2d8ed8eae748d413c9ec" =
-                "sha256-tMFvmypIBh1GHg3cLFWmLf6N1wrwKPlzx2G/MHwtlFM=";
-              "git+https://github.com/t8y2/tokio-postgres-gaussdb.git?rev=115f9fef10f0fc3669b5337955e4eb461fc349a6#115f9fef10f0fc3669b5337955e4eb461fc349a6" =
-                "sha256-HRbYVSD7iIwG3m1tOGoIZy0xAZwALWIpTtakVSYPIYI=";
+              "git+https://github.com/t8y2/rust_mysql_common.git?rev=47740d85a8277167a5717afac785d37b46a36296#47740d85a8277167a5717afac785d37b46a36296" =
+                "sha256-fw1rDLNh0BByLHjS8Cgc7KQxdj3N51HVMHXvRyETsas=";
+              "git+https://github.com/t8y2/tokio-postgres-gaussdb.git?rev=ac8ad476de59093d33ab9f294531c956e0c6a724#ac8ad476de59093d33ab9f294531c956e0c6a724" =
+                "sha256-ybf+2siiLokb2iylFEhmLAFCFmbjSKF+zNdH93LggkM=";
+              "git+https://github.com/zipg/mysql_async.git?rev=4a9e60a62f5a48e35ef9ccc9fc8277d5012b19dd#4a9e60a62f5a48e35ef9ccc9fc8277d5012b19dd" =
+                "sha256-zIMZitF9fU6wkeuGAv4LJv80bCWbvmUkgQ1/G5MjDv8=";
             };
           };
 
@@ -220,8 +254,8 @@
           nativeBuildInputs =
             [
               rustToolchain
-              pkgs.nodejs_22
-              pkgs.pnpm
+              pkgs.nodejs_26
+              pnpmTool
               pkgs.pkg-config
               pkgs.perl
               pkgs.jq                         # used by preConfigure to strip packageManager
@@ -252,7 +286,7 @@
             icon = "dbx";
             desktopName = "DBX";
             genericName = "Database Management Tool";
-            comment = "Open-source database management tool for 90+ databases";
+            comment = "Open-source database management tool for 100+ databases";
             categories = [ "Development" "Database" ];
             keywords = [
               "database"
@@ -414,7 +448,7 @@
           meta = with pkgs.lib; {
             description = "DBX desktop — open-source database management tool (Tauri 2)";
             longDescription = ''
-              DBX is a lightweight (~15 MB) database management tool supporting 90+
+              DBX is a lightweight (~15 MB) database management tool supporting 100+
               databases. Built with Tauri 2, Vue 3, and Rust. No Java, no Chromium.
             '';
             license = licenses.asl20;

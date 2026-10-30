@@ -4,8 +4,8 @@ on:
   # Automatic mirroring is disabled until PanDB mirror repositories are provisioned.
   workflow_dispatch:
 
-# Mirror providers reject concurrent forced updates to the same ref. Serialize all
-# branch, tag, and delete events so rapid GitHub pushes cannot race each other.
+# Mirror providers reject concurrent forced updates to the same ref. Serialize tag,
+# delete, and scheduled runs so overlapping triggers cannot race each other.
 concurrency:
   group: sync-mirrors
   cancel-in-progress: false
@@ -13,10 +13,13 @@ concurrency:
 jobs:
   sync-cnb:
     name: Sync to CNB
+    # Mirror destinations are fixed to the upstream remotes; forks must never
+    # publish their refs there, even with mirrored secrets (#10944).
+    if: github.repository == 't8y2/dbx'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -34,10 +37,11 @@ jobs:
 
   sync-atomgit:
     name: Sync to AtomGit
+    if: github.repository == 't8y2/dbx'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -55,10 +59,11 @@ jobs:
 
   sync-gitee:
     name: Sync to Gitee
+    if: github.repository == 't8y2/dbx'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 

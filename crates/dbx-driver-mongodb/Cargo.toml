@@ -1,0 +1,23 @@
+[package]
+name = "dbx-driver-mongodb"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+dbx-driver-support = { path = "../dbx-driver-support" }
+dbx-types = { path = "../dbx-types", default-features = false }
+base64 = "0.23.1"
+chrono = { version = "0.4.45", features = ["serde"] }
+futures = "0.3.34"
+json5 = "1.3.6"
+log = "0.4.34"
+mongodb = { version = "3.9.1", features = ["socks5-proxy"] }
+percent-encoding = "2.3.2"
+reqwest = { version = "0.13.5", default-features = false, features = ["query", "form", "json", "rustls"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["arbitrary_precision", "preserve_order"] }
+sha2 = "0.11.1"
+tokio = { version = "1.54.1", features = ["full"] }
+uuid = { version = "1.29.0", features = ["v4"] }

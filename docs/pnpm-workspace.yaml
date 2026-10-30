@@ -2,5 +2,11 @@ allowBuilds:
   esbuild: true
   sharp: true
 
+minimumReleaseAgeExclude:
+  - '@types/node@26.6.6'
+  - fumadocs-core@16.17.9
+  - fumadocs-ui@16.17.9
+  - lucide-react@1.64.0
+
 patchedDependencies:
   next-themes@0.4.6: patches/next-themes@0.4.6.patch

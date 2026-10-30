@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use crate::mqttbytes::{v4::*, QoS};
-use crate::{valid_topic, ConnectionError, Event, EventLoop, MqttOptions, Request};
+use crate::{valid_filter, valid_topic, ConnectionError, Event, EventLoop, MqttOptions, Request};
 
 use bytes::Bytes;
 use flume::{SendError, Sender, TrySendError};
@@ -150,17 +150,23 @@ impl AsyncClient {
 
     /// Sends a MQTT Subscribe to the `EventLoop`
     pub async fn subscribe<S: Into<String>>(&self, topic: S, qos: QoS) -> Result<(), ClientError> {
-        let subscribe = Subscribe::new(topic.into(), qos);
-        let request = Request::Subscribe(subscribe);
-        self.request_tx.send_async(request).await?;
+        let subscribe = Subscribe::new(topic, qos);
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::Request(subscribe.into()));
+        }
+
+        self.request_tx.send_async(subscribe.into()).await?;
         Ok(())
     }
 
     /// Attempts to send a MQTT Subscribe to the `EventLoop`
     pub fn try_subscribe<S: Into<String>>(&self, topic: S, qos: QoS) -> Result<(), ClientError> {
-        let subscribe = Subscribe::new(topic.into(), qos);
-        let request = Request::Subscribe(subscribe);
-        self.request_tx.try_send(request)?;
+        let subscribe = Subscribe::new(topic, qos);
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::TryRequest(subscribe.into()));
+        }
+
+        self.request_tx.try_send(subscribe.into())?;
         Ok(())
     }
 
@@ -170,8 +176,11 @@ impl AsyncClient {
         T: IntoIterator<Item = SubscribeFilter>,
     {
         let subscribe = Subscribe::new_many(topics);
-        let request = Request::Subscribe(subscribe);
-        self.request_tx.send_async(request).await?;
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::Request(subscribe.into()));
+        }
+
+        self.request_tx.send_async(subscribe.into()).await?;
         Ok(())
     }
 
@@ -181,8 +190,10 @@ impl AsyncClient {
         T: IntoIterator<Item = SubscribeFilter>,
     {
         let subscribe = Subscribe::new_many(topics);
-        let request = Request::Subscribe(subscribe);
-        self.request_tx.try_send(request)?;
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::TryRequest(subscribe.into()));
+        }
+        self.request_tx.try_send(subscribe.into())?;
         Ok(())
     }
 
@@ -323,9 +334,12 @@ impl Client {
 
     /// Sends a MQTT Subscribe to the `EventLoop`
     pub fn subscribe<S: Into<String>>(&self, topic: S, qos: QoS) -> Result<(), ClientError> {
-        let subscribe = Subscribe::new(topic.into(), qos);
-        let request = Request::Subscribe(subscribe);
-        self.client.request_tx.send(request)?;
+        let subscribe = Subscribe::new(topic, qos);
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::Request(subscribe.into()));
+        }
+
+        self.client.request_tx.send(subscribe.into())?;
         Ok(())
     }
 
@@ -341,8 +355,11 @@ impl Client {
         T: IntoIterator<Item = SubscribeFilter>,
     {
         let subscribe = Subscribe::new_many(topics);
-        let request = Request::Subscribe(subscribe);
-        self.client.request_tx.send(request)?;
+        if !subscribe_has_valid_filters(&subscribe) {
+            return Err(ClientError::Request(subscribe.into()));
+        }
+
+        self.client.request_tx.send(subscribe.into())?;
         Ok(())
     }
 
@@ -379,6 +396,15 @@ impl Client {
         self.client.try_disconnect()?;
         Ok(())
     }
+}
+
+#[must_use]
+fn subscribe_has_valid_filters(subscribe: &Subscribe) -> bool {
+    !subscribe.filters.is_empty()
+        && subscribe
+            .filters
+            .iter()
+            .all(|filter| valid_filter(&filter.path))
 }
 
 /// Error type returned by [`Connection::recv`]
@@ -424,10 +450,10 @@ impl Connection {
         Iter { connection: self }
     }
 
-    /// Attempt to fetch an incoming [`Event`] on the [`EvenLoop`], returning an error
+    /// Attempt to fetch an incoming [`Event`] on the [`EventLoop`], returning an error
     /// if all clients/users have closed requests channel.
     ///
-    /// [`EvenLoop`]: super::EventLoop
+    /// [`EventLoop`]: super::EventLoop
     pub fn recv(&mut self) -> Result<Result<Event, ConnectionError>, RecvError> {
         let f = self.eventloop.poll();
         let event = self.runtime.block_on(f);
@@ -435,10 +461,10 @@ impl Connection {
         resolve_event(event).ok_or(RecvError)
     }
 
-    /// Attempt to fetch an incoming [`Event`] on the [`EvenLoop`], returning an error
+    /// Attempt to fetch an incoming [`Event`] on the [`EventLoop`], returning an error
     /// if none immediately present or all clients/users have closed requests channel.
     ///
-    /// [`EvenLoop`]: super::EventLoop
+    /// [`EventLoop`]: super::EventLoop
     pub fn try_recv(&mut self) -> Result<Result<Event, ConnectionError>, TryRecvError> {
         let f = self.eventloop.poll();
         // Enters the runtime context so we can poll the future, as required by `now_or_never()`.
@@ -449,10 +475,10 @@ impl Connection {
         resolve_event(event).ok_or(TryRecvError::Disconnected)
     }
 
-    /// Attempt to fetch an incoming [`Event`] on the [`EvenLoop`], returning an error
+    /// Attempt to fetch an incoming [`Event`] on the [`EventLoop`], returning an error
     /// if all clients/users have closed requests channel or the timeout has expired.
     ///
-    /// [`EvenLoop`]: super::EventLoop
+    /// [`EventLoop`]: super::EventLoop
     pub fn recv_timeout(
         &mut self,
         duration: Duration,

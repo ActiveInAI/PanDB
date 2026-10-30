@@ -1,6 +1,6 @@
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'io.trino:trino-jdbc:471'
+    implementation 'io.trino:trino-jdbc:484'
 }
 
 tasks.named('shadowJar') {

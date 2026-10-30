@@ -6,7 +6,7 @@ import { docs } from "@/.source/server";
 
 const pageIcons: Record<string, keyof typeof icons> = {
   "what-is-dbx": "BookOpen",
-  changelog: "History",
+  changelog: "RotateCcwClock",
   "getting-started": "Rocket",
   "1panel": "PanelsTopLeft",
   databases: "Database",
@@ -23,7 +23,7 @@ const pageIcons: Record<string, keyof typeof icons> = {
   "table-structure": "TableProperties",
   "field-lineage": "GitBranch",
   "table-import": "Upload",
-  "sql-file": "FileCode2",
+  "sql-file": "FileCodeCorner",
   "database-export": "Download",
   "database-backup": "DatabaseBackup",
   "sql-snippets": "ScrollText",
@@ -33,8 +33,9 @@ const pageIcons: Record<string, keyof typeof icons> = {
   "web-api": "Webhook",
   contributing: "GitPullRequest",
   plugins: "Plug",
+  "plugin-development": "Puzzle",
   "driver-management": "Package",
-  "sql-formatter": "AlignLeft",
+  "sql-formatter": "TextAlignStart",
   "keyboard-shortcuts": "Keyboard",
   "connection-import": "Import",
   "config-export": "FileUp",

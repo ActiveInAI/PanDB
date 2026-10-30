@@ -1,14 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpJsonConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpTraeConfig, buildMcpVsCodeConfig, mcpWebBackendUrl } from "@/lib/mcp/mcpConfigTemplates";
+import {
+  buildMcpCherryStudioConfig,
+  buildMcpCodexConfig,
+  buildMcpDeepSeekHarnessConfig,
+  buildMcpJsonConfig,
+  buildMcpOpenCodeConfig,
+  buildMcpPiConfig,
+  buildMcpQoderConfig,
+  buildMcpTraeConfig,
+  buildMcpVsCodeConfig,
+  buildMcpWorkBuddyConfig,
+  mcpWebBackendUrl,
+  preferMcpNativeLaunch,
+} from "@/lib/mcp/mcpConfigTemplates";
 
 describe("MCP config templates", () => {
+  it.each(["/Users/DBX User/.dbx/bin/dbx-mcp", "/home/dbx/.dbx/bin/dbx-mcp", "C:\\Users\\DBX User\\.dbx\\bin\\dbx-mcp.exe"])("prefers native launch for every client: %s", (binary) => {
+    const shim = { command: "node", args: ["/old/shim.js"], env: { DBX_DATA_DIR: "/custom/data" } };
+    const native = preferMcpNativeLaunch(shim, binary);
+    expect(native).toEqual({ command: binary, env: shim.env });
+    for (const builder of [buildMcpJsonConfig, buildMcpTraeConfig, buildMcpQoderConfig, buildMcpVsCodeConfig, buildMcpCherryStudioConfig, buildMcpCodexConfig, buildMcpDeepSeekHarnessConfig, buildMcpOpenCodeConfig, buildMcpPiConfig, buildMcpWorkBuddyConfig]) {
+      const result = builder(native);
+      expect(result).toContain(JSON.stringify(binary));
+      expect(result).toContain("DBX_DATA_DIR");
+      expect(result).not.toContain("shim.js");
+    }
+    expect(preferMcpNativeLaunch(shim)).toBe(shim);
+    expect(preferMcpNativeLaunch(shim, "")).toBe(shim);
+    expect(preferMcpNativeLaunch()).toBeUndefined();
+  });
+
   it("builds the standard mcpServers JSON used by Claude, Cursor, TRAE, and Windsurf", () => {
     const config = JSON.parse(buildMcpJsonConfig());
 
     expect(config).toEqual({
       mcpServers: {
         pandb: {
-          command: "pandb-mcp-server",
+          command: "dbx-mcp-server",
         },
       },
     });
@@ -22,19 +50,29 @@ describe("MCP config templates", () => {
     };
     const config = JSON.parse(buildMcpJsonConfig(launch));
 
-    expect(config).toEqual({ mcpServers: { dbx: launch } });
+    expect(config).toEqual({ mcpServers: { pandb: launch } });
     expect(config).not.toHaveProperty("mcp");
   });
 
   it("builds the standard mcpServers JSON used by the Pi agent", () => {
     expect(JSON.parse(buildMcpPiConfig())).toEqual({
       mcpServers: {
-        dbx: {
+        pandb: {
           command: "dbx-mcp-server",
         },
       },
     });
     expect(buildMcpPiConfig({ command: "npx", args: ["-y", "@dbx-app/mcp-server"] })).toContain('"npx"');
+  });
+
+  it("builds the standard mcpServers JSON used by WorkBuddy", () => {
+    const launch = { command: "dbx-mcp-server", env: { DBX_DATA_DIR: "D:\\DBX Data" } };
+
+    expect(JSON.parse(buildMcpWorkBuddyConfig(launch))).toEqual({
+      mcpServers: {
+        pandb: launch,
+      },
+    });
   });
 
   it("builds standard JSON configs with a direct node launch command", () => {
@@ -70,9 +108,22 @@ describe("MCP config templates", () => {
     });
   });
 
+  it("builds the Qoder config with the same launch shape as TRAE", () => {
+    const launch = {
+      command: "C:\\Program Files\\nodejs\\node.exe",
+      args: ["C:\\dbx\\mcp\\dist\\index.js"],
+      env: { DBX_DATA_DIR: "D:\\DBX Data" },
+    };
+    const nativeBinPath = "C:\\Users\\supervisor\\AppData\\Roaming\\npm\\node_modules\\@dbx-app\\mcp-win32-x64\\bin\\dbx-mcp.exe";
+
+    expect(JSON.parse(buildMcpQoderConfig(launch, nativeBinPath))).toEqual({
+      mcpServers: { pandb: { command: nativeBinPath, env: launch.env } },
+    });
+  });
+
   it("includes Web runtime settings without restoring permission environment variables", () => {
     const launch = {
-      command: "pandb-mcp-server",
+      command: "dbx-mcp-server",
       env: {
         PANDB_WEB_URL: "https://dbx.example.com/tools/dbx",
         PANDB_WEB_PASSWORD: "your-web-login-password",
@@ -81,7 +132,7 @@ describe("MCP config templates", () => {
 
     expect(JSON.parse(buildMcpJsonConfig(launch))).toEqual({
       mcpServers: {
-        pandb: { command: "pandb-mcp-server", env: launch.env },
+        pandb: { command: "dbx-mcp-server", env: launch.env },
       },
     });
     expect(buildMcpCodexConfig(launch)).toContain('[mcp_servers.pandb.env]\nPANDB_WEB_URL = "https://dbx.example.com/tools/dbx"');
@@ -91,7 +142,7 @@ describe("MCP config templates", () => {
 
   it("includes the portable PanDB data directory in JSON and Codex configs", () => {
     const launch = {
-      command: "pandb-mcp-server",
+      command: "dbx-mcp-server",
       env: { PANDB_DATA_DIR: "D:\\GreenSoft\\PanDB\\data" },
     };
 
@@ -110,7 +161,7 @@ describe("MCP config templates", () => {
       servers: {
         pandb: {
           type: "stdio",
-          command: "pandb-mcp-server",
+          command: "dbx-mcp-server",
         },
       },
     });
@@ -156,7 +207,7 @@ describe("MCP config templates", () => {
   });
 
   it("builds Codex TOML config without policy environment", () => {
-    expect(buildMcpCodexConfig()).toBe(["[mcp_servers.pandb]", 'command = "pandb-mcp-server"'].join("\n"));
+    expect(buildMcpCodexConfig()).toBe(["[mcp_servers.pandb]", 'command = "dbx-mcp-server"'].join("\n"));
   });
 
   it("builds Codex TOML config with a direct node launch command", () => {
@@ -184,7 +235,7 @@ describe("MCP config templates", () => {
       mcp: {
         pandb: {
           type: "local",
-          command: ["pandb-mcp-server"],
+          command: ["dbx-mcp-server"],
         },
       },
     });

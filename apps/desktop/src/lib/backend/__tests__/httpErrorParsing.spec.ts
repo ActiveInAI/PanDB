@@ -52,14 +52,20 @@ describe("HTTP backend error parsing", () => {
     if (expected) {
       expect(error.backendError).toEqual(expected);
     } else {
-      expect(error.backendError.code).toBe("PanDB-LEGACY-0001");
+      expect(error.backendError.code).toBe("DBX-LEGACY-0001");
       expect(error.backendError.detail).toBe(body);
     }
   });
 
+  test.each(["committed", "rolled_back", "unknown"] as const)("preserves a confirmed transaction outcome (%s)", async (outcome) => {
+    const transaction = { ...envelope, code: "DBX-TXN-1007", transactionOutcome: outcome };
+    const error = await backendResponseError(new Response(JSON.stringify(transaction), { status: 500 }));
+    expect(error.backendError.transactionOutcome).toBe(outcome);
+  });
+
   test("uses a stable summary for an empty body", async () => {
     const error = await backendResponseError(new Response("", { status: 503 }));
-    expect(error.backendError.code).toBe("PanDB-LEGACY-0001");
+    expect(error.backendError.code).toBe("DBX-LEGACY-0001");
     expect(error.backendError.detail).toBeUndefined();
     expect(error.message).toBe("Backend request failed");
   });

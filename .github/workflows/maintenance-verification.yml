@@ -1,0 +1,74 @@
+name: PanDB Maintenance Verification
+
+on:
+  push:
+    branches: [maintenance/upstream-latest-dependencies-20261029]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandb-maintenance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: Swatinem/rust-cache@v2.9.3
+        with:
+          shared-key: pandb-maintenance-windows
+          cache-on-failure: true
+      - name: Pageant shared-memory security regression
+        run: cargo test --locked -p pageant --lib --release
+      - name: Check Windows desktop and security extensions
+        env:
+          CXXFLAGS: /std:c++17 /EHsc
+        run: cargo check --locked -p dbx --target x86_64-pc-windows-msvc --no-default-features --features sqlite-multiple-ciphers,os-keyring,sqlserver-native-attention
+
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: Swatinem/rust-cache@v2.9.3
+        with:
+          shared-key: pandb-maintenance-macos
+          cache-on-failure: true
+      - name: Check macOS desktop and native integrations
+        run: cargo check --locked -p dbx --no-default-features --features sqlite-multiple-ciphers,os-keyring,sqlserver-native-attention
+
+  nix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: Verify Nix pnpm native package
+        run: |
+          nix build .#pandb-pnpm --no-link --print-build-logs
+          nix shell .#pandb-pnpm -c pnpm --version
+      - name: Verify dependency hashes and capture a required update
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/pnpm-deps.log"
+          if ! nix build .#dbx-pnpm-deps --no-link --print-build-logs >"$log" 2>&1; then
+            tail -100 "$log"
+            expected_hash=$(sed -n 's/.*got:[[:space:]]*\(sha256-[A-Za-z0-9+/=]*\).*/\1/p' "$log" | tail -1)
+            test -n "$expected_hash"
+            EXPECTED_HASH="$expected_hash" perl -0pi -e 's/(hash = ")sha256-[^"]+(";)/$1 . $ENV{EXPECTED_HASH} . $2/e' flake.nix
+            nix build .#dbx-pnpm-deps --no-link --print-build-logs
+          fi
+          git diff -- flake.nix > "$RUNNER_TEMP/pandb-nix-hash.patch"
+      - name: Build locked Rust dependency sources and verify Git hashes
+        run: nix build .#dbx-cargo-deps --no-link --print-build-logs
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: pandb-nix-verified-hash
+          path: ${{ runner.temp }}/pandb-nix-hash.patch

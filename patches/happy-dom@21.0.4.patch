@@ -1,0 +1,25 @@
+diff --git a/lib/selection/Selection.js b/lib/selection/Selection.js
+--- a/lib/selection/Selection.js
++++ b/lib/selection/Selection.js
+@@ -16,6 +16,7 @@
+  */
+ export default class Selection {
+     #ownerDocument;
++    #selectionChangeScheduled = false;
+     #range = null;
+     #direction = SelectionDirectionEnum.directionless;
+     /**
+@@ -439,7 +440,12 @@
+             range === null ? SelectionDirectionEnum.directionless : SelectionDirectionEnum.forwards;
+         if (oldRange !== this.#range) {
+             // https://w3c.github.io/selection-api/#selectionchange-event
+-            this.#ownerDocument.dispatchEvent(new Event('selectionchange'));
++            if (this.#selectionChangeScheduled) return;
++            this.#selectionChangeScheduled = true;
++            this.#ownerDocument[PropertySymbol.window].setTimeout(() => {
++                this.#selectionChangeScheduled = false;
++                this.#ownerDocument.dispatchEvent(new Event('selectionchange'));
++            }, 0);
+         }
+     }
+ }

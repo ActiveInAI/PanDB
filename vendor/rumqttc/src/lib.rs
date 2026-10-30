@@ -95,15 +95,15 @@
 //! address and use that name in your code.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(feature = "use-rustls")]
-compile_error!("The Rumqttc Rustls backend has been retired; use the native TLS backend instead.");
+// The retired 0.24 backend used an obsolete TLS stack. The 0.25 backend
+// is permitted only with the minimum safe rustls/webpki versions enforced in Cargo.toml.
 
 #[macro_use]
 extern crate log;
 
 use std::fmt::{self, Debug, Formatter};
 
-#[cfg(any(feature = "use-rustls", feature = "websocket"))]
+#[cfg(any(feature = "use-rustls-no-provider", feature = "websocket"))]
 use std::sync::Arc;
 
 use std::time::Duration;
@@ -115,7 +115,7 @@ pub mod mqttbytes;
 mod state;
 pub mod v5;
 
-#[cfg(any(feature = "use-rustls", feature = "use-native-tls"))]
+#[cfg(any(feature = "use-rustls-no-provider", feature = "use-native-tls"))]
 mod tls;
 
 #[cfg(feature = "websocket")]
@@ -143,14 +143,18 @@ pub use client::{
 pub use eventloop::{ConnectionError, Event, EventLoop};
 pub use mqttbytes::v4::*;
 pub use mqttbytes::*;
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use rustls_native_certs::load_native_certs;
 pub use state::{MqttState, StateError};
-#[cfg(any(feature = "use-rustls", feature = "use-native-tls"))]
+#[cfg(any(feature = "use-rustls-no-provider", feature = "use-native-tls"))]
 pub use tls::Error as TlsError;
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-native-tls")]
+pub use tokio_native_tls;
+#[cfg(feature = "use-native-tls")]
+use tokio_native_tls::native_tls::TlsConnector;
+#[cfg(feature = "use-rustls-no-provider")]
 pub use tokio_rustls;
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 
 #[cfg(feature = "proxy")]
@@ -203,25 +207,6 @@ pub enum Request {
     Disconnect(Disconnect),
 }
 
-impl Request {
-    fn size(&self) -> usize {
-        match &self {
-            Request::Publish(publish) => publish.size(),
-            Request::PubAck(puback) => puback.size(),
-            Request::PubRec(pubrec) => pubrec.size(),
-            Request::PubComp(pubcomp) => pubcomp.size(),
-            Request::PubRel(pubrel) => pubrel.size(),
-            Request::PingReq(pingreq) => pingreq.size(),
-            Request::PingResp(pingresp) => pingresp.size(),
-            Request::Subscribe(subscribe) => subscribe.size(),
-            Request::SubAck(suback) => suback.size(),
-            Request::Unsubscribe(unsubscribe) => unsubscribe.size(),
-            Request::UnsubAck(unsuback) => unsuback.size(),
-            Request::Disconnect(disconn) => disconn.size(),
-        }
-    }
-}
-
 impl From<Publish> for Request {
     fn from(publish: Publish) -> Request {
         Request::Publish(publish)
@@ -244,15 +229,18 @@ impl From<Unsubscribe> for Request {
 #[derive(Clone)]
 pub enum Transport {
     Tcp,
-    #[cfg(any(feature = "use-rustls", feature = "use-native-tls"))]
+    #[cfg(any(feature = "use-rustls-no-provider", feature = "use-native-tls"))]
     Tls(TlsConfiguration),
     #[cfg(unix)]
     Unix,
     #[cfg(feature = "websocket")]
     #[cfg_attr(docsrs, doc(cfg(feature = "websocket")))]
     Ws,
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "use-rustls", feature = "websocket"))))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "use-rustls-no-provider", feature = "websocket")))
+    )]
     Wss(TlsConfiguration),
 }
 
@@ -268,13 +256,13 @@ impl Transport {
         Self::Tcp
     }
 
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     pub fn tls_with_default_config() -> Self {
         Self::tls_with_config(Default::default())
     }
 
     /// Use secure tcp with tls as transport
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     pub fn tls(
         ca: Vec<u8>,
         client_auth: Option<(Vec<u8>, Vec<u8>)>,
@@ -289,7 +277,7 @@ impl Transport {
         Self::tls_with_config(config)
     }
 
-    #[cfg(any(feature = "use-rustls", feature = "use-native-tls"))]
+    #[cfg(any(feature = "use-rustls-no-provider", feature = "use-native-tls"))]
     pub fn tls_with_config(tls_config: TlsConfiguration) -> Self {
         Self::Tls(tls_config)
     }
@@ -307,8 +295,11 @@ impl Transport {
     }
 
     /// Use secure websockets with tls as transport
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "use-rustls", feature = "websocket"))))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "use-rustls-no-provider", feature = "websocket")))
+    )]
     pub fn wss(
         ca: Vec<u8>,
         client_auth: Option<(Vec<u8>, Vec<u8>)>,
@@ -323,14 +314,20 @@ impl Transport {
         Self::wss_with_config(config)
     }
 
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "use-rustls", feature = "websocket"))))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "use-rustls-no-provider", feature = "websocket")))
+    )]
     pub fn wss_with_config(tls_config: TlsConfiguration) -> Self {
         Self::Wss(tls_config)
     }
 
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "use-rustls", feature = "websocket"))))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "use-rustls-no-provider", feature = "websocket")))
+    )]
     pub fn wss_with_default_config() -> Self {
         Self::Wss(Default::default())
     }
@@ -338,11 +335,11 @@ impl Transport {
 
 /// TLS configuration method
 #[derive(Clone, Debug)]
-#[cfg(any(feature = "use-rustls", feature = "use-native-tls"))]
+#[cfg(any(feature = "use-rustls-no-provider", feature = "use-native-tls"))]
 pub enum TlsConfiguration {
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     Simple {
-        /// connection method
+        /// ca certificate
         ca: Vec<u8>,
         /// alpn settings
         alpn: Option<Vec<Vec<u8>>>,
@@ -357,14 +354,18 @@ pub enum TlsConfiguration {
         /// password for use with der
         client_auth: Option<(Vec<u8>, String)>,
     },
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// Injected rustls ClientConfig for TLS, to allow more customisation.
     Rustls(Arc<ClientConfig>),
     #[cfg(feature = "use-native-tls")]
+    /// Use default native-tls configuration
     Native,
+    #[cfg(feature = "use-native-tls")]
+    /// Injected native-tls TlsConnector for TLS, to allow more customisation.
+    NativeConnector(TlsConnector),
 }
 
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 impl Default for TlsConfiguration {
     fn default() -> Self {
         let mut root_cert_store = RootCertStore::empty();
@@ -379,10 +380,17 @@ impl Default for TlsConfiguration {
     }
 }
 
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 impl From<ClientConfig> for TlsConfiguration {
     fn from(config: ClientConfig) -> Self {
         TlsConfiguration::Rustls(Arc::new(config))
+    }
+}
+
+#[cfg(feature = "use-native-tls")]
+impl From<TlsConnector> for TlsConfiguration {
+    fn from(connector: TlsConnector) -> Self {
+        TlsConfiguration::NativeConnector(connector)
     }
 }
 
@@ -391,6 +399,7 @@ impl From<ClientConfig> for TlsConfiguration {
 pub struct NetworkOptions {
     tcp_send_buffer_size: Option<u32>,
     tcp_recv_buffer_size: Option<u32>,
+    tcp_nodelay: bool,
     conn_timeout: u64,
     #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
     bind_device: Option<String>,
@@ -401,10 +410,15 @@ impl NetworkOptions {
         NetworkOptions {
             tcp_send_buffer_size: None,
             tcp_recv_buffer_size: None,
+            tcp_nodelay: false,
             conn_timeout: 5,
             #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))]
             bind_device: None,
         }
+    }
+
+    pub fn set_tcp_nodelay(&mut self, nodelay: bool) {
+        self.tcp_nodelay = nodelay;
     }
 
     pub fn set_tcp_send_buffer_size(&mut self, size: u32) {
@@ -459,7 +473,7 @@ pub struct MqttOptions {
     /// client identifier
     client_id: String,
     /// username and password
-    credentials: Option<(String, String)>,
+    credentials: Option<Login>,
     /// maximum incoming packet size (verifies remaining length of the packet)
     max_incoming_packet_size: usize,
     /// Maximum outgoing packet size (only verifies publish payload size)
@@ -567,6 +581,11 @@ impl MqttOptions {
         self.last_will.clone()
     }
 
+    pub fn set_client_id(&mut self, client_id: String) -> &mut Self {
+        self.client_id = client_id;
+        self
+    }
+
     pub fn set_transport(&mut self, transport: Transport) -> &mut Self {
         self.transport = transport;
         self
@@ -608,7 +627,7 @@ impl MqttOptions {
         self.client_id.clone()
     }
 
-    /// Set packet size limit for outgoing an incoming packets
+    /// Set packet size limit for outgoing and incoming packets
     pub fn set_max_packet_size(&mut self, incoming: usize, outgoing: usize) -> &mut Self {
         self.max_incoming_packet_size = incoming;
         self.max_outgoing_packet_size = outgoing;
@@ -656,12 +675,12 @@ impl MqttOptions {
         username: U,
         password: P,
     ) -> &mut Self {
-        self.credentials = Some((username.into(), password.into()));
+        self.credentials = Some(Login::new(username, password));
         self
     }
 
     /// Security options
-    pub fn credentials(&self) -> Option<(String, String)> {
+    pub fn credentials(&self) -> Option<Login> {
         self.credentials.clone()
     }
 
@@ -796,12 +815,12 @@ impl std::convert::TryFrom<url::Url> for MqttOptions {
             // Encrypted connections are supported, but require explicit TLS configuration. We fall
             // back to the unencrypted transport layer, so that `set_transport` can be used to
             // configure the encrypted transport layer with the provided TLS configuration.
-            #[cfg(feature = "use-rustls")]
+            #[cfg(feature = "use-rustls-no-provider")]
             "mqtts" | "ssl" => (Transport::tls_with_default_config(), 8883),
             "mqtt" | "tcp" => (Transport::Tcp, 1883),
             #[cfg(feature = "websocket")]
             "ws" => (Transport::Ws, 8000),
-            #[cfg(all(feature = "use-rustls", feature = "websocket"))]
+            #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
             "wss" => (Transport::wss_with_default_config(), 8000),
             _ => return Err(OptionError::Scheme),
         };
@@ -936,7 +955,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
     fn no_scheme() {
         let mut mqttoptions = MqttOptions::new("client_a", "a3f8czas.iot.eu-west-1.amazonaws.com/mqtt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=MyCreds%2F20201001%2Feu-west-1%2Fiotdevicegateway%2Faws4_request&X-Amz-Date=20201001T130812Z&X-Amz-Expires=7200&X-Amz-Signature=9ae09b49896f44270f2707551581953e6cac71a4ccf34c7c3415555be751b2d1&X-Amz-SignedHeaders=host", 443);
 

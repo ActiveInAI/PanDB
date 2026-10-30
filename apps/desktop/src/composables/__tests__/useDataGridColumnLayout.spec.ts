@@ -1,12 +1,52 @@
 // @vitest-environment happy-dom
 
-import { effectScope, nextTick, ref } from "vue";
+import { effectScope, nextTick, ref, watch } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dataGridColumnOffsets, dataGridHorizontalColumnWindow, useDataGridColumnLayout, useDataGridColumnLayoutState, type ColumnHeaderReferenceDragController } from "@/composables/useDataGridColumnLayout";
 import { columnHeaderDragAutoScrollDelta, columnHeaderDropTargetIndex } from "@/lib/dataGrid/dataGridColumnHeaderInteraction";
 import { loadDataGridColumnLayout, saveDataGridColumnLayout } from "@/lib/dataGrid/dataGridColumnLayoutStorage";
 
 describe("useDataGridColumnLayout", () => {
+  it("combines independent NULL and empty-column toggles without losing manual visibility", async () => {
+    const scope = effectScope();
+    const hideNullColumns = ref(true);
+    const hideEmptyColumns = ref(false);
+    const allEmptyColumnIndexes = ref([1, 2]);
+    const state = scope.run(() =>
+      useDataGridColumnLayoutState({
+        columns: ref(["value", "null", "mixed", "manual"]),
+        displayableColumnIndexes: ref([0, 1, 2, 3]),
+        allNullColumnIndexes: ref([1]),
+        allEmptyColumnIndexes,
+        columnOrderKeys: ref(["value", "null", "mixed", "manual"]),
+        layoutScopeKey: ref("empty-columns"),
+        tableScopeKey: ref(""),
+        hideNullColumns,
+        hideEmptyColumns,
+        onHideNullColumnsChange: (hidden) => {
+          hideNullColumns.value = hidden;
+        },
+      }),
+    )!;
+    try {
+      state.hideColumns([3]);
+      expect(state.visibleColumnIndexes.value).toEqual([0, 2]);
+      hideEmptyColumns.value = true;
+      await nextTick();
+      expect(state.visibleColumnIndexes.value).toEqual([0]);
+      state.toggleAllNullColumns();
+      await nextTick();
+      expect(state.visibleColumnIndexes.value).toEqual([0]);
+      allEmptyColumnIndexes.value = [];
+      await nextTick();
+      expect(state.visibleColumnIndexes.value).toEqual([0, 1, 2]);
+      hideEmptyColumns.value = false;
+      await nextTick();
+      expect(state.hiddenColumnIndexes.value).toEqual(new Set([3]));
+    } finally {
+      scope.stop();
+    }
+  });
   beforeEach(() => {
     const values = new Map<string, string>();
     vi.stubGlobal("localStorage", {
@@ -21,6 +61,41 @@ describe("useDataGridColumnLayout", () => {
     document.querySelectorAll("[data-column-header-drag-preview]").forEach((element) => element.remove());
     vi.unstubAllGlobals();
   });
+  it("shows only valid requested columns, persists the selection, and restores all columns", async () => {
+    vi.useFakeTimers();
+    const scope = effectScope();
+    const keys = ["id", "internal", "email", "created"];
+    const state = scope.run(() =>
+      useDataGridColumnLayoutState({
+        columns: ref(keys),
+        displayableColumnIndexes: ref([0, 2, 3]),
+        allNullColumnIndexes: ref([]),
+        columnOrderKeys: ref(keys),
+        layoutScopeKey: ref("show-only-regression"),
+        tableScopeKey: ref(""),
+        hideNullColumns: ref(false),
+        onHideNullColumnsChange: vi.fn(),
+      }),
+    )!;
+    try {
+      state.hideColumns([2]);
+      state.showOnlyColumns([2, 2, 1, -1, 999, NaN]);
+      expect(state.visibleColumnIndexes.value).toEqual([2]);
+      state.showOnlyColumns([]);
+      state.showOnlyColumns([999]);
+      expect(state.visibleColumnIndexes.value).toEqual([2]);
+      await vi.advanceTimersByTimeAsync(101);
+      expect(loadDataGridColumnLayout("show-only-regression", keys)?.hiddenKeys).toEqual(["id", "created"]);
+      state.showAllColumns();
+      expect(state.visibleColumnIndexes.value).toEqual([0, 2, 3]);
+      await vi.advanceTimersByTimeAsync(101);
+      expect(loadDataGridColumnLayout("show-only-regression", keys)?.hiddenKeys).toEqual([]);
+    } finally {
+      scope.stop();
+      vi.useRealTimers();
+    }
+  });
+
   it("builds cumulative offsets", () => {
     expect(dataGridColumnOffsets([80, 120, 60])).toEqual([0, 80, 200, 260]);
   });
@@ -38,6 +113,45 @@ describe("useDataGridColumnLayout", () => {
       beforeWidth: 0,
       afterWidth: 0,
     });
+  });
+
+  it("keeps rendered columns stable while scrolling inside the same buffered window", async () => {
+    const scrollLeft = ref(100);
+    const columnNames = ref(Array.from({ length: 40 }, (_, index) => `column_${index}`));
+    const visibleColumnIndexes = ref(columnNames.value.map((_, index) => index));
+    const renderedColumnWidths = ref(columnNames.value.map(() => 100));
+    const scope = effectScope();
+    const layout = scope.run(() =>
+      useDataGridColumnLayout({
+        columnNames,
+        visibleColumnIndexes,
+        renderedColumnWidths,
+        scrollLeft,
+        viewportWidth: ref(500),
+        rowNumberWidth: ref(40),
+      }),
+    )!;
+
+    const firstWindow = layout.horizontalColumnWindow.value;
+    const firstColumns = layout.renderedGridColumns.value;
+    const renderedColumnUpdates = vi.fn();
+    const stopWatching = watch(layout.renderedGridColumns, renderedColumnUpdates, { flush: "sync" });
+
+    for (let position = 101; position <= 140; position += 1) scrollLeft.value = position;
+    await nextTick();
+
+    expect(layout.horizontalColumnWindow.value).toBe(firstWindow);
+    expect(layout.renderedGridColumns.value).toBe(firstColumns);
+    expect(renderedColumnUpdates).not.toHaveBeenCalled();
+
+    scrollLeft.value = 1_500;
+    await nextTick();
+
+    expect(layout.horizontalColumnWindow.value).not.toBe(firstWindow);
+    expect(layout.renderedGridColumns.value).not.toBe(firstColumns);
+    expect(renderedColumnUpdates).toHaveBeenCalledTimes(1);
+    stopWatching();
+    scope.stop();
   });
 
   it("accelerates column drag scrolling toward the viewport edges", () => {
@@ -230,6 +344,83 @@ describe("useDataGridColumnLayout", () => {
 
     scope.stop();
     expect(JSON.parse(localStorage.getItem("dbx-data-grid-column-layout:visibility-null-column-layout")!)).toMatchObject({ hiddenKeys: ["empty\0\0"] });
+  });
+
+  it("hides a batch of columns in one commit and persists the hidden keys", () => {
+    const scope = effectScope();
+    const state = scope.run(() =>
+      useDataGridColumnLayoutState({
+        columns: ref(["id", "name", "email", "phone"]),
+        sourceColumns: ref(undefined),
+        commentByColumn: ref(new Map()),
+        displayableColumnIndexes: ref([0, 1, 2, 3]),
+        allNullColumnIndexes: ref([]),
+        columnOrderKeys: ref(["id\0\0", "name\0\0", "email\0\0", "phone\0\0"]),
+        layoutScopeKey: ref("batch-hide-layout"),
+        tableScopeKey: ref(""),
+      }),
+    )!;
+
+    state.hideColumns([1, 2]);
+    expect(state.visibleColumnIndexes.value).toEqual([0, 3]);
+    expect(state.hiddenColumnCount.value).toBe(2);
+
+    // 重复索引与已隐藏索引不会改变结果（幂等）
+    state.hideColumns([1, 2]);
+    expect(state.visibleColumnIndexes.value).toEqual([0, 3]);
+
+    state.showAllColumns();
+    expect(state.visibleColumnIndexes.value).toEqual([0, 1, 2, 3]);
+
+    state.hideColumns([3]);
+    state.toggleColumnVisibility(0);
+    scope.stop();
+
+    expect(loadDataGridColumnLayout("batch-hide-layout")?.hiddenKeys).toEqual(["id\0\0", "phone\0\0"]);
+  });
+
+  it("keeps at least one column visible when a batch would hide every column", () => {
+    const scope = effectScope();
+    const state = scope.run(() =>
+      useDataGridColumnLayoutState({
+        columns: ref(["id", "name", "email"]),
+        sourceColumns: ref(undefined),
+        commentByColumn: ref(new Map()),
+        displayableColumnIndexes: ref([0, 1, 2]),
+        allNullColumnIndexes: ref([]),
+        columnOrderKeys: ref(["id\0\0", "name\0\0", "email\0\0"]),
+        layoutScopeKey: ref("batch-hide-last-layout"),
+        tableScopeKey: ref(""),
+      }),
+    )!;
+
+    state.hideColumns([1, 2]);
+    expect(state.visibleColumnIndexes.value).toEqual([0]);
+
+    // 只剩一列可见时再隐藏它：保持不变，不会变成空网格
+    state.hideColumns([0]);
+    expect(state.visibleColumnIndexes.value).toEqual([0]);
+    scope.stop();
+  });
+
+  it("treats an empty batch hide as a no-op", () => {
+    const scope = effectScope();
+    const state = scope.run(() =>
+      useDataGridColumnLayoutState({
+        columns: ref(["id", "name", "email"]),
+        sourceColumns: ref(undefined),
+        commentByColumn: ref(new Map()),
+        displayableColumnIndexes: ref([0, 1, 2]),
+        allNullColumnIndexes: ref([]),
+        columnOrderKeys: ref(["id\0\0", "name\0\0", "email\0\0"]),
+        layoutScopeKey: ref("batch-hide-empty-layout"),
+        tableScopeKey: ref(""),
+      }),
+    )!;
+
+    state.hideColumns([]);
+    expect(state.visibleColumnIndexes.value).toEqual([0, 1, 2]);
+    scope.stop();
   });
 
   it("returns ordered layout options with visibility state and reorders hidden fields", () => {

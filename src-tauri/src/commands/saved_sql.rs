@@ -95,6 +95,16 @@ pub async fn save_saved_sql_file(state: State<'_, Arc<AppState>>, file: SavedSql
 }
 
 #[tauri::command]
+pub async fn save_default_query_content(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+    sql: String,
+    updated_at: String,
+) -> Result<(), String> {
+    state.storage.save_default_query_content(&id, &sql, &updated_at).await
+}
+
+#[tauri::command]
 pub async fn delete_saved_sql_file(state: State<'_, Arc<AppState>>, id: String) -> Result<(), String> {
     state.storage.delete_saved_sql_file(&id).await
 }
@@ -323,7 +333,7 @@ fn normalized_relative_path(relative: &str) -> Option<PathBuf> {
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect::<String>()
 }
 
 fn sync_conflict(path: &str, reason: &str) -> String {

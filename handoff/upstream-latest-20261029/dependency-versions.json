@@ -1,0 +1,1226 @@
+{
+  "npm": {
+    "@babel/runtime": {
+      "latest_stable": "8.0.8",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40babel%2Fruntime/latest"
+    },
+    "@codemirror/autocomplete": {
+      "latest_stable": "6.20.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Fautocomplete/latest"
+    },
+    "@codemirror/commands": {
+      "latest_stable": "6.11.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Fcommands/latest"
+    },
+    "@codemirror/lang-html": {
+      "latest_stable": "6.4.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flang-html/latest"
+    },
+    "@codemirror/lang-json": {
+      "latest_stable": "6.0.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flang-json/latest"
+    },
+    "@codemirror/lang-sql": {
+      "latest_stable": "6.10.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flang-sql/latest"
+    },
+    "@codemirror/lang-xml": {
+      "latest_stable": "6.1.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flang-xml/latest"
+    },
+    "@codemirror/lang-yaml": {
+      "latest_stable": "6.1.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flang-yaml/latest"
+    },
+    "@codemirror/language": {
+      "latest_stable": "6.13.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flanguage/latest"
+    },
+    "@codemirror/legacy-modes": {
+      "latest_stable": "6.5.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flegacy-modes/latest"
+    },
+    "@codemirror/lint": {
+      "latest_stable": "6.9.7",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Flint/latest"
+    },
+    "@codemirror/search": {
+      "latest_stable": "6.7.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Fsearch/latest"
+    },
+    "@codemirror/state": {
+      "latest_stable": "6.7.6",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Fstate/latest"
+    },
+    "@codemirror/theme-one-dark": {
+      "latest_stable": "6.1.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Ftheme-one-dark/latest"
+    },
+    "@codemirror/view": {
+      "latest_stable": "6.43.15",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40codemirror%2Fview/latest"
+    },
+    "@internationalized/date": {
+      "latest_stable": "3.12.4",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/%40internationalized%2Fdate/latest"
+    },
+    "@lezer/common": {
+      "latest_stable": "1.5.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40lezer%2Fcommon/latest"
+    },
+    "@lezer/highlight": {
+      "latest_stable": "1.2.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40lezer%2Fhighlight/latest"
+    },
+    "@lucide/vue": {
+      "latest_stable": "1.64.0",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/%40lucide%2Fvue/latest"
+    },
+    "@msgpack/msgpack": {
+      "latest_stable": "3.1.3",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/%40msgpack%2Fmsgpack/latest"
+    },
+    "@noble/ciphers": {
+      "latest_stable": "2.4.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40noble%2Fciphers/latest"
+    },
+    "@replit/codemirror-vim": {
+      "latest_stable": "6.4.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40replit%2Fcodemirror-vim/latest"
+    },
+    "@tauri-apps/api": {
+      "latest_stable": "2.12.4",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fapi/latest"
+    },
+    "@tauri-apps/plugin-clipboard-manager": {
+      "latest_stable": "2.5.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fplugin-clipboard-manager/latest"
+    },
+    "@tauri-apps/plugin-dialog": {
+      "latest_stable": "2.8.4",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fplugin-dialog/latest"
+    },
+    "@tauri-apps/plugin-fs": {
+      "latest_stable": "2.7.1",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fplugin-fs/latest"
+    },
+    "@tauri-apps/plugin-shell": {
+      "latest_stable": "2.6.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fplugin-shell/latest"
+    },
+    "@tauri-apps/plugin-updater": {
+      "latest_stable": "2.14.1",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fplugin-updater/latest"
+    },
+    "@uiw/codemirror-theme-duotone": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-duotone/latest"
+    },
+    "@uiw/codemirror-theme-material": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-material/latest"
+    },
+    "@uiw/codemirror-theme-nord": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-nord/latest"
+    },
+    "@uiw/codemirror-theme-okaidia": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-okaidia/latest"
+    },
+    "@uiw/codemirror-theme-vscode": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-vscode/latest"
+    },
+    "@uiw/codemirror-theme-xcode": {
+      "latest_stable": "4.25.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40uiw%2Fcodemirror-theme-xcode/latest"
+    },
+    "@vue-flow/background": {
+      "latest_stable": "1.3.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vue-flow%2Fbackground/latest"
+    },
+    "@vue-flow/controls": {
+      "latest_stable": "1.1.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vue-flow%2Fcontrols/latest"
+    },
+    "@vue-flow/core": {
+      "latest_stable": "1.48.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vue-flow%2Fcore/latest"
+    },
+    "@vue-flow/minimap": {
+      "latest_stable": "1.5.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vue-flow%2Fminimap/latest"
+    },
+    "@vueuse/core": {
+      "latest_stable": "15.0.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vueuse%2Fcore/latest"
+    },
+    "cbor-x": {
+      "latest_stable": "1.6.8",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/cbor-x/latest"
+    },
+    "class-variance-authority": {
+      "latest_stable": "0.7.1",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/class-variance-authority/latest"
+    },
+    "clsx": {
+      "latest_stable": "2.1.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/clsx/latest"
+    },
+    "codemirror": {
+      "latest_stable": "6.0.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/codemirror/latest"
+    },
+    "cytoscape": {
+      "latest_stable": "3.34.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/cytoscape/latest"
+    },
+    "cytoscape-fcose": {
+      "latest_stable": "2.2.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/cytoscape-fcose/latest"
+    },
+    "dayjs": {
+      "latest_stable": "1.11.23",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/dayjs/latest"
+    },
+    "diff": {
+      "latest_stable": "9.0.0",
+      "license": "BSD-3-Clause",
+      "source": "https://registry.npmjs.org/diff/latest"
+    },
+    "dom-to-image-more": {
+      "latest_stable": "3.11.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/dom-to-image-more/latest"
+    },
+    "echarts": {
+      "latest_stable": "6.1.0",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/echarts/latest"
+    },
+    "elkjs": {
+      "latest_stable": "0.12.1",
+      "license": "EPL-2.0 OR GPL-3.0-or-later",
+      "source": "https://registry.npmjs.org/elkjs/latest"
+    },
+    "fast-xml-parser": {
+      "latest_stable": "5.11.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/fast-xml-parser/latest"
+    },
+    "leaflet": {
+      "latest_stable": "1.9.4",
+      "license": "BSD-2-Clause",
+      "source": "https://registry.npmjs.org/leaflet/latest"
+    },
+    "marked": {
+      "latest_stable": "18.1.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/marked/latest"
+    },
+    "pako": {
+      "latest_stable": "3.0.3",
+      "license": "(MIT AND Zlib)",
+      "source": "https://registry.npmjs.org/pako/latest"
+    },
+    "pinia": {
+      "latest_stable": "4.1.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/pinia/latest"
+    },
+    "pinyin-pro": {
+      "latest_stable": "3.29.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/pinyin-pro/latest"
+    },
+    "proj4": {
+      "latest_stable": "2.22.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/proj4/latest"
+    },
+    "reka-ui": {
+      "latest_stable": "2.11.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/reka-ui/latest"
+    },
+    "shiki": {
+      "latest_stable": "4.5.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/shiki/latest"
+    },
+    "smol-toml": {
+      "latest_stable": "1.9.1",
+      "license": "BSD-3-Clause",
+      "source": "https://registry.npmjs.org/smol-toml/latest"
+    },
+    "splitpanes": {
+      "latest_stable": "4.1.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/splitpanes/latest"
+    },
+    "sql-formatter": {
+      "latest_stable": "15.9.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/sql-formatter/latest"
+    },
+    "tailwind-merge": {
+      "latest_stable": "3.7.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/tailwind-merge/latest"
+    },
+    "tw-animate-css": {
+      "latest_stable": "1.4.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/tw-animate-css/latest"
+    },
+    "vue": {
+      "latest_stable": "3.5.44",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vue/latest"
+    },
+    "vue-echarts": {
+      "latest_stable": "8.3.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vue-echarts/latest"
+    },
+    "vue-i18n": {
+      "latest_stable": "11.4.16",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vue-i18n/latest"
+    },
+    "vue-virtual-scroller": {
+      "latest_stable": "3.0.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vue-virtual-scroller/latest"
+    },
+    "@oxfmt/binding-darwin-arm64": {
+      "latest_stable": "0.75.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-darwin-arm64/latest"
+    },
+    "@oxlint/binding-darwin-arm64": {
+      "latest_stable": "1.90.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-darwin-arm64/latest"
+    },
+    "@tailwindcss/vite": {
+      "latest_stable": "4.3.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40tailwindcss%2Fvite/latest"
+    },
+    "@tauri-apps/cli": {
+      "latest_stable": "2.12.4",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://registry.npmjs.org/%40tauri-apps%2Fcli/latest"
+    },
+    "@types/leaflet": {
+      "latest_stable": "1.9.22",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40types%2Fleaflet/latest"
+    },
+    "@types/node": {
+      "latest_stable": "26.6.6",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40types%2Fnode/latest"
+    },
+    "@vitejs/plugin-vue": {
+      "latest_stable": "6.0.10",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vitejs%2Fplugin-vue/latest"
+    },
+    "@vitest/coverage-v8": {
+      "latest_stable": "5.0.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40vitest%2Fcoverage-v8/latest"
+    },
+    "@xmldom/xmldom": {
+      "latest_stable": "0.9.12",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40xmldom%2Fxmldom/latest"
+    },
+    "fake-indexeddb": {
+      "latest_stable": "6.2.6",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/fake-indexeddb/latest"
+    },
+    "fzstd": {
+      "latest_stable": "0.1.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/fzstd/latest"
+    },
+    "happy-dom": {
+      "latest_stable": "21.0.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/happy-dom/latest"
+    },
+    "husky": {
+      "latest_stable": "9.1.7",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/husky/latest"
+    },
+    "lint-staged": {
+      "latest_stable": "17.6.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/lint-staged/latest"
+    },
+    "oxfmt": {
+      "latest_stable": "0.75.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/oxfmt/latest"
+    },
+    "oxlint": {
+      "latest_stable": "1.90.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/oxlint/latest"
+    },
+    "shadcn-vue": {
+      "latest_stable": "2.9.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/shadcn-vue/latest"
+    },
+    "tailwindcss": {
+      "latest_stable": "4.3.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/tailwindcss/latest"
+    },
+    "tsx": {
+      "latest_stable": "4.23.15",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/tsx/latest"
+    },
+    "typescript": {
+      "latest_stable": "7.0.2",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/typescript/latest"
+    },
+    "vite": {
+      "latest_stable": "8.3.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vite/latest"
+    },
+    "vitest": {
+      "latest_stable": "5.0.5",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vitest/latest"
+    },
+    "vue-tsc": {
+      "latest_stable": "3.3.13",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vue-tsc/latest"
+    },
+    "yaml": {
+      "latest_stable": "2.9.1",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/yaml/latest"
+    },
+    "@orama/orama": {
+      "latest_stable": "3.1.18",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/%40orama%2Forama/latest"
+    },
+    "@tailwindcss/postcss": {
+      "latest_stable": "4.3.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40tailwindcss%2Fpostcss/latest"
+    },
+    "@types/mdx": {
+      "latest_stable": "2.0.14",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40types%2Fmdx/latest"
+    },
+    "@types/react": {
+      "latest_stable": "19.3.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40types%2Freact/latest"
+    },
+    "@types/react-dom": {
+      "latest_stable": "19.3.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40types%2Freact-dom/latest"
+    },
+    "fumadocs-core": {
+      "latest_stable": "16.17.9",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/fumadocs-core/latest"
+    },
+    "fumadocs-mdx": {
+      "latest_stable": "15.4.10",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/fumadocs-mdx/latest"
+    },
+    "fumadocs-ui": {
+      "latest_stable": "16.17.9",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/fumadocs-ui/latest"
+    },
+    "lucide-react": {
+      "latest_stable": "1.64.0",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/lucide-react/latest"
+    },
+    "next": {
+      "latest_stable": "16.4.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/next/latest"
+    },
+    "postcss": {
+      "latest_stable": "8.5.32",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/postcss/latest"
+    },
+    "react": {
+      "latest_stable": "19.3.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/react/latest"
+    },
+    "react-dom": {
+      "latest_stable": "19.3.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/react-dom/latest"
+    },
+    "playwright": {
+      "latest_stable": "1.64.1",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/playwright/latest"
+    },
+    "daisyui": {
+      "latest_stable": "5.7.50",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/daisyui/latest"
+    },
+    "esbuild": {
+      "latest_stable": "0.28.2",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/esbuild/latest"
+    },
+    "jsdom": {
+      "latest_stable": "30.1.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/jsdom/latest"
+    },
+    "lucide-vue-next": {
+      "latest_stable": "1.0.0",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/lucide-vue-next/latest"
+    },
+    "semver": {
+      "latest_stable": "7.8.5",
+      "license": "ISC",
+      "source": "https://registry.npmjs.org/semver/latest"
+    },
+    "vite-plugin-singlefile": {
+      "latest_stable": "2.3.4",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/vite-plugin-singlefile/latest"
+    },
+    "@sveltejs/vite-plugin-svelte": {
+      "latest_stable": "7.3.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/%40sveltejs%2Fvite-plugin-svelte/latest"
+    },
+    "svelte": {
+      "latest_stable": "5.57.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/svelte/latest"
+    }
+  },
+  "rust": {
+    "tauri-build": {
+      "latest_stable": "2.7.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-build"
+    },
+    "serde": {
+      "latest_stable": "1.0.229",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/serde"
+    },
+    "serde_json": {
+      "latest_stable": "1.0.154",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/serde_json"
+    },
+    "tempfile": {
+      "latest_stable": "3.27.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tempfile"
+    },
+    "serde_yaml_ng": {
+      "latest_stable": "0.10.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/serde_yaml_ng"
+    },
+    "base64": {
+      "latest_stable": "0.23.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/base64"
+    },
+    "log": {
+      "latest_stable": "0.4.34",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/log"
+    },
+    "tauri": {
+      "latest_stable": "2.12.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri"
+    },
+    "tauri-plugin-log": {
+      "latest_stable": "2.10.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-log"
+    },
+    "tauri-plugin-opener": {
+      "latest_stable": "2.7.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-opener"
+    },
+    "tokio-postgres": {
+      "latest_stable": "0.7.18",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio-postgres"
+    },
+    "deadpool-postgres": {
+      "latest_stable": "0.14.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/deadpool-postgres"
+    },
+    "rust_decimal": {
+      "latest_stable": "1.43.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rust_decimal"
+    },
+    "tokio": {
+      "latest_stable": "1.54.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio"
+    },
+    "uuid": {
+      "latest_stable": "1.29.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/uuid"
+    },
+    "anyhow": {
+      "latest_stable": "1.0.104",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/anyhow"
+    },
+    "chrono": {
+      "latest_stable": "0.4.45",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/chrono"
+    },
+    "tauri-plugin-deep-link": {
+      "latest_stable": "2.6.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-deep-link"
+    },
+    "tauri-plugin-dialog": {
+      "latest_stable": "2.8.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-dialog"
+    },
+    "tauri-plugin-fs": {
+      "latest_stable": "2.7.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-fs"
+    },
+    "tauri-plugin-single-instance": {
+      "latest_stable": "2.5.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-single-instance"
+    },
+    "tauri-plugin-shell": {
+      "latest_stable": "2.6.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-shell"
+    },
+    "tauri-plugin-updater": {
+      "latest_stable": "2.14.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-updater"
+    },
+    "tauri-plugin-window-state": {
+      "latest_stable": "2.5.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-window-state"
+    },
+    "redis": {
+      "latest_stable": "1.8.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/redis"
+    },
+    "rustls": {
+      "latest_stable": "0.23.46",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rustls"
+    },
+    "portpicker": {
+      "latest_stable": "0.1.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/portpicker"
+    },
+    "tiberius": {
+      "latest_stable": "0.13.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tiberius"
+    },
+    "tokio-util": {
+      "latest_stable": "0.7.20",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio-util"
+    },
+    "reqwest": {
+      "latest_stable": "0.13.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/reqwest"
+    },
+    "regex": {
+      "latest_stable": "1.13.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/regex"
+    },
+    "grep": {
+      "latest_stable": "0.4.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/grep"
+    },
+    "ignore": {
+      "latest_stable": "0.4.34",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/ignore"
+    },
+    "futures": {
+      "latest_stable": "0.3.34",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/futures"
+    },
+    "mongodb": {
+      "latest_stable": "3.9.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/mongodb"
+    },
+    "percent-encoding": {
+      "latest_stable": "2.3.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/percent-encoding"
+    },
+    "minisign-verify": {
+      "latest_stable": "0.3.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/minisign-verify"
+    },
+    "semver": {
+      "latest_stable": "1.0.28",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/semver"
+    },
+    "sha2": {
+      "latest_stable": "0.11.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/sha2"
+    },
+    "russh": {
+      "latest_stable": "0.65.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/russh"
+    },
+    "csv": {
+      "latest_stable": "1.4.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/csv"
+    },
+    "calamine": {
+      "latest_stable": "0.37.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/calamine"
+    },
+    "zip": {
+      "latest_stable": "9.1.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/zip"
+    },
+    "axum": {
+      "latest_stable": "0.8.9",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/axum"
+    },
+    "font-kit": {
+      "latest_stable": "0.14.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/font-kit"
+    },
+    "tauri-plugin-clipboard-manager": {
+      "latest_stable": "2.5.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tauri-plugin-clipboard-manager"
+    },
+    "sys-locale": {
+      "latest_stable": "0.3.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/sys-locale"
+    },
+    "sysinfo": {
+      "latest_stable": "0.40.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/sysinfo"
+    },
+    "objc2": {
+      "latest_stable": "0.6.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/objc2"
+    },
+    "objc2-app-kit": {
+      "latest_stable": "0.3.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/objc2-app-kit"
+    },
+    "objc2-foundation": {
+      "latest_stable": "0.3.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/objc2-foundation"
+    },
+    "libloading": {
+      "latest_stable": "0.9.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/libloading"
+    },
+    "gtk": {
+      "latest_stable": "0.19.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/gtk"
+    },
+    "libc": {
+      "latest_stable": "0.2.191",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/libc"
+    },
+    "webview2-com": {
+      "latest_stable": "0.39.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/webview2-com"
+    },
+    "windows": {
+      "latest_stable": "0.62.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/windows"
+    },
+    "windows-core": {
+      "latest_stable": "0.100.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/windows-core"
+    },
+    "windows-sys": {
+      "latest_stable": "0.61.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/windows-sys"
+    },
+    "openssl-sys": {
+      "latest_stable": "0.9.117",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/openssl-sys"
+    },
+    "aws-lc-sys": {
+      "latest_stable": "0.47.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/aws-lc-sys"
+    },
+    "toml": {
+      "latest_stable": "1.1.8+spec-1.1.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/toml"
+    },
+    "ed25519-dalek": {
+      "latest_stable": "3.0.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/ed25519-dalek"
+    },
+    "getrandom": {
+      "latest_stable": "0.4.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/getrandom"
+    },
+    "walkdir": {
+      "latest_stable": "2.5.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/walkdir"
+    },
+    "chrono-tz": {
+      "latest_stable": "0.10.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/chrono-tz"
+    },
+    "duckdb": {
+      "latest_stable": "1.20000.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/duckdb"
+    },
+    "taos": {
+      "latest_stable": "0.12.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/taos"
+    },
+    "url": {
+      "latest_stable": "2.5.8",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/url"
+    },
+    "hyper-util": {
+      "latest_stable": "0.1.21",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/hyper-util"
+    },
+    "crc": {
+      "latest_stable": "3.4.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/crc"
+    },
+    "flate2": {
+      "latest_stable": "1.1.10",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/flate2"
+    },
+    "tar": {
+      "latest_stable": "0.4.46",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tar"
+    },
+    "zstd": {
+      "latest_stable": "0.14.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/zstd"
+    },
+    "json5": {
+      "latest_stable": "1.3.6",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/json5"
+    },
+    "encoding_rs": {
+      "latest_stable": "0.8.42",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/encoding_rs"
+    },
+    "sqlparser": {
+      "latest_stable": "0.63.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/sqlparser"
+    },
+    "unicode-ident": {
+      "latest_stable": "1.0.27",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/unicode-ident"
+    },
+    "winnow": {
+      "latest_stable": "1.0.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/winnow"
+    },
+    "futures-util": {
+      "latest_stable": "0.3.34",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/futures-util"
+    },
+    "notify": {
+      "latest_stable": "8.2.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/notify"
+    },
+    "serde_yaml": {
+      "latest_stable": "0.9.34+deprecated",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/serde_yaml"
+    },
+    "insta": {
+      "latest_stable": "1.49.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/insta"
+    },
+    "fs2": {
+      "latest_stable": "0.4.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/fs2"
+    },
+    "bytes": {
+      "latest_stable": "1.12.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/bytes"
+    },
+    "tower-http": {
+      "latest_stable": "0.7.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tower-http"
+    },
+    "utoipa": {
+      "latest_stable": "6.0.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/utoipa"
+    },
+    "argon2": {
+      "latest_stable": "0.6.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/argon2"
+    },
+    "tracing-subscriber": {
+      "latest_stable": "0.3.23",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tracing-subscriber"
+    },
+    "tracing": {
+      "latest_stable": "0.1.44",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tracing"
+    },
+    "async-stream": {
+      "latest_stable": "0.3.6",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/async-stream"
+    },
+    "aes-gcm": {
+      "latest_stable": "0.11.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/aes-gcm"
+    },
+    "pbkdf2": {
+      "latest_stable": "0.13.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/pbkdf2"
+    },
+    "rust-embed": {
+      "latest_stable": "8.13.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rust-embed"
+    },
+    "mime_guess": {
+      "latest_stable": "2.0.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/mime_guess"
+    },
+    "rayon": {
+      "latest_stable": "1.12.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rayon"
+    },
+    "rusqlite": {
+      "latest_stable": "0.41.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rusqlite"
+    },
+    "dirs": {
+      "latest_stable": "7.0.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/dirs"
+    },
+    "async-trait": {
+      "latest_stable": "0.1.92",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/async-trait"
+    },
+    "unicode-width": {
+      "latest_stable": "0.2.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/unicode-width"
+    },
+    "nix": {
+      "latest_stable": "0.31.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/nix"
+    },
+    "mysql_async": {
+      "latest_stable": "0.37.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/mysql_async"
+    },
+    "mysql_common": {
+      "latest_stable": "0.38.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/mysql_common"
+    },
+    "glob": {
+      "latest_stable": "0.3.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/glob"
+    },
+    "httpdate": {
+      "latest_stable": "1.0.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/httpdate"
+    },
+    "env_logger": {
+      "latest_stable": "0.11.11",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/env_logger"
+    },
+    "rmcp": {
+      "latest_stable": "3.8.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rmcp"
+    },
+    "schemars": {
+      "latest_stable": "1.2.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/schemars"
+    },
+    "security-framework": {
+      "latest_stable": "3.7.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/security-framework"
+    },
+    "rustls-pemfile": {
+      "latest_stable": "2.2.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rustls-pemfile"
+    },
+    "tokio-rustls": {
+      "latest_stable": "0.26.6",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio-rustls"
+    },
+    "webpki-roots": {
+      "latest_stable": "1.0.11",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/webpki-roots"
+    },
+    "prometheus-parse": {
+      "latest_stable": "0.2.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/prometheus-parse"
+    },
+    "rumqttc": {
+      "latest_stable": "0.25.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/rumqttc"
+    },
+    "ssfmt": {
+      "latest_stable": "0.1.2",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/ssfmt"
+    },
+    "quick-xml": {
+      "latest_stable": "0.42.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/quick-xml"
+    },
+    "jsonwebtoken": {
+      "latest_stable": "11.1.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/jsonwebtoken"
+    },
+    "aes": {
+      "latest_stable": "0.9.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/aes"
+    },
+    "cbc": {
+      "latest_stable": "0.2.1",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/cbc"
+    },
+    "keyring": {
+      "latest_stable": "4.2.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/keyring"
+    },
+    "sha1": {
+      "latest_stable": "0.11.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/sha1"
+    },
+    "minijinja": {
+      "latest_stable": "3.0.4",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/minijinja"
+    },
+    "arc-swap": {
+      "latest_stable": "1.9.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/arc-swap"
+    },
+    "secret-service": {
+      "latest_stable": "5.2.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/secret-service"
+    },
+    "tokio-postgres-rustls": {
+      "latest_stable": "0.14.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio-postgres-rustls"
+    },
+    "postgres-openssl": {
+      "latest_stable": "0.5.3",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/postgres-openssl"
+    },
+    "openssl": {
+      "latest_stable": "0.10.81",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/openssl"
+    },
+    "libsqlite3-hotbundle": {
+      "latest_stable": "1.540100.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/libsqlite3-hotbundle"
+    },
+    "aws-sdk-dynamodb": {
+      "latest_stable": "1.135.0",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/aws-sdk-dynamodb"
+    },
+    "pageant": {
+      "latest_stable": "0.2.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/pageant"
+    },
+    "tokio-openssl": {
+      "latest_stable": "0.6.5",
+      "license": null,
+      "source": "https://crates.io/api/v1/crates/tokio-openssl"
+    }
+  }
+}
