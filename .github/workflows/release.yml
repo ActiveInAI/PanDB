@@ -601,6 +601,7 @@ jobs:
     environment: release-signing
     # The vendored loader is a tracked Cargo input, so Rust compile caching is safe.
     env:
+      RUSTUP_TOOLCHAIN: nightly-2026-10-25
       CARGO_INCREMENTAL: "0"
       # An env RUSTFLAGS replaces .cargo/config.toml target rustflags, so the
       # 8 MiB main-thread stack must be repeated here: without it the legacy PE
@@ -631,7 +632,7 @@ jobs:
       - name: Setup Rust for Windows 7
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
 
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
@@ -772,6 +773,7 @@ jobs:
           - target: x86_64-win7-windows-msvc
             arch: x86_64
     env:
+      RUSTUP_TOOLCHAIN: nightly-2026-10-25
       CARGO_INCREMENTAL: "0"
       # An env RUSTFLAGS replaces .cargo/config.toml target rustflags, so the
       # 8 MiB main-thread stack must be repeated here: without it the legacy PE
@@ -797,7 +799,7 @@ jobs:
       - name: Setup Rust for Windows 7
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
 
       - name: Install NASM

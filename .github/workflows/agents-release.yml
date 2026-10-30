@@ -906,6 +906,7 @@ jobs:
             win7: true
     runs-on: ${{ matrix.runner }}
     env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.win7 == true && 'nightly-2026-10-25' || '1.99.1' }}
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/duckdb-driver
       RUSTC_WRAPPER: sccache
@@ -920,7 +921,7 @@ jobs:
         if: matrix.win7 == true
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
       - uses: actions/setup-python@v7.1.0
         if: runner.os == 'Windows'
@@ -1141,6 +1142,7 @@ jobs:
             win7: true
     runs-on: ${{ matrix.runner }}
     env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.win7 == true && 'nightly-2026-10-25' || '1.99.1' }}
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/tdengine-driver
       RUSTC_WRAPPER: sccache
@@ -1155,7 +1157,7 @@ jobs:
         if: matrix.win7 == true
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         with:

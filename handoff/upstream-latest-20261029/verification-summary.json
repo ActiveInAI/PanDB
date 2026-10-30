@@ -41,8 +41,9 @@
     "exported_files": 1486
   },
   "github_script_tests": {
-    "passed": 314,
-    "failed": 0
+    "passed": 321,
+    "failed": 0,
+    "nightly_selection_regressions": 7
   },
   "go_modules": {
     "toolchain": "go1.27.3",
@@ -125,5 +126,6 @@
     "Source update; installation-package publication and production deployment were not performed.",
     "Live vendor databases and legacy Windows machines were not used for acceptance.",
     "Compatibility pins and upstream unresolved RSA/maintenance advisories are documented; no claim of globally zero vulnerabilities."
-  ]
+  ],
+  "win7_build_toolchain": "All seven existing nightly jobs explicitly set RUSTUP_TOOLCHAIN; modern matrix legs retain1.99.1. Regression tests red before the fix and green after it. No legacy OS runtime acceptance claimed."
 }

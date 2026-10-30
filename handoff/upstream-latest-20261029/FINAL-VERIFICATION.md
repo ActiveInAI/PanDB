@@ -1,6 +1,6 @@
 # PanDB 同步与依赖升级验收（2026-10-30）
 
-交付目标：`ActiveInAI/PanDB/main`。上游基线：`6bac6034b5b3e17780d49b80363db026b6a7003e`。功能源码冻结于 `f2a5f0b8`；`a1be700a` 增强 Nix 依赖验证，已比较其功能源码字节一致。最后的插件发布模板默认值与项目 Node26.13.0 / Go1.27.3 / CLI0.1.9 对齐，314项工作流脚本再次通过。
+交付目标：`ActiveInAI/PanDB/main`。上游基线：`6bac6034b5b3e17780d49b80363db026b6a7003e`。功能源码冻结于 `f2a5f0b8`；`a1be700a` 增强 Nix 依赖验证，已比较其功能源码字节一致。最后的插件发布模板默认值与项目 Node26.13.0 / Go1.27.3 / CLI0.1.9 对齐，321项工作流脚本再次通过。
 
 ## 观察到的通过结果
 
@@ -13,7 +13,7 @@
 | Windows Pageant | 真实内核mapping release回归及既有用例合计13通过，包括恶意长度、边界与SID生命周期 |
 | 前端 | Node26下format/lint/typecheck/全量test及生产build通过 |
 | 文档 | Node26生产build及postbuild通过；266索引页、270本地化页、1486导出文件 |
-| GitHub脚本 | 314通过 |
+| GitHub脚本 | 321通过，含7个nightly选择回归 |
 | Go | Go1.27.3下21模块build和short unit命令通过 |
 | Java | 持久JUnit报告读回527通过，无失败和跳过 |
 | 插件SDK | Node26开发宿主build及58测试通过；Rust CLI23、packager8通过 |

@@ -11,6 +11,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 120
     env:
+      RUSTUP_TOOLCHAIN: nightly-2026-10-25
       CARGO_INCREMENTAL: "0"
       # Keep the Win7/Server 2012 R2 main-thread stack at 8 MiB: an env
       # RUSTFLAGS replaces the .cargo/config.toml target rustflags.
@@ -50,7 +51,7 @@ jobs:
       - name: Setup Rust for Windows 7
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
 
       - name: Rust cache

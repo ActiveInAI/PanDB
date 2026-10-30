@@ -158,3 +158,9 @@
 - 最新MC3.54.1默认桌面完整build/link已exit0，8m18s；实际Cargo native archive七种旧密码格式全部读回、wrong-key拒绝、SHA不变。
 - Node26 dev-host再次build/test58通过；工作流脚本314再次通过；可复用插件发布模板默认Node26.13.0、Go1.27.3、CLI0.1.9（当前npmlatest，与源码版本一致）。
 - 当前进入元数据收口及普通main合并推送；功能代码不再改变。将记录已经手工整合的上游6bac父节点，并用以原main为第一父节点的正常merge交付，便于git revert -m1回退。推送只包含明确branch ref，关闭followTags，禁止force。
+
+## 主分支传输与CI工具链收口
+
+- 首次main推送被GitHub index-pack拒绝，main仍为b74f8b14，未更新。原因是上游浅历史中缺失ancestor对象efcdabe；已从原上游补全历史（67→9262提交，is-shallow=false），缺失对象可读取，connectivity fsck通过。后续改用完整pack传输，关闭followTags，保持普通fast-forward推送。
+- 在推送前复查发现新rust-toolchain.toml会覆盖仅rustup-default的Win7 nightly job；dtolnay action确实只设置default。七条既有nightly job现显式RUSTUP_TOOLCHAIN，混合agent matrix的现代leg仍用项目1.99.1。新增7回归先红后绿，脚本总计321通过，4份YAML解析通过。
+- 这是CI配置修复，运行时源码仍与f2a5相同。旧88854bf7 rollout未成功推送，保留为本地草稿。最终release将重新以原main为第一父节点，单个merge可revert。

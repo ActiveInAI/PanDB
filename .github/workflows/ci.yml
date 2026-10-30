@@ -414,7 +414,7 @@ jobs:
       SCCACHE_IDLE_TIMEOUT: "0"
       # Single source for the job's nightly pin: the toolchain step and the
       # prebuilt AWS-LC artifact name must move together.
-      WIN7_NIGHTLY_TOOLCHAIN: nightly-2026-10-25
+      RUSTUP_TOOLCHAIN: nightly-2026-10-25
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -435,7 +435,7 @@ jobs:
       - name: Setup Rust for Windows 7
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: ${{ env.WIN7_NIGHTLY_TOOLCHAIN }}
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
 
       # build-std makes this rustc invocation reach the Windows 32K command-line limit;
@@ -471,7 +471,7 @@ jobs:
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          WIN7_PREBUILT_ARTIFACT_NAME: win7-aws-lc-v3-${{ runner.os }}-${{ env.WIN7_NIGHTLY_TOOLCHAIN }}-${{ hashFiles('.github/fixtures/win7-aws-lc-cache/Cargo.toml', '.github/fixtures/win7-aws-lc-cache/Cargo.lock') }}
+          WIN7_PREBUILT_ARTIFACT_NAME: win7-aws-lc-v3-${{ runner.os }}-${{ env.RUSTUP_TOOLCHAIN }}-${{ hashFiles('.github/fixtures/win7-aws-lc-cache/Cargo.toml', '.github/fixtures/win7-aws-lc-cache/Cargo.lock') }}
         run: node .github/scripts/find-win7-prebuilt-artifact.mjs
 
       - name: Download prebuilt Win7 AWS-LC artifact
@@ -586,7 +586,7 @@ jobs:
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          WIN7_PREBUILT_ARTIFACT_NAME: win7-openssl-v1-${{ runner.os }}-${{ env.WIN7_NIGHTLY_TOOLCHAIN }}-${{ hashFiles('.github/fixtures/win7-openssl-cache/Cargo.toml', '.github/fixtures/win7-openssl-cache/Cargo.lock') }}
+          WIN7_PREBUILT_ARTIFACT_NAME: win7-openssl-v1-${{ runner.os }}-${{ env.RUSTUP_TOOLCHAIN }}-${{ hashFiles('.github/fixtures/win7-openssl-cache/Cargo.toml', '.github/fixtures/win7-openssl-cache/Cargo.lock') }}
         run: node .github/scripts/find-win7-prebuilt-artifact.mjs
 
       - name: Download prebuilt Win7 OpenSSL artifact
@@ -845,6 +845,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     env:
+      RUSTUP_TOOLCHAIN: nightly-2026-10-25
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/duckdb-driver
       # An env RUSTFLAGS replaces .cargo/config.toml target rustflags, so the
@@ -866,7 +867,7 @@ jobs:
       - name: Setup Rust for Windows 7
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-10-25
+          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
           components: rust-src
 
       - name: Setup MSVC
