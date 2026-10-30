@@ -140,3 +140,14 @@
 - 默认桌面完整cargo build已本轮观察exit0（4m54s），后续core变更需最终再check/link。
 - SQLite旧加密fixture已重建到work/pandb-upgrade-20261030/sqlite-compat：旧3.51.3生成、新3.54.0只读验证、wrongkey拒绝、SHA不变均exit0，有result.json持久证据。
 - 未更新main、未部署或发布安装包。新增upstream缓存清理schedule与自动issue-label同步在fork改为显式手动运行，避免同步代码引入未授权外部写入。已有contributors更新被保留。
+
+## 2026-10-30 最终验证阶段（持久日志以实际结果为准）
+
+- 第一轮完整nextest：11526执行、11507通过、19失败、370原有跳过。根因已分别修正：JWT11明确AWS-LC功能；MQTT库显式选provider；agent依赖registry恢复既有上游地址；Linux窗口标题保持PanDB；SQLParser新版诊断字串兼容且保留结构重解析；ZIP9更早拒绝伪造尺寸的回归验证；SSE测试服务完整读取HTTP请求。
+- 第二轮同范围nextest（采用line-tables-only调试信息、8MiB栈）：11526全部通过，370跳过，日志rust-workspace-runtime-fixes.log。SQL-core713与原始SQL分析46个集成case独立通过；方言173通过。
+- 严格CI全target Clippy新代码已exit0（rust-clippy-runtime-final.log）；默认桌面完整build exit0（desktop-runtime-final-build.log，7m46s）。
+- 真正DuckDB native2.0.0 stdio协议、BIGINT/中文/DECIMAL、Parquet读写、checkpoint与重开全部通过，证据duckdb-acceptance/result.json。DuckDB独立all-target check和TDengine当前check都通过。
+- Vendored组件单独OSV复查发现Pageant0.2.1实际缺CVE-2026-102820长度检查；已补官方边界修复，并修复同处SID/安全属性指针生命周期和handle/view错误处理；Windows target check与-Dwarnings Clippy通过。维护CI新增真实Windows内核mapping release回归。
+- SQLite3.54.0存在已公布的32位缺陷；保持MC稳定2.6.1，拷贝官方维护提交30f1的3.54.1内核与头文件（官方SHA3一致），稳定tag生成器重生成，全部codec hook计数不变。七种3.51.3旧密码文件读取、wrong-key拒绝、SHA不变再次全过。现在vendor版本1.540100.0；还需最后默认build/跨平台收口。
+- GitHub run41029991835（31fb3836）：Windows、macOS、Nix全成功；最后native安全补丁会再推维护分支验证。main未更新，已读回其protected=false，SHA仍b74f8b14。
+- DOCX完整ZIP/逐段文本复查0社区词/链接残留，无媒体部件；输出绝对路径仍为Downloads/PanDB_已删除社区相关内容.docx。

@@ -1091,9 +1091,7 @@ fn is_postgres_create_procedure_parser_gap(sql: &str, error: &ParserError) -> bo
         return false;
     };
     let error_matches_gap = if layout.or_replace_indexes.is_some() {
-        message.starts_with(
-            "Expected: [EXTERNAL] TABLE or [MATERIALIZED] VIEW or FUNCTION after CREATE OR REPLACE, found: PROCEDURE at ",
-        )
+        message.starts_with("Expected: ") && message.contains(" after CREATE OR REPLACE, found: PROCEDURE at ")
     } else {
         message.starts_with(&format!(
             "Expected: an SQL statement, found: {} at ",

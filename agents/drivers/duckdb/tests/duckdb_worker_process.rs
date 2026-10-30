@@ -639,11 +639,12 @@ async fn wait_until_process_exits(pid: u32, timeout: Duration) {
 
 fn process_exists(pid: u32) -> bool {
     let mut system =
-        System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new().with_memory()));
+        System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_memory()))
+            .expect("worker process inspection must be available for this test");
     system.refresh_processes_specifics(
         ProcessesToUpdate::Some(&[Pid::from(pid as usize)]),
         true,
-        ProcessRefreshKind::new().with_memory(),
+        ProcessRefreshKind::nothing().with_memory(),
     );
     system.process(Pid::from(pid as usize)).is_some()
 }

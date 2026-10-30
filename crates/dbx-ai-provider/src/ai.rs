@@ -8676,12 +8676,38 @@ mod tests {
 
     #[tokio::test]
     async fn openai_tool_stream_finishes_without_done_marker_after_finish_reason() {
-        use tokio::io::AsyncWriteExt;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
+            // Consume the complete request before replying, as a real HTTP server does.
+            // Leaving unread request bytes can reset the connection on newer Hyper clients.
+            let mut request = Vec::new();
+            let mut chunk = [0_u8; 4096];
+            let header_end = loop {
+                if let Some(index) = request.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
+                    break index + 4;
+                }
+                let read = socket.read(&mut chunk).await.unwrap();
+                assert!(read > 0, "incomplete request headers");
+                request.extend_from_slice(&chunk[..read]);
+            };
+            let headers = String::from_utf8(request[..header_end].to_vec()).unwrap();
+            assert!(headers.starts_with("POST "));
+            let content_length = headers
+                .lines()
+                .find_map(|line| {
+                    let (name, value) = line.split_once(':')?;
+                    name.eq_ignore_ascii_case("content-length").then(|| value.trim().parse::<usize>().unwrap())
+                })
+                .unwrap_or(0);
+            while request.len() < header_end + content_length {
+                let read = socket.read(&mut chunk).await.unwrap();
+                assert!(read > 0, "incomplete request body");
+                request.extend_from_slice(&chunk[..read]);
+            }
             let payload =
                 concat!("data: {\"choices\":[{\"delta\":{\"content\":\"done\"},", "\"finish_reason\":\"stop\"}]}\n\n");
             let response = format!(
@@ -8767,7 +8793,7 @@ mod tests {
         .await
         .expect("stream should finish after the finish_reason grace period");
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "{result:?}");
         assert!(events
             .lock()
             .unwrap()

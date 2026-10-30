@@ -1,0 +1,24 @@
+{
+  "mc_base": "v2.6.1",
+  "mc_commit": "45d4ed3487bc02cb08ac73afff47c031c3f88ee0",
+  "sqlite_source_commit": "30f1abc0e6cf1d7ee792d2902cd20cebdf46b52a",
+  "sqlite3_c_official_sha3": "e2b869d3003b33c942b7dd7063604fbc53553e1b66609570df39b9b7b558ee81",
+  "sqlite_version": "3.54.1",
+  "codec_hook_counts_preserved": {
+    "sqlite3mcCheckVfs": 2,
+    "sqlite3mcFileControlPragma": 2,
+    "sqlite3mcHandleAttachKey": 2,
+    "sqlite3mcHandleMainKey": 2,
+    "sqlite3mcPagerCodec": 3,
+    "sqlite3mcOpenTempFile": 4,
+    "sqlite3mcOpenTempJournal": 3,
+    "sqlite3mcPagerHasCodec": 3,
+    "sqlite3mcInitMemoryMethods": 2,
+    "sqlite3mcIsBackupSupported": 2,
+    "sqlite3mcCodecGetKey": 3,
+    "sqlite3mc_builtin_extensions": 2,
+    "sqlite3mc_initialize": 2,
+    "sqlite3mc_shutdown": 2
+  },
+  "generated_sha256": "12baf1ca030750fba03dce59f2f8474cf764c7037448c477499570c404839ecf"
+}

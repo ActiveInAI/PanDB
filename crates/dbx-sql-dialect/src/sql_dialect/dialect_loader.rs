@@ -53,6 +53,10 @@ impl DialectRegistry {
     }
 
     pub fn get_by_kind(&self, kind: DialectKind) -> Option<LoadedDialect> {
+        // Dedicated dialects may have named catalogs without sharing a SQL family.
+        if kind == DialectKind::Unsupported {
+            return None;
+        }
         self.descriptors.read().ok().and_then(|d| d.values().find(|ld| ld.kind == kind).cloned())
     }
 
@@ -62,6 +66,9 @@ impl DialectRegistry {
     /// resolved across an entire dialect family (e.g. PostgreSQL, HighGo,
     /// KingBase all share `DialectKind::Postgres`).
     pub fn get_all_by_kind(&self, kind: DialectKind) -> Vec<LoadedDialect> {
+        if kind == DialectKind::Unsupported {
+            return Vec::new();
+        }
         self.descriptors
             .read()
             .ok()
@@ -314,6 +321,19 @@ mod tests {
             checked += 1;
         }
         assert!(checked > 0);
+    }
+
+    #[test]
+    fn dedicated_transwarp_catalog_does_not_become_an_unsupported_sql_family() {
+        let registry = DialectRegistry::new();
+        let (kind, yaml, descriptor) =
+            DialectPluginLoader::load_from_string(include_str!("../../../../plugins/dialects/transwarp.yaml"), None)
+                .unwrap();
+        assert_eq!(kind, DialectKind::Unsupported);
+        registry.register_descriptor("Transwarp", descriptor, yaml);
+        assert!(registry.get("transwarp").is_some());
+        assert!(registry.get_by_kind(DialectKind::Unsupported).is_none());
+        assert!(registry.get_all_by_kind(DialectKind::Unsupported).is_empty());
     }
 
     fn temp_dialect_dir() -> PathBuf {

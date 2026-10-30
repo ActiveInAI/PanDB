@@ -23,6 +23,8 @@ jobs:
         with:
           shared-key: pandb-maintenance-windows
           cache-on-failure: true
+      - name: Pageant shared-memory security regression
+        run: cargo test --locked -p pageant --lib --release
       - name: Check Windows desktop and security extensions
         env:
           CXXFLAGS: /std:c++17 /EHsc

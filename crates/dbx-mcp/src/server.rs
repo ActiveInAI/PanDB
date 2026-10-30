@@ -11319,7 +11319,7 @@ mod tests {
         // Discovery must apply the same v2 floor, otherwise it would disclose
         // connections that the policy has made inaccessible.
         let connections = server.list_connections(Parameters(ListConnectionsRequest {})).await;
-        assert_eq!(result_text(&connections), "No connections configured in DBX.");
+        assert_eq!(result_text(&connections), "No connections configured in PanDB.");
     }
 
     #[test]

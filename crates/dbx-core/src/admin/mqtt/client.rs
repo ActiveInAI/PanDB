@@ -1336,6 +1336,14 @@ fn build_transport(
     })
 }
 
+// Select the same provider as application startup without depending on global
+// initialization. Workspace feature unification also enables the ring backend.
+fn mqtt_tls_builder() -> rustls::ConfigBuilder<rustls::ClientConfig, rustls::WantsVerifier> {
+    rustls::ClientConfig::builder_with_provider(Arc::new(rustls::crypto::aws_lc_rs::default_provider()))
+        .with_safe_default_protocol_versions()
+        .expect("AWS-LC supports the default TLS protocol versions")
+}
+
 fn certificate_tls_configuration(auth: &MqttAuth, mode: MqttTlsVerificationMode) -> Result<TlsConfiguration, String> {
     let MqttAuth::Certificate { ca_cert_path, client_cert_path, client_key_path } = auth else {
         return Err("MQTT 证书认证配置无效".to_string());
@@ -1358,12 +1366,10 @@ fn certificate_tls_configuration(auth: &MqttAuth, mode: MqttTlsVerificationMode)
     }
 
     let builder = match mode {
-        MqttTlsVerificationMode::VerifyServerCert => {
-            rustls::ClientConfig::builder().with_root_certificates(root_cert_store)
-        }
+        MqttTlsVerificationMode::VerifyServerCert => mqtt_tls_builder().with_root_certificates(root_cert_store),
         MqttTlsVerificationMode::SkipServerCertVerification => {
             let provider = Arc::new(rustls::crypto::ring::default_provider());
-            rustls::ClientConfig::builder()
+            mqtt_tls_builder()
                 .dangerous()
                 .with_custom_certificate_verifier(Arc::new(NoCertificateVerification { provider }))
         }
@@ -1394,7 +1400,7 @@ fn verified_tls_configuration() -> TlsConfiguration {
     static CONFIG: LazyLock<TlsConfiguration> = LazyLock::new(|| {
         let mut root_cert_store = rustls::RootCertStore::empty();
         root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        let config = rustls::ClientConfig::builder().with_root_certificates(root_cert_store).with_no_client_auth();
+        let config = mqtt_tls_builder().with_root_certificates(root_cert_store).with_no_client_auth();
         TlsConfiguration::from(config)
     });
     CONFIG.clone()
@@ -1402,7 +1408,7 @@ fn verified_tls_configuration() -> TlsConfiguration {
 
 fn insecure_tls_configuration() -> TlsConfiguration {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
-    let config = rustls::ClientConfig::builder()
+    let config = mqtt_tls_builder()
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(NoCertificateVerification { provider }))
         .with_no_client_auth();

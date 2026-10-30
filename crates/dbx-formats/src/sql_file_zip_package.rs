@@ -228,6 +228,14 @@ mod tests {
 
         let destination = dir.path().join("parts");
         let error = extract_sql_file_zip_package(&package_path, &destination).unwrap_err();
-        assert!(error.contains("Failed to fully extract SQL part"), "{error}");
+        assert!(
+            error.contains("Failed to fully extract SQL part")
+                || (error.contains("Failed to extract SQL part") && error.contains("declared uncompressed size")),
+            "{error}"
+        );
+        // ZIP9 can reject the lying metadata before the bounded copy finishes.
+        // Neither rejection path may inflate the complete malicious entry onto disk.
+        let written = std::fs::metadata(destination.join("a.sql")).map(|metadata| metadata.len()).unwrap_or(0);
+        assert!(written <= 2, "unexpected extracted bytes: {written}");
     }
 }

@@ -1,0 +1,481 @@
+{
+  "date": "2026-10-30",
+  "npm": {
+    "root": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "docs": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "devhost": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "rust_registry_versions_queried": 1061,
+  "rust_unresolved_inventory": [
+    {
+      "name": "block-buffer",
+      "version": "0.10.4",
+      "lockfiles": [
+        "Cargo.lock",
+        "agents/drivers/duckdb/Cargo.lock",
+        "agents/drivers/tdengine/Cargo.lock"
+      ],
+      "ids": [
+        "GHSA-qwgh-2vcv-g2f7"
+      ]
+    },
+    {
+      "name": "proc-macro-error",
+      "version": "1.0.4",
+      "lockfiles": [
+        "Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2024-0370"
+      ]
+    },
+    {
+      "name": "rsa",
+      "version": "0.10.0-rc.18",
+      "lockfiles": [
+        "Cargo.lock",
+        "agents/drivers/duckdb/Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2023-0071"
+      ]
+    },
+    {
+      "name": "unsafe-libyaml",
+      "version": "0.2.11",
+      "lockfiles": [
+        "Cargo.lock",
+        "agents/drivers/duckdb/Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2024-0449"
+      ]
+    },
+    {
+      "name": "zbus_names",
+      "version": "4.3.5",
+      "lockfiles": [
+        "Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2026-0371"
+      ]
+    },
+    {
+      "name": "zvariant",
+      "version": "5.15.1",
+      "lockfiles": [
+        "Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2026-0370"
+      ]
+    },
+    {
+      "name": "zvariant_derive",
+      "version": "5.15.1",
+      "lockfiles": [
+        "Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2026-0372"
+      ]
+    },
+    {
+      "name": "paste",
+      "version": "1.0.15",
+      "lockfiles": [
+        "agents/drivers/tdengine/Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2024-0436"
+      ]
+    },
+    {
+      "name": "scc",
+      "version": "2.4.0",
+      "lockfiles": [
+        "agents/drivers/tdengine/Cargo.lock"
+      ],
+      "ids": [
+        "RUSTSEC-2026-0205"
+      ]
+    }
+  ],
+  "go_module_count": 21,
+  "go_graph_inventory": [
+    {
+      "module": "github.com/yuin/goldmark",
+      "version": "v1.4.13",
+      "used_by": [
+        "agents/drivers/argo-go",
+        "agents/drivers/zookeeper",
+        "agents/drivers/hive-go",
+        "agents/drivers/nebula-go",
+        "agents/drivers/cassandra-go",
+        "agents/go-common/gohive",
+        "agents/go-common/go-gssapi",
+        "agents/go-common/gosasl"
+      ],
+      "ids": [
+        "GO-2026-5320"
+      ]
+    },
+    {
+      "module": "golang.org/x/crypto",
+      "version": "v0.58.0",
+      "used_by": [
+        "agents/drivers/argo-go",
+        "agents/drivers/zookeeper",
+        "agents/drivers/hive-go",
+        "agents/drivers/etcd-go",
+        "agents/drivers/vastbase-go",
+        "agents/drivers/nebula-go",
+        "agents/drivers/cassandra-go",
+        "agents/drivers/rocketmq",
+        "agents/go-common/gohive",
+        "agents/go-common/go-gssapi",
+        "agents/go-common/gosasl"
+      ],
+      "ids": [
+        "GO-2026-5932"
+      ]
+    },
+    {
+      "module": "golang.org/x/mod",
+      "version": "v0.6.0-dev.0.20220419223038-86c51ed26bb4",
+      "used_by": [
+        "agents/drivers/argo-go",
+        "agents/drivers/zookeeper",
+        "agents/drivers/hive-go",
+        "agents/drivers/cassandra-go",
+        "agents/go-common/gohive",
+        "agents/go-common/go-gssapi",
+        "agents/go-common/gosasl"
+      ],
+      "ids": [
+        "GO-2026-6179",
+        "GO-2026-6180"
+      ]
+    },
+    {
+      "module": "gopkg.in/yaml.v2",
+      "version": "v2.2.2",
+      "used_by": [
+        "agents/drivers/argo-go",
+        "agents/drivers/zookeeper",
+        "agents/drivers/hive-go",
+        "agents/go-common/gohive",
+        "agents/go-common/go-gssapi",
+        "agents/go-common/gosasl"
+      ],
+      "ids": [
+        "GHSA-6q6q-88xp-6f2r",
+        "GHSA-r88r-gmrh-7j83",
+        "GHSA-wxc4-f4m6-wwqv",
+        "GO-2020-0036",
+        "GO-2021-0061",
+        "GO-2022-0956"
+      ]
+    },
+    {
+      "module": "github.com/go-jose/go-jose/v4",
+      "version": "v4.1.4",
+      "used_by": [
+        "agents/drivers/etcd-go",
+        "agents/drivers/rocketmq"
+      ],
+      "ids": [
+        "GHSA-4w3g-jfj2-cw2q",
+        "GHSA-mgcc-cww5-fp2q",
+        "GHSA-vvm8-gf78-28g4"
+      ]
+    },
+    {
+      "module": "github.com/golang/glog",
+      "version": "v0.0.0-20160126235308-23def4e6c14b",
+      "used_by": [
+        "agents/drivers/vastbase-go"
+      ],
+      "ids": [
+        "GHSA-6wxm-mpqj-6jpf",
+        "GO-2025-3372"
+      ]
+    },
+    {
+      "module": "golang.org/x/net",
+      "version": "v0.60.0",
+      "used_by": [
+        "agents/drivers/vastbase-go"
+      ],
+      "ids": [
+        "GO-2026-6860",
+        "GO-2026-6866"
+      ]
+    },
+    {
+      "module": "golang.org/x/oauth2",
+      "version": "v0.0.0-20180821212333-d2e6202438be",
+      "used_by": [
+        "agents/drivers/vastbase-go"
+      ],
+      "ids": [
+        "GHSA-6v2p-p543-phr9",
+        "GO-2025-3488"
+      ]
+    },
+    {
+      "module": "google.golang.org/grpc",
+      "version": "v1.31.0",
+      "used_by": [
+        "agents/drivers/vastbase-go"
+      ],
+      "ids": [
+        "GHSA-2v4p-qf9q-27wj",
+        "GHSA-hrxh-6v49-42gf",
+        "GHSA-m425-mq94-257g",
+        "GHSA-p77j-4mvh-x3m3",
+        "GHSA-qc2q-p7wx-3px3",
+        "GHSA-vp52-pcj8-j9qc",
+        "GO-2023-2153",
+        "GO-2026-4762",
+        "GO-2026-6061",
+        "GO-2026-6348",
+        "GO-2026-6441",
+        "GO-2026-6443"
+      ]
+    },
+    {
+      "module": "google.golang.org/protobuf",
+      "version": "v1.23.0",
+      "used_by": [
+        "agents/drivers/vastbase-go"
+      ],
+      "ids": [
+        "GHSA-8r3f-844c-mc37",
+        "GO-2024-2611"
+      ]
+    },
+    {
+      "module": "gopkg.in/yaml.v3",
+      "version": "v3.0.0-20200313102051-9f266ea9e77c",
+      "used_by": [
+        "agents/drivers/vastbase-go",
+        "agents/drivers/nebula-go"
+      ],
+      "ids": [
+        "GHSA-hp87-p4gw-j4gq",
+        "GO-2022-0603"
+      ]
+    },
+    {
+      "module": "github.com/gomarkdown/markdown",
+      "version": "v0.0.0-20240328165702-4d01890c35c0",
+      "used_by": [
+        "agents/drivers/cassandra-go"
+      ],
+      "ids": [
+        "GHSA-77fj-vx54-gvh7",
+        "GHSA-cv23-7vc5-jfh7",
+        "GHSA-xhr3-wf7j-h255",
+        "GO-2024-3205",
+        "GO-2026-5208"
+      ]
+    },
+    {
+      "module": "github.com/klauspost/compress",
+      "version": "v1.17.7",
+      "used_by": [
+        "agents/drivers/cassandra-go"
+      ],
+      "ids": [
+        "GHSA-259r-337f-4rfw",
+        "GO-2026-5841"
+      ]
+    },
+    {
+      "module": "github.com/labstack/echo/v4",
+      "version": "v4.15.1",
+      "used_by": [
+        "agents/drivers/cassandra-go"
+      ],
+      "ids": [
+        "GHSA-23wf-92cp-8pcj",
+        "GHSA-246p-cpwv-v3jq",
+        "GHSA-2ffq-g2xg-c22p",
+        "GHSA-375p-5qhx-8wq4",
+        "GHSA-3pmx-cf9f-34xr",
+        "GHSA-9969-6676-49h5",
+        "GHSA-99jh-6h7p-pp36",
+        "GHSA-cxf3-9h37-7rr8",
+        "GHSA-f48p-c9v4-h7xv",
+        "GHSA-h7wr-284f-5qvc",
+        "GHSA-h9g5-28mm-hx3g",
+        "GHSA-r7w9-592q-9vg4",
+        "GHSA-v753-g4cw-jm48",
+        "GHSA-vfp3-v2gw-7wfq",
+        "GHSA-xwq5-6cqp-vx96",
+        "GO-2026-6293"
+      ]
+    },
+    {
+      "module": "golang.org/x/sys",
+      "version": "v0.22.0",
+      "used_by": [
+        "agents/drivers/oracle-go"
+      ],
+      "ids": [
+        "GO-2026-5024"
+      ]
+    },
+    {
+      "module": "github.com/yuin/goldmark",
+      "version": "v1.3.5",
+      "used_by": [
+        "agents/drivers/rocketmq"
+      ],
+      "ids": [
+        "GO-2026-5320"
+      ]
+    },
+    {
+      "module": "golang.org/x/image",
+      "version": "v0.0.0-20190802002840-cff245a6509b",
+      "used_by": [
+        "agents/drivers/rocketmq"
+      ],
+      "ids": [
+        "GHSA-44p7-9xx4-hf2g",
+        "GHSA-9phm-fm57-rhg8",
+        "GHSA-j3p8-6mrq-6g7h",
+        "GHSA-q675-qj96-32m9",
+        "GHSA-qgc7-mgm3-q253",
+        "GHSA-x92r-3vfx-4cv3",
+        "GO-2023-1572",
+        "GO-2023-1989",
+        "GO-2023-1990",
+        "GO-2024-2937",
+        "GO-2026-4815",
+        "GO-2026-4961",
+        "GO-2026-4962",
+        "GO-2026-5031",
+        "GO-2026-5032",
+        "GO-2026-5061",
+        "GO-2026-5062",
+        "GO-2026-5066",
+        "GO-2026-6222"
+      ]
+    }
+  ],
+  "go_go_list_errors": [],
+  "ignored_advisory_configuration_added": false,
+  "glib_local_backport": "RUSTSEC-2024-0429; VariantStrIter::impl_get mutable vararg pointer; official release baseline SIGSEGV, patched release regression passes",
+  "block_buffer": "The queried 0.10.4 has a separate cursor field and no ReadBuffer; the published panic scenario retains cursor and subsequent digest correctness in the local compatibility harness. Registry metadata warning retained.",
+  "rsa": "RUSTSEC-2023-0071 has no patched release. Used transitively by russh/ssh-key. No claim that the upstream vulnerability is fixed.",
+  "go_openpgp": "GO-2026-5932 concerns x/crypto/openpgp; current x/crypto0.58.0 is official latest. Production import graph observed md4/pbkdf2 rather than openpgp.",
+  "vendored_registry_matches": [
+    {
+      "name": "glib",
+      "version": "0.18.5",
+      "path": "vendor/glib",
+      "ids": [
+        "GHSA-wrw7-89jp-8q8g",
+        "RUSTSEC-2024-0429"
+      ]
+    },
+    {
+      "name": "ssfmt",
+      "version": "0.1.2",
+      "path": "vendor/ssfmt",
+      "ids": []
+    },
+    {
+      "name": "webview2-com-sys",
+      "version": "0.39.1",
+      "path": "vendor/webview2-com-sys",
+      "ids": []
+    },
+    {
+      "name": "tauri-plugin-updater",
+      "version": "2.10.1",
+      "path": "vendor/tauri-plugin-updater",
+      "ids": []
+    },
+    {
+      "name": "rumqttc",
+      "version": "0.25.1",
+      "path": "vendor/rumqttc",
+      "ids": []
+    },
+    {
+      "name": "dirs-sys",
+      "version": "0.5.0",
+      "path": "vendor/dirs-sys",
+      "ids": []
+    },
+    {
+      "name": "pageant",
+      "version": "0.2.1",
+      "path": "vendor/pageant",
+      "ids": [
+        "GHSA-g4mp-vgx3-xrvm"
+      ]
+    },
+    {
+      "name": "wry",
+      "version": "0.57.1",
+      "path": "vendor/wry",
+      "ids": []
+    },
+    {
+      "name": "tiberius",
+      "version": "0.12.3",
+      "path": "vendor/tiberius",
+      "ids": []
+    }
+  ],
+  "pageant": "GHSA-g4mp-vgx3-xrvm backported: checked read bounds before allocation, 8192-byte frame limit, live SID buffer and security-attribute lifetime. Windows check/clippy passed; native release regression pending.",
+  "sqlite_native_core": {
+    "mc_base": "v2.6.1",
+    "mc_commit": "45d4ed3487bc02cb08ac73afff47c031c3f88ee0",
+    "sqlite_source_commit": "30f1abc0e6cf1d7ee792d2902cd20cebdf46b52a",
+    "sqlite3_c_official_sha3": "e2b869d3003b33c942b7dd7063604fbc53553e1b66609570df39b9b7b558ee81",
+    "sqlite_version": "3.54.1",
+    "codec_hook_counts_preserved": {
+      "sqlite3mcCheckVfs": 2,
+      "sqlite3mcFileControlPragma": 2,
+      "sqlite3mcHandleAttachKey": 2,
+      "sqlite3mcHandleMainKey": 2,
+      "sqlite3mcPagerCodec": 3,
+      "sqlite3mcOpenTempFile": 4,
+      "sqlite3mcOpenTempJournal": 3,
+      "sqlite3mcPagerHasCodec": 3,
+      "sqlite3mcInitMemoryMethods": 2,
+      "sqlite3mcIsBackupSupported": 2,
+      "sqlite3mcCodecGetKey": 3,
+      "sqlite3mc_builtin_extensions": 2,
+      "sqlite3mc_initialize": 2,
+      "sqlite3mc_shutdown": 2
+    },
+    "generated_sha256": "12baf1ca030750fba03dce59f2f8474cf764c7037448c477499570c404839ecf"
+  }
+}

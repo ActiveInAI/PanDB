@@ -1,6 +1,6 @@
 # libsqlite3-hotbundle
 
-A fork of `libsqlite3-sys` that bundles **SQLite3MultipleCiphers** - providing SQLite 3.51.3 with full encryption support.
+A fork of `libsqlite3-sys` that bundles **SQLite3MultipleCiphers** - providing SQLite 3.54.1 with full encryption support.
 
 ## Features
 
@@ -9,7 +9,7 @@ A fork of `libsqlite3-sys` that bundles **SQLite3MultipleCiphers** - providing S
 - **⚡ Full SQLite**: All standard extensions (FTS3/4/5, JSON1, RTREE, GEOPOLY, etc.)
 - **🔧 Zero Config**: Encryption "just works" - no OpenSSL dependencies
 
-**Version**: 1.540000.0 (SQLite 3.54.0 + SQLite3MultipleCiphers 2.6.1)
+**Version**: 1.540100.0 (SQLite 3.54.1 + SQLite3MultipleCiphers 2.6.1)
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Add to your `Cargo.toml`:
 rusqlite = { version = "0.38", default-features = false }
 
 # Add the hotbundle - provides SQLite3MultipleCiphers
-libsqlite3-hotbundle = "1.510300"
+libsqlite3-hotbundle = { path = "vendor/libsqlite3-hotbundle" }
 ```
 
 ### Basic Usage
@@ -84,7 +84,7 @@ let conn = Connection::open_in_memory()?;
 let version: String = conn.query_row(
     "SELECT sqlite_version()", [], |row| row.get(0)
 )?;
-assert_eq!(version, "3.51.3"); // ✅
+assert_eq!(version, "3.54.1"); // ✅
 
 // 2. Check SQLite3MultipleCiphers is active
 let mc_version: String = conn.query_row(
@@ -184,7 +184,7 @@ Choose default cipher at compile time:
 
 ```toml
 [dependencies]
-libsqlite3-hotbundle = { version = "1.510300", features = ["cipher-aes256"] }
+libsqlite3-hotbundle = { path = "vendor/libsqlite3-hotbundle", features = ["cipher-aes256"] }
 ```
 
 **Available features:**
@@ -200,7 +200,7 @@ libsqlite3-hotbundle = { version = "1.510300", features = ["cipher-aes256"] }
 ```toml
 [dependencies]
 libsqlite3-hotbundle = { 
-    version = "1.510300", 
+    path = "vendor/libsqlite3-hotbundle", 
     features = [
         "unlock_notify",    # Enable unlock notify
         "preupdate_hook",   # Enable preupdate hooks

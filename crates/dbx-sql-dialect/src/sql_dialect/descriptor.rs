@@ -76,6 +76,8 @@ impl DialectKind {
             "oracle" | "dameng" | "oceanbaseoracle" | "oceanbase" | "iris" | "yashandb" | "xugu" => {
                 Some(DialectKind::Oracle)
             }
+            // Transwarp uses dedicated table-structure SQL, not a shared DDL family.
+            "transwarp" => Some(DialectKind::Unsupported),
             // Others
             "h2" => Some(DialectKind::H2),
             "clickhouse" => Some(DialectKind::ClickHouse),
