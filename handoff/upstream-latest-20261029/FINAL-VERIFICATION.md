@@ -39,3 +39,5 @@ DOCX绝对路径：`/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区�
 结构化结果见[verification-summary.json](verification-summary.json)。原始日志与隔离验收文件位于 `/home/arch-gpt--notebook001/work/pandb-upgrade-20261030`；本地开发工作树为 `/home/arch-gpt--notebook001/dev/worktrees/pandb/upstream-latest-dependencies-20261029`。
 
 2026-10-30 支持策略调整：Windows 桌面以 Windows 11+ 为目标；停用 Win7 自动安装包与发布任务，保留标准 Windows 检查，DuckDB/TDengine Windows x64 使用标准 Rust 1.99.1 目标，Go 发布构建统一到 1.27.3。321 项脚本测试全通过，3 个 YAML 与 58 段 Bash 语法验证通过；应用功能代码未改变。
+
+现代 Windows Go agent 交叉编译额外验证：Oracle、RabbitMQ、Xugu、Kingbase 四个 x64 PE 均生成成功，构建信息均为 Go1.27.3。主分支首次安装发现 cbor-extract 可选脚本策略缺失，已显式禁用其原生加速构建并保留纯 JS 回退，未开启任意依赖脚本。独立 AI 代理工具锁文件同步、安全审计范围扩展和 Windows 检查见安全复查。

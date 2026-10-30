@@ -384,6 +384,9 @@ jobs:
       - name: Check standard Windows dependency path
         run: cargo check --locked --package dbx --no-default-features --target x86_64-pc-windows-msvc
 
+      - name: Check Windows AI proxy proof tool
+        run: cargo check --locked --manifest-path scripts/ai-proxy-12277/Cargo.toml --target x86_64-pc-windows-msvc
+
       - name: Show sccache stats
         if: always()
         continue-on-error: true

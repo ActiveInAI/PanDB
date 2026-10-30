@@ -49,7 +49,37 @@
   "go_modules": {
     "toolchain": "go1.27.3",
     "built": 21,
-    "short_unit_commands_passed": 21
+    "short_unit_commands_passed": 21,
+    "modern_windows_x64_cross_builds": [
+      {
+        "module": "oracle-go",
+        "exit": 0,
+        "seconds": 17.0,
+        "toolchain": "go1.27.3",
+        "pe_header": "MZ"
+      },
+      {
+        "module": "rabbitmq",
+        "exit": 0,
+        "seconds": 13.1,
+        "toolchain": "go1.27.3",
+        "pe_header": "MZ"
+      },
+      {
+        "module": "xugu",
+        "exit": 0,
+        "seconds": 1.2,
+        "toolchain": "go1.27.3",
+        "pe_header": "MZ"
+      },
+      {
+        "module": "kingbase-go",
+        "exit": 0,
+        "seconds": 1.5,
+        "toolchain": "go1.27.3",
+        "pe_header": "MZ"
+      }
+    ]
   },
   "java_junit": {
     "passed": 527,
@@ -138,5 +168,10 @@
     "go_toolchain": "1.27.3",
     "workflow_yaml_files_parsed": 3,
     "bash_steps_syntax_checked": 58
+  },
+  "rust_lockfile_audit": {
+    "lockfiles": 7,
+    "registry_versions": 1062,
+    "ai_proxy_tool_findings": 0
   }
 }

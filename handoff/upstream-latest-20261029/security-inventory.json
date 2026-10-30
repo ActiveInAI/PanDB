@@ -24,7 +24,7 @@
       "total": 0
     }
   },
-  "rust_registry_versions_queried": 1061,
+  "rust_registry_versions_queried": 1062,
   "rust_unresolved_inventory": [
     {
       "name": "block-buffer",
@@ -479,5 +479,21 @@
     "generated_sha256": "12baf1ca030750fba03dce59f2f8474cf764c7037448c477499570c404839ecf"
   },
   "verification_ci_run": 41043514043,
-  "verification_ci_conclusion": "success"
+  "verification_ci_conclusion": "success",
+  "rust_lockfiles_queried": [
+    "scripts/ai-proxy-12277/Cargo.lock",
+    "Cargo.lock",
+    "agents/drivers/duckdb/Cargo.lock",
+    "agents/drivers/tdengine/Cargo.lock",
+    "plugins/sdk/packager/Cargo.lock",
+    "plugins/sdk/cli/Cargo.lock",
+    "plugins/examples/hello-workbench/backend/Cargo.lock"
+  ],
+  "independent_ai_proxy_tool": {
+    "rustls": "0.23.46",
+    "rustls-webpki": "0.103.16",
+    "osv_findings": [],
+    "platform": "Windows registry proof tool",
+    "native_check": "Added to standard Windows CI; Linux check unsupported because registry module is Windows-specific"
+  }
 }

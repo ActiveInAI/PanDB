@@ -168,3 +168,7 @@
 ## 2026-10-30 Windows 支持范围收敛
 
 用户明确要求停止 Win7/Win10 适配投入。上游/依赖整合已以 23a4e4b60b2c5e383c6fd670db639c6203c8057a 推送 main 并独立读回。此后仅调整 Windows CI/发布策略与说明：Win7 bundle 分流恒 false、两个遗留发布作业停用并解除发布后续依赖、原生驱动标准 Windows 目标与 Go1.27.3，保留标准 Windows 编译及启动/PE检查。应用功能代码未改变。新增策略测试先 3 项失败、修复后全量脚本 321/321 通过；3 工作流 YAML 解析、58 Bash 步骤语法与 git diff --check 通过。历史源码/手工工具未做无关清理，不再承诺旧 Windows 验收。
+
+## 2026-10-30 最终主分支 CI 复查
+
+363ef653a 已推送并独立读回；新 CI 确认 windows-win7-bundle skipped，旧任务已自动取消。主分支首次 frontend 安装失败为 pnpm12 的 ERR_PNPM_IGNORED_BUILDS，cbor-extract@2.2.2 未声明策略；显式 allowBuilds=false，保持纯 JS 回退及脚本拒绝策略。GitHub Dependabot 指出独立 Windows AI 代理工具 Cargo.lock 为旧依赖图；按已更新清单刷新到主图当前依赖，Rustls0.23.46/WebPKI0.103.16，重新审计7锁文件1062包版本，此工具0命中。Linux cargo check 依赖通过后在 Windows 注册表模块失败（平台不适用），未宣称本机原生检查通过，已加入现有标准 Windows CI。四个 Go Windows x64 agent 交叉编译exit0、MZ头及go1.27.3元数据验证通过。

@@ -19,3 +19,7 @@
 本地及GitHub验证不等于所有真实数据库、供应商环境、旧Windows主机的用户验收。未对用户真实数据库执行迁移、未更改凭据和服务，未发布安装包。
 
 来源：[GLib公告](https://rustsec.org/advisories/RUSTSEC-2024-0429.html)、[官方修复](https://github.com/gtk-rs/gtk-rs-core/pull/1343)、[RSA公告](https://rustsec.org/advisories/RUSTSEC-2023-0071.html)、[block-buffer公告](https://osv.dev/vulnerability/GHSA-qwgh-2vcv-g2f7)、[Go OpenPGP公告](https://pkg.go.dev/vuln/GO-2026-5932)。
+
+最终 GitHub 告警复查发现独立 Windows AI 代理验证工具锁文件遗漏同步；已按其现有清单刷新依赖并对齐 Rustls 0.23.46 / WebPKI 0.103.16。重新查询全部 7 个 Rust 锁文件、1062 个 registry 包版本，此独立工具无 OSV 命中。其注册表证明模块只适用于 Windows，本机 Linux 编译不适用；已加入标准 Windows CI 原生检查。Pageant 为本地安全回移，保留 GitHub 元数据告警，不执行 dismiss。
+
+WebPKI 修复依据：[RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)。
