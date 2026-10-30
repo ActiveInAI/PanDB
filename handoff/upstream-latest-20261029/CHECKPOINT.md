@@ -151,3 +151,10 @@
 - SQLite3.54.0存在已公布的32位缺陷；保持MC稳定2.6.1，拷贝官方维护提交30f1的3.54.1内核与头文件（官方SHA3一致），稳定tag生成器重生成，全部codec hook计数不变。七种3.51.3旧密码文件读取、wrong-key拒绝、SHA不变再次全过。现在vendor版本1.540100.0；还需最后默认build/跨平台收口。
 - GitHub run41029991835（31fb3836）：Windows、macOS、Nix全成功；最后native安全补丁会再推维护分支验证。main未更新，已读回其protected=false，SHA仍b74f8b14。
 - DOCX完整ZIP/逐段文本复查0社区词/链接残留，无媒体部件；输出绝对路径仍为Downloads/PanDB_已删除社区相关内容.docx。
+
+## 交付前最终读回
+
+- a1be700a的CI41043514043全部success；Nix已实际执行dbx-cargo-deps源vendoring，不是仅eval。Windows Pageant真实release13测试通过。
+- 最新MC3.54.1默认桌面完整build/link已exit0，8m18s；实际Cargo native archive七种旧密码格式全部读回、wrong-key拒绝、SHA不变。
+- Node26 dev-host再次build/test58通过；工作流脚本314再次通过；可复用插件发布模板默认Node26.13.0、Go1.27.3、CLI0.1.9（当前npmlatest，与源码版本一致）。
+- 当前进入元数据收口及普通main合并推送；功能代码不再改变。将记录已经手工整合的上游6bac父节点，并用以原main为第一父节点的正常merge交付，便于git revert -m1回退。推送只包含明确branch ref，关闭followTags，禁止force。

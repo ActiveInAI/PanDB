@@ -27,12 +27,12 @@ on:
         required: false
         type: string
       node-version:
-        default: "22"
+        default: "26.13.0"
         required: false
         type: string
       go-version:
         description: Go version to install; leave empty for plugins without a Go backend
-        default: "1.22.x"
+        default: "1.27.3"
         required: false
         type: string
       rust-toolchain:
@@ -47,7 +47,7 @@ on:
         type: string
       plugin-cli-version:
         description: Published @dbx-app/plugin-cli version used to package the plugin
-        default: "0.1.2"
+        default: "0.1.9"
         required: false
         type: string
       install-plugin-cli:

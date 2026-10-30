@@ -10,7 +10,7 @@
 | PostgreSQL | 固定GaussDB兼容fork ac8ad476 | 保留GaussDB与现有协议扩展；未将源码不同的上游fork HEAD盲目替换 |
 | SQL Server | tiberius0.12.3 + 自有补丁 | 注册表0.13缺少send_attention、旧TDS、损坏UTF16恢复；使用当前OpenSSL保留功能 |
 | 本机更新器 | 2.10.1 + 安全扩展，ZIP9 | 注册表2.14缺package_kind、签名离线restore_update与受控安装接口；移除其旧ZIP4间接依赖 |
-| Pageant | 0.2.1 + Win7/SID修复 | 保留旧Windows兼容和用户身份检查；本轮补回CVE-2026-102820读界限与SID/安全属性生命周期修复，Windows原生回归待收口 |
+| Pageant | 0.2.1 + Win7/SID修复 | 保留旧Windows兼容和用户身份检查；本轮补回CVE-2026-102820读界限与SID/安全属性生命周期修复，Windows真实内核mapping release回归13项通过 |
 | Kafka旧broker支持 | Java client3.9.2维护线 | 4.4移除alterConfigs，现有不支持incrementalAlterConfigs的broker需此fallback；107项unit通过 |
 | MongoDB旧服务兼容 | mongodb-driver-sync3.12.14 | 单独旧服务驱动使用维护兼容线，现代MongoDB路径独立 |
 | IRIS / GBase厂商发布线 | intersystems-jdbc3.11.0 / gbasedbt jdbc3.6.5.21 | 保留厂商提供的现有支持线，避免用不对应的Maven变体替换数据库协议 |

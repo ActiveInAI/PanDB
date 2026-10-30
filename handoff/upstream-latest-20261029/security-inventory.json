@@ -453,7 +453,7 @@
       "ids": []
     }
   ],
-  "pageant": "GHSA-g4mp-vgx3-xrvm backported: checked read bounds before allocation, 8192-byte frame limit, live SID buffer and security-attribute lifetime. Windows check/clippy passed; native release regression pending.",
+  "pageant": "GHSA-g4mp-vgx3-xrvm backported with bounds and lifetime fixes. Windows target check/clippy and native Windows release tests13/13 passed.",
   "sqlite_native_core": {
     "mc_base": "v2.6.1",
     "mc_commit": "45d4ed3487bc02cb08ac73afff47c031c3f88ee0",
@@ -477,5 +477,7 @@
       "sqlite3mc_shutdown": 2
     },
     "generated_sha256": "12baf1ca030750fba03dce59f2f8474cf764c7037448c477499570c404839ecf"
-  }
+  },
+  "verification_ci_run": 41043514043,
+  "verification_ci_conclusion": "success"
 }

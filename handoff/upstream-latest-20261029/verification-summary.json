@@ -1,57 +1,129 @@
 {
-  "workspace_npm": {
-    "info": 0,
-    "low": 0,
-    "moderate": 0,
-    "high": 0,
-    "critical": 0
+  "verified_on": "2026-10-30",
+  "upstream_commit": "6bac6034b5b3e17780d49b80363db026b6a7003e",
+  "verified_runtime_code_commit": "f2a5f0b810b624760513e120b41413c2cb73080d",
+  "verified_ci_commit": "a1be700aa57c21b41e2ea723b8886a115cc564dd",
+  "ci_run": 41043514043,
+  "ci_conclusion": "success",
+  "ci_jobs": {
+    "windows": "success",
+    "nix": "success",
+    "macos": "success"
   },
-  "docs_npm": {
-    "info": 0,
-    "low": 0,
-    "moderate": 0,
-    "high": 0,
-    "critical": 0
+  "rust_workspace": {
+    "passed": 11526,
+    "failed": 0,
+    "skipped": 370,
+    "stack_bytes": 8388608,
+    "debug_info": "line-tables-only"
+  },
+  "rust_clippy": {
+    "all_targets": true,
+    "deny_warnings": true,
+    "exit": 0
+  },
+  "linux_desktop_native_build": {
+    "exit": 0,
+    "sqlite_native_core": "3.54.1"
+  },
+  "frontend_node26": {
+    "format": "passed",
+    "lint": "passed",
+    "typecheck": "passed",
+    "complete_test_command": "passed",
+    "production_build": "passed"
+  },
+  "docs_node26": {
+    "production_build": "passed",
+    "postbuild": "passed",
+    "indexable_pages": 266,
+    "localized_pages": 270,
+    "exported_files": 1486
   },
   "github_script_tests": {
     "passed": 314,
     "failed": 0
   },
   "go_modules": {
+    "toolchain": "go1.27.3",
     "built": 21,
-    "unit_short_passed": 21,
-    "source": "previous observed execution before temporary logs were cleared"
+    "short_unit_commands_passed": 21
   },
-  "docs": {
-    "content_pages": 42,
-    "seo_tests_passed": 10,
-    "indexable_pages": 266,
-    "localized_pages": 270,
+  "java_junit": {
+    "passed": 527,
+    "failed": 0,
+    "skipped": 0,
+    "source": "persistent XML reports: common368/H2 52/Kafka107"
+  },
+  "plugin_dev_host_node26": {
+    "passed": 58,
     "build": "passed"
   },
-  "frontend": {
-    "previous_complete_check": "passed before final branding edits and Node26 alignment",
-    "current_check": "running; durable log in ~/work/pandb-upgrade-20261030/logs"
+  "plugin_cli_tests": 23,
+  "plugin_packager_tests": 8,
+  "sql_core_tests": 713,
+  "sql_analysis_regressions": 46,
+  "dialect_regressions": 173,
+  "pageant_windows_release_tests": 13,
+  "sqlite_cipher_compatibility": {
+    "old_core": "3.51.3",
+    "new_core": "3.54.1",
+    "passed_ciphers": 7,
+    "wrong_keys_rejected": true,
+    "read_only_sha_unchanged": true
   },
-  "rust": {
-    "default_desktop_check": "passed earlier",
-    "default_desktop_link": "running",
-    "workspace_nextest": "running; canonical protocol codes and ZIP9 fixture APIs fixed"
+  "duckdb_native": {
+    "passed": 4,
+    "engine_version": "v2.0.0",
+    "checks": [
+      "Native engine version readback: v2.0.0",
+      "BIGINT, UTF8 text and DECIMAL readback",
+      "Parquet export and native readback",
+      "Clean shutdown, checkpoint and persisted reopen"
+    ]
   },
-  "publication": "maintenance branch preparation; main not updated",
-  "phase": "2026-10-30 maintenance branch verification in progress",
-  "java": {
-    "unit_passed": 527,
-    "source": "previous observed execution before temporary logs were cleared"
+  "web_http_acceptance": {
+    "passed": 8,
+    "checks": [
+      "Unauthenticated connection access denied",
+      "Incorrect password denied",
+      "Argon2 login succeeds",
+      "SQLite connection saved and opened",
+      "Multilingual data reads correctly",
+      "INSERT, UPDATE, SELECT and DELETE succeed",
+      "SQL failure returns canonical structured DBX error",
+      "Explicit MCP read-only policy persisted and read back"
+    ]
   },
-  "browser": {
-    "login": "passed",
-    "query_editor_and_grid": "passed; screenshot visually inspected before temporary profile cleared",
-    "mcp_readonly": "explicit configured read-only denied INSERT; legacy unconfigured default is writable and was not misreported as read-only"
+  "mcp_acceptance": {
+    "passed": 4,
+    "checks": [
+      "Stdio MCP initialize and discovery",
+      "Saved connection discovery through authenticated Web backend",
+      "Multilingual SQLite read",
+      "Explicit read-only policy blocks INSERT"
+    ]
   },
-  "sqlite_compatibility": {
-    "old": "encrypted SQLite3.51.3",
-    "new": "SQLite3MultipleCiphers2.6.1/SQLite3.54.0",
-    "result": "read-only data readback passed; wrong key rejected; before/after SHA256 identical; original temporary evidence no longer available"
-  }
+  "browser_acceptance": {
+    "passed": true,
+    "login": true,
+    "connectionOpened": true,
+    "editorInput": true,
+    "executionButton": true,
+    "oneRowRendered": true,
+    "screenshot": "browser-query.png",
+    "canvasValues": "Visually verified: row1 id=1, label=中文验收, amount=1.25"
+  },
+  "docx": {
+    "path": "/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区相关内容.docx",
+    "sha256": "064ad4bd24fdb0952c1336dd987e7638a8dc057cea2d541862993ccbb1adb56f",
+    "community_matches": 0,
+    "zip_integrity": "passed"
+  },
+  "delivery_target": "https://github.com/ActiveInAI/PanDB/tree/main",
+  "scope_limits": [
+    "Source update; installation-package publication and production deployment were not performed.",
+    "Live vendor databases and legacy Windows machines were not used for acceptance.",
+    "Compatibility pins and upstream unresolved RSA/maintenance advisories are documented; no claim of globally zero vulnerabilities."
+  ]
 }
