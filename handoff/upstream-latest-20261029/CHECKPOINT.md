@@ -127,3 +127,16 @@
 - Node26.13.0是2026-10-28官方当前LTS，已验证下载SHA；.nvmrc/CI/Docker/Nix统一。pnpm12原生Nix包已补nodejs-slim passthrough，Git source hashes按当前Cargo.lock重算；需GitHub Nix runner实测，不可称已通过。
 - 新maintenance-verification仅维护分支push和手动运行，contents:read，Windows check与Nix验证；无部署/发布/外部消息。准备维护分支提交后运行；主分支仍未更新。
 - origin/main多一份contributors更新已读回并保留，禁止force push。
+
+## 2026-10-30 持久验证结果与修复收口
+
+- 维护分支已推送，首次GitHub run 41025526627：Nix成功，Windows定位到Wry once_cell移除后自有回调未迁移；已改std::sync::LazyLock并在本机Windows target独立cargo check通过。Win32 clipboard的Rust2024 unsafe操作已显式封装，保留所有数据和窗口校验。
+- Nix runner实测pnpm12原生包及依赖fetch成功，artifact已取回并应用验证哈希 sha256-9HEZQTnW4mqLoZJPRn7Vh2GJ3UkD7ySrbBWU8aqLASg=。
+- Node26前端完整check5项通过，生产build通过；docs Node26 build+postbuild通过，314 GitHub脚本再次通过，工作流无重复YAML键。
+- 插件CLI23项和packager测试均通过；独立packager旧ZIP4 lock已刷新到ZIP9。
+- Go全module OSV查询发现unused graph及实际驱动依赖遗留；13个受影响模块已处理，其中Argo/Hive广泛更新下载超时后改为精确模块更新成功。iotdb bench原先未充分升级，本轮精确更新与unit通过。Go x/crypto0.58仍是官方latest，其GO-2026-5932针对未维护openpgp；生产依赖扫描仅使用md4/pbkdf2，没有openpgp，不得把module级告警直接当可达漏洞。仍需最终重审与21模块整体测试。
+- Rust all-targets发现并修复SSH测试fixture新接口、MQTT Packet::read新接口、Sysinfo基准示例及Windows条件代码；SQL-schema测试遗漏tempfile已补既有当前版dev依赖。新Clippy要求as_chunks、expect_err等已按建议迁移，未关闭门禁。
+- 对大型内部错误进行了Box封装并在Web/Tauri边界还原原错误，避免扩大异步栈；SecretStr清理改用现有依赖图zeroize1.9.1确保清理不被优化移除。需要等待当前Clippy与nextest真正完成后才能报告通过。
+- 默认桌面完整cargo build已本轮观察exit0（4m54s），后续core变更需最终再check/link。
+- SQLite旧加密fixture已重建到work/pandb-upgrade-20261030/sqlite-compat：旧3.51.3生成、新3.54.0只读验证、wrongkey拒绝、SHA不变均exit0，有result.json持久证据。
+- 未更新main、未部署或发布安装包。新增upstream缓存清理schedule与自动issue-label同步在fork改为显式手动运行，避免同步代码引入未授权外部写入。已有contributors更新被保留。

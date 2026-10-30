@@ -626,7 +626,7 @@ pub async fn execute_conditional_update(
         let result =
             dbx_core::query_cancel::finish_conditional_update(registered, &app.storage, recovery.as_ref(), result)
                 .await;
-        let _ = result_tx.send(result.map_err(AppError::from));
+        let _ = result_tx.send(result.map_err(|error| AppError::from(*error)));
     });
 
     let result = match response_timeout {

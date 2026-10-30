@@ -579,9 +579,9 @@ pub struct WebView2ProcessFailedInfo {
 pub type WebView2ProcessFailedCallback = std::sync::Arc<dyn Fn(&WebView2ProcessFailedInfo) + Send + Sync>;
 
 #[cfg(target_os = "windows")]
-pub(crate) static WEBVIEW2_PROCESS_FAILED_CALLBACK: once_cell::sync::Lazy<
+pub(crate) static WEBVIEW2_PROCESS_FAILED_CALLBACK: std::sync::LazyLock<
     std::sync::RwLock<Option<WebView2ProcessFailedCallback>>,
-> = once_cell::sync::Lazy::new(|| std::sync::RwLock::new(None));
+> = std::sync::LazyLock::new(|| std::sync::RwLock::new(None));
 
 /// Registers the application-level WebView2 process-failure callback.
 ///

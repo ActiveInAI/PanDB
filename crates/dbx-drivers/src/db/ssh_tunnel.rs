@@ -3186,7 +3186,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(trusted, "accepted host key should be trusted");
         // The accepted key must be persisted when remember=true.
         let contents = std::fs::read_to_string(&path).unwrap();
@@ -3210,7 +3210,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(trusted, "accepted host key should be trusted for the session");
         // remember=false -> key is NOT persisted.
         assert!(
@@ -3236,7 +3236,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(!trusted, "rejected host key must not be trusted");
         // Rejected -> never persisted.
         assert!(
@@ -3262,7 +3262,7 @@ mod tests {
             port: 22,
             prompt_started_tx: None,
         };
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         // No UI to confirm -> fail-closed, host is not trusted.
         assert!(!trusted, "without a gateway, an unknown host must be rejected (fail-closed)");
     }
@@ -3285,7 +3285,7 @@ mod tests {
             port: 22,
             prompt_started_tx: None,
         };
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(trusted, "a known-trusted host must be accepted without a prompt");
     }
 
@@ -3314,7 +3314,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(trusted, "updating a changed host key should continue the handshake");
         let contents = std::fs::read_to_string(&path).unwrap();
         assert!(
@@ -3343,7 +3343,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(trusted, "continuing without update should trust this session");
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
@@ -3371,7 +3371,7 @@ mod tests {
             prompt_started_tx: None,
         };
 
-        let trusted = client.check_server_key(&key).await.unwrap();
+        let trusted = client.check_server_key(&key.clone().into()).await.unwrap();
         assert!(!trusted, "rejected changed host key must not be trusted");
         assert_eq!(std::fs::read_to_string(&path).unwrap(), original, "rejected change must not rewrite known_hosts");
         ssh_prompt::clear_ssh_prompt_gateway();
@@ -3451,7 +3451,7 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
         async fn auth_publickey(
             &mut self,
             _user: &str,
-            _public_key: &russh::keys::ssh_key::PublicKey,
+            _public_key: server::VerifiedPublicKey<'_>,
         ) -> Result<Auth, Self::Error> {
             Ok(Auth::Reject {
                 proceed_with_methods: Some(MethodSet::from(&[MethodKind::KeyboardInteractive][..])),
@@ -4545,7 +4545,7 @@ uveF/dLmnVN1IriEyEvHAAAACGRieC10ZXN0AQIDBAU=
         async fn auth_publickey(
             &mut self,
             _user: &str,
-            _public_key: &russh::keys::ssh_key::PublicKey,
+            _public_key: server::VerifiedPublicKey<'_>,
         ) -> Result<Auth, Self::Error> {
             if self.publickey_attempts.fetch_add(1, Ordering::SeqCst) == 0 {
                 Ok(Auth::Accept)

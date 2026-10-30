@@ -2141,6 +2141,7 @@ dependencies = [
  "uuid",
  "webpki-roots",
  "windows-sys 0.61.2",
+ "zeroize",
  "zip",
  "zstd",
 ]
@@ -2538,6 +2539,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sqlparser",
+ "tempfile",
 ]
 
 [[package]]

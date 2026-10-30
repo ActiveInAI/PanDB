@@ -92,19 +92,23 @@ static REOWN_IN_FLIGHT: AtomicBool = AtomicBool::new(false);
 /// Starts watching `hwnd` (the host window) for clipboard updates. No-op on
 /// Windows versions without Clipboard History.
 pub(crate) unsafe fn attach(hwnd: HWND) {
-    if windows_version::OsVersion::current().build < CLIPBOARD_HISTORY_MIN_BUILD {
-        return;
+    unsafe {
+        if windows_version::OsVersion::current().build < CLIPBOARD_HISTORY_MIN_BUILD {
+            return;
+        }
+        if AddClipboardFormatListener(hwnd).is_err() {
+            return;
+        }
+        let _ = SetWindowSubclass(hwnd, Some(subclass_proc), CLIPBOARD_SUBCLASS_ID, 0);
     }
-    if AddClipboardFormatListener(hwnd).is_err() {
-        return;
-    }
-    let _ = SetWindowSubclass(hwnd, Some(subclass_proc), CLIPBOARD_SUBCLASS_ID, 0);
 }
 
 /// Stops watching `hwnd` and removes the message hook.
 pub(crate) unsafe fn detach(hwnd: HWND) {
-    let _ = RemoveClipboardFormatListener(hwnd);
-    let _ = RemoveWindowSubclass(hwnd, Some(subclass_proc), CLIPBOARD_SUBCLASS_ID);
+    unsafe {
+        let _ = RemoveClipboardFormatListener(hwnd);
+        let _ = RemoveWindowSubclass(hwnd, Some(subclass_proc), CLIPBOARD_SUBCLASS_ID);
+    }
 }
 
 unsafe extern "system" fn subclass_proc(
@@ -115,93 +119,101 @@ unsafe extern "system" fn subclass_proc(
     _uidsubclass: usize,
     _dwrefdata: usize,
 ) -> LRESULT {
-    if msg == WM_CLIPBOARDUPDATE {
-        on_clipboard_update(hwnd);
+    unsafe {
+        if msg == WM_CLIPBOARDUPDATE {
+            on_clipboard_update(hwnd);
+        }
+        DefSubclassProc(hwnd, msg, wparam, lparam)
     }
-    DefSubclassProc(hwnd, msg, wparam, lparam)
 }
 
 /// Entry point for `WM_CLIPBOARDUPDATE`: schedules a re-own when the update
 /// was written by the WebView2 browser process. Runs on the host window's
 /// thread and only performs quick, non-blocking checks.
 unsafe fn on_clipboard_update(host: HWND) {
-    if !clipboard_update_from_webview2(host) {
-        return;
-    }
-    if REOWN_IN_FLIGHT.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_err() {
-        return;
-    }
-    // `HWND` is a raw pointer and not `Send` (and edition-2021 precise capture
-    // would see through any wrapper around `host.0`), so ship the handle value
-    // across the thread boundary and rebuild it inside the worker. The worker
-    // only uses it as the owner argument of `OpenClipboard`, which is legal
-    // from any thread.
-    let host = host.0 as isize;
-    std::thread::spawn(move || {
-        // Clears the flag when the worker ends, panic or not.
-        struct InFlight;
-        impl Drop for InFlight {
-            fn drop(&mut self) {
-                REOWN_IN_FLIGHT.store(false, Ordering::Release);
-            }
+    unsafe {
+        if !clipboard_update_from_webview2(host) {
+            return;
         }
-        let _in_flight = InFlight;
-        let host = HWND(host as *mut core::ffi::c_void);
+        if REOWN_IN_FLIGHT.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_err() {
+            return;
+        }
+        // `HWND` is a raw pointer and not `Send` (and edition-2021 precise capture
+        // would see through any wrapper around `host.0`), so ship the handle value
+        // across the thread boundary and rebuild it inside the worker. The worker
+        // only uses it as the owner argument of `OpenClipboard`, which is legal
+        // from any thread.
+        let host = host.0 as isize;
+        std::thread::spawn(move || {
+            // Clears the flag when the worker ends, panic or not.
+            struct InFlight;
+            impl Drop for InFlight {
+                fn drop(&mut self) {
+                    REOWN_IN_FLIGHT.store(false, Ordering::Release);
+                }
+            }
+            let _in_flight = InFlight;
+            let host = HWND(host as *mut core::ffi::c_void);
 
-        std::thread::sleep(REOWN_DELAY);
-        for _ in 0..REOWN_ROUNDS {
-            let from_webview2 = unsafe { clipboard_update_from_webview2(host) };
-            if !from_webview2 {
-                break;
-            }
-            unsafe { reown_from_webview2(host) };
             std::thread::sleep(REOWN_DELAY);
-        }
-        // A copy landing during the tail sleep of the last round is coalesced
-        // away by `REOWN_IN_FLIGHT` and its update notification never
-        // re-arrives, so without this check it would silently miss Clipboard
-        // History. One final re-check while the flag is still held (no other
-        // worker can race for it) re-owns the copy; a no-op unless one is
-        // pending, because `reown_from_webview2` re-verifies the owner first.
-        if unsafe { clipboard_update_from_webview2(host) } {
-            unsafe { reown_from_webview2(host) };
-        }
-    });
+            for _ in 0..REOWN_ROUNDS {
+                let from_webview2 = clipboard_update_from_webview2(host);
+                if !from_webview2 {
+                    break;
+                }
+                reown_from_webview2(host);
+                std::thread::sleep(REOWN_DELAY);
+            }
+            // A copy landing during the tail sleep of the last round is coalesced
+            // away by `REOWN_IN_FLIGHT` and its update notification never
+            // re-arrives, so without this check it would silently miss Clipboard
+            // History. One final re-check while the flag is still held (no other
+            // worker can race for it) re-owns the copy; a no-op unless one is
+            // pending, because `reown_from_webview2` re-verifies the owner first.
+            if clipboard_update_from_webview2(host) {
+                reown_from_webview2(host);
+            }
+        });
+    }
 }
 
 /// `true` when the current clipboard update was written by the WebView2
 /// browser process (and is therefore invisible to Clipboard History).
 unsafe fn clipboard_update_from_webview2(host: HWND) -> bool {
-    let Ok(owner) = GetClipboardOwner() else {
-        return false;
-    };
-    // Updates we produced ourselves (and ownerless writes) need no re-own.
-    if owner == host {
-        return false;
+    unsafe {
+        let Ok(owner) = GetClipboardOwner() else {
+            return false;
+        };
+        // Updates we produced ourselves (and ownerless writes) need no re-own.
+        if owner == host {
+            return false;
+        }
+        window_process_image_is(owner, WEBVIEW2_BROWSER_PROCESS)
     }
-    window_process_image_is(owner, WEBVIEW2_BROWSER_PROCESS)
 }
 
 /// `true` when `hwnd` belongs to a process whose image name matches
 /// `image_name` (case-insensitive file-name comparison).
 unsafe fn window_process_image_is(hwnd: HWND, image_name: &str) -> bool {
-    let mut pid = 0u32;
-    GetWindowThreadProcessId(hwnd, Some(&mut pid));
-    if pid == 0 {
-        return false;
+    unsafe {
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == 0 {
+            return false;
+        }
+        let Ok(process) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
+            return false;
+        };
+        let mut path = [0u16; 512];
+        let mut len = path.len() as u32;
+        let queried = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, PWSTR(path.as_mut_ptr()), &mut len);
+        let _ = CloseHandle(process);
+        if queried.is_err() || len as usize >= path.len() {
+            return false;
+        }
+        let path = String::from_utf16_lossy(&path[..len as usize]);
+        process_image_matches(&path, image_name)
     }
-    let Ok(process) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
-        return false;
-    };
-    let mut path = [0u16; 512];
-    let mut len = path.len() as u32;
-    let queried = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, PWSTR(path.as_mut_ptr()), &mut len);
-    let _ = CloseHandle(process);
-    if queried.is_err() || len as usize >= path.len() {
-        return false;
-    }
-    let path = String::from_utf16_lossy(&path[..len as usize]);
-    process_image_matches(&path, image_name)
 }
 
 /// Pure helper: does a full image path end with `image_name`?
@@ -213,19 +225,21 @@ fn process_image_matches(image_path: &str, image_name: &str) -> bool {
 /// Gives up — keeping the original clipboard untouched — if the clipboard
 /// cannot be opened within the retry budget.
 unsafe fn reown_from_webview2(host: HWND) {
-    // The user may have copied somewhere else during the delay.
-    if !clipboard_update_from_webview2(host) {
-        return;
-    }
-    for _ in 0..OPEN_ATTEMPTS {
-        if OpenClipboard(Some(host)).is_ok() {
-            // An abstention (unsafe formats / nothing to re-apply) is final;
-            // retrying cannot change the outcome.
-            let _ = snapshot_and_reapply();
-            let _ = CloseClipboard();
+    unsafe {
+        // The user may have copied somewhere else during the delay.
+        if !clipboard_update_from_webview2(host) {
             return;
         }
-        std::thread::sleep(OPEN_RETRY_DELAY);
+        for _ in 0..OPEN_ATTEMPTS {
+            if OpenClipboard(Some(host)).is_ok() {
+                // An abstention (unsafe formats / nothing to re-apply) is final;
+                // retrying cannot change the outcome.
+                let _ = snapshot_and_reapply();
+                let _ = CloseClipboard();
+                return;
+            }
+            std::thread::sleep(OPEN_RETRY_DELAY);
+        }
     }
 }
 
@@ -295,13 +309,15 @@ impl Payload {
 
     /// Frees duplicated GDI handles when a payload can no longer be applied.
     unsafe fn release(self) {
-        match self {
-            Payload::Bytes { .. } => {}
-            Payload::Bitmap(handle) => {
-                let _ = DeleteObject(HGDIOBJ(handle.0));
-            }
-            Payload::EnhancedMetafile(handle) => {
-                let _ = DeleteEnhMetaFile(Some(handle));
+        unsafe {
+            match self {
+                Payload::Bytes { .. } => {}
+                Payload::Bitmap(handle) => {
+                    let _ = DeleteObject(HGDIOBJ(handle.0));
+                }
+                Payload::EnhancedMetafile(handle) => {
+                    let _ = DeleteEnhMetaFile(Some(handle));
+                }
             }
         }
     }
@@ -315,114 +331,124 @@ impl Payload {
 /// re-own was deliberately skipped; the original clipboard is then left
 /// untouched.
 unsafe fn snapshot_and_reapply() -> bool {
-    let mut payloads: Vec<Payload> = Vec::new();
-    let mut format = EnumClipboardFormats(0);
-    while format != 0 {
-        let payload = match payload_kind(format) {
-            PayloadKind::Unsafe => {
+    unsafe {
+        let mut payloads: Vec<Payload> = Vec::new();
+        let mut format = EnumClipboardFormats(0);
+        while format != 0 {
+            let payload = match payload_kind(format) {
+                PayloadKind::Unsafe => {
+                    for payload in payloads {
+                        payload.release();
+                    }
+                    return false;
+                }
+                PayloadKind::Bitmap => snapshot_bitmap(format),
+                PayloadKind::EnhancedMetafile => snapshot_enhmetafile(format),
+                PayloadKind::Bytes => snapshot_bytes(format),
+            };
+            // A format that failed to snapshot cannot be re-set after the
+            // `EmptyClipboard` below, so abstain rather than let it be destroyed.
+            // Duplicated GDI handles collected so far are freed here.
+            let Some(payload) = payload else {
                 for payload in payloads {
                     payload.release();
                 }
                 return false;
-            }
-            PayloadKind::Bitmap => snapshot_bitmap(format),
-            PayloadKind::EnhancedMetafile => snapshot_enhmetafile(format),
-            PayloadKind::Bytes => snapshot_bytes(format),
-        };
-        // A format that failed to snapshot cannot be re-set after the
-        // `EmptyClipboard` below, so abstain rather than let it be destroyed.
-        // Duplicated GDI handles collected so far are freed here.
-        let Some(payload) = payload else {
+            };
+            payloads.push(payload);
+            format = EnumClipboardFormats(format);
+        }
+        if payloads.is_empty() {
+            return false;
+        }
+
+        // Replay primary formats first: a re-set that fails below is gone for
+        // good, so the valuable payloads must not depend on where the original
+        // writer's enumeration order happened to place them.
+        payloads.sort_by_key(|payload| replay_priority(payload.format()));
+
+        if EmptyClipboard().is_err() {
             for payload in payloads {
                 payload.release();
             }
             return false;
-        };
-        payloads.push(payload);
-        format = EnumClipboardFormats(format);
-    }
-    if payloads.is_empty() {
-        return false;
-    }
-
-    // Replay primary formats first: a re-set that fails below is gone for
-    // good, so the valuable payloads must not depend on where the original
-    // writer's enumeration order happened to place them.
-    payloads.sort_by_key(|payload| replay_priority(payload.format()));
-
-    if EmptyClipboard().is_err() {
-        for payload in payloads {
-            payload.release();
         }
-        return false;
-    }
 
-    for payload in payloads {
-        apply_payload(payload);
+        for payload in payloads {
+            apply_payload(payload);
+        }
+        true
     }
-    true
 }
 
 unsafe fn snapshot_bytes(format: u32) -> Option<Payload> {
-    let handle = GetClipboardData(format).ok()?;
-    let hglobal = HGLOBAL(handle.0);
-    let size = GlobalSize(hglobal);
-    if size == 0 {
-        return Some(Payload::Bytes { format, data: Vec::new() });
+    unsafe {
+        let handle = GetClipboardData(format).ok()?;
+        let hglobal = HGLOBAL(handle.0);
+        let size = GlobalSize(hglobal);
+        if size == 0 {
+            return Some(Payload::Bytes { format, data: Vec::new() });
+        }
+        let ptr = GlobalLock(hglobal);
+        if ptr.is_null() {
+            return None;
+        }
+        let data = std::slice::from_raw_parts(ptr as *const u8, size).to_vec();
+        let _ = GlobalUnlock(hglobal);
+        Some(Payload::Bytes { format, data })
     }
-    let ptr = GlobalLock(hglobal);
-    if ptr.is_null() {
-        return None;
-    }
-    let data = std::slice::from_raw_parts(ptr as *const u8, size).to_vec();
-    let _ = GlobalUnlock(hglobal);
-    Some(Payload::Bytes { format, data })
 }
 
 unsafe fn snapshot_bitmap(format: u32) -> Option<Payload> {
-    let handle = GetClipboardData(format).ok()?;
-    // Zero width/height duplicate the bitmap at its original size.
-    CopyImage(handle, IMAGE_BITMAP, 0, 0, IMAGE_FLAGS(0)).ok().map(Payload::Bitmap)
+    unsafe {
+        let handle = GetClipboardData(format).ok()?;
+        // Zero width/height duplicate the bitmap at its original size.
+        CopyImage(handle, IMAGE_BITMAP, 0, 0, IMAGE_FLAGS(0)).ok().map(Payload::Bitmap)
+    }
 }
 
 unsafe fn snapshot_enhmetafile(format: u32) -> Option<Payload> {
-    let handle = GetClipboardData(format).ok()?;
-    let copy = CopyEnhMetaFileW(HENHMETAFILE(handle.0), PCWSTR::null());
-    if copy.is_invalid() {
-        return None;
+    unsafe {
+        let handle = GetClipboardData(format).ok()?;
+        let copy = CopyEnhMetaFileW(HENHMETAFILE(handle.0), PCWSTR::null());
+        if copy.is_invalid() {
+            return None;
+        }
+        Some(Payload::EnhancedMetafile(copy))
     }
-    Some(Payload::EnhancedMetafile(copy))
 }
 
 /// Hands a payload to the clipboard, which takes ownership of the handle on
 /// success; failed handles are freed here.
 unsafe fn apply_payload(payload: Payload) {
-    match payload {
-        Payload::Bytes { format, data } => {
-            let Ok(hglobal) = GlobalAlloc(GMEM_MOVEABLE, data.len()) else {
-                return;
-            };
-            if !data.is_empty() {
-                let ptr = GlobalLock(hglobal);
-                if ptr.is_null() {
-                    let _ = GlobalFree(Some(hglobal));
+    unsafe {
+        match payload {
+            Payload::Bytes { format, data } => {
+                let Ok(hglobal) = GlobalAlloc(GMEM_MOVEABLE, data.len()) else {
                     return;
+                };
+                if !data.is_empty() {
+                    let ptr = GlobalLock(hglobal);
+                    if ptr.is_null() {
+                        let _ = GlobalFree(Some(hglobal));
+                        return;
+                    }
+                    std::ptr::copy_nonoverlapping(data.as_ptr(), ptr as *mut u8, data.len());
+                    let _ = GlobalUnlock(hglobal);
                 }
-                std::ptr::copy_nonoverlapping(data.as_ptr(), ptr as *mut u8, data.len());
-                let _ = GlobalUnlock(hglobal);
+                if SetClipboardData(format, Some(HANDLE(hglobal.0))).is_err() {
+                    let _ = GlobalFree(Some(hglobal));
+                }
             }
-            if SetClipboardData(format, Some(HANDLE(hglobal.0))).is_err() {
-                let _ = GlobalFree(Some(hglobal));
+            Payload::Bitmap(handle) => {
+                if SetClipboardData(CF_BITMAP, Some(handle)).is_err() {
+                    let _ = DeleteObject(HGDIOBJ(handle.0));
+                }
             }
-        }
-        Payload::Bitmap(handle) => {
-            if SetClipboardData(CF_BITMAP, Some(handle)).is_err() {
-                let _ = DeleteObject(HGDIOBJ(handle.0));
-            }
-        }
-        Payload::EnhancedMetafile(handle) => {
-            if SetClipboardData(CF_ENHMETAFILE, Some(HANDLE(handle.0))).is_err() {
-                let _ = DeleteEnhMetaFile(Some(handle));
+            Payload::EnhancedMetafile(handle) => {
+                if SetClipboardData(CF_ENHMETAFILE, Some(HANDLE(handle.0))).is_err() {
+                    let _ = DeleteEnhMetaFile(Some(handle));
+                }
             }
         }
     }

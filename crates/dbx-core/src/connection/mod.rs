@@ -6278,15 +6278,22 @@ impl AppState {
         self.postgres_cancel_contexts.write().await.remove(pool_key);
         match close_reclaimed_agent_pool(pool).await {
             Ok(()) => true,
-            Err((PoolKind::Agent(client), error)) if should_replace_agent_runtime(&error) => {
-                log::warn!("Reclaimed Agent pool '{pool_key}' requested runtime replacement while closing: {error}");
-                self.pool_routing_control().replace_runtime_after_close_failure(pool_key, &client).await;
-                true
-            }
-            Err((pool, error)) => {
-                log::warn!("Failed to close reclaimed Agent pool '{pool_key}': {error}; restoring the pool");
-                self.restore_reclaimed_agent_pool(pool_key, pool, transport).await;
-                false
+            Err(failure) => {
+                let (pool, error) = *failure;
+                match pool {
+                    PoolKind::Agent(client) if should_replace_agent_runtime(&error) => {
+                        log::warn!(
+                            "Reclaimed Agent pool '{pool_key}' requested runtime replacement while closing: {error}"
+                        );
+                        self.pool_routing_control().replace_runtime_after_close_failure(pool_key, &client).await;
+                        true
+                    }
+                    pool => {
+                        log::warn!("Failed to close reclaimed Agent pool '{pool_key}': {error}; restoring the pool");
+                        self.restore_reclaimed_agent_pool(pool_key, pool, transport).await;
+                        false
+                    }
+                }
             }
         }
     }
@@ -8502,10 +8509,15 @@ async fn close_pool_kind_inner(pool: PoolKind, report_completion: bool) -> Resul
     Ok(())
 }
 
-async fn close_reclaimed_agent_pool(pool: PoolKind) -> Result<(), (PoolKind, String)> {
+async fn close_reclaimed_agent_pool(pool: PoolKind) -> Result<(), Box<(PoolKind, String)>> {
     let client = match pool {
         PoolKind::Agent(client) => client,
-        pool => return Err((pool, "Only Agent pools can be reclaimed after connection slot exhaustion".to_string())),
+        pool => {
+            return Err(Box::new((
+                pool,
+                "Only Agent pools can be reclaimed after connection slot exhaustion".to_string(),
+            )))
+        }
     };
     let result = {
         let mut client = client.lock().await;
@@ -8513,7 +8525,7 @@ async fn close_reclaimed_agent_pool(pool: PoolKind) -> Result<(), (PoolKind, Str
     };
     match result {
         Ok(()) => Ok(()),
-        Err(error) => Err((PoolKind::Agent(client), error)),
+        Err(error) => Err(Box::new((PoolKind::Agent(client), error))),
     }
 }
 

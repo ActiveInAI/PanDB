@@ -188,7 +188,8 @@ pub async fn execute_conditional_update(
             recovery.as_ref(),
             result,
         )
-        .await;
+        .await
+        .map_err(|error| *error);
         let _ = result_tx.send(result);
     });
 

@@ -107,7 +107,7 @@ pub async fn finish_conditional_update<T>(
     storage: &crate::storage::Storage,
     binding: Option<&crate::storage::TypeExecutionBinding>,
     result: Result<T, crate::query::QueryExecutionError>,
-) -> Result<T, crate::backend_error::BackendError> {
+) -> Result<T, Box<crate::backend_error::BackendError>> {
     let terminal = registered.finish_with_database_result(&result);
     if let Some(binding) = binding {
         if terminal {
@@ -119,10 +119,12 @@ pub async fn finish_conditional_update<T>(
         } else {
             // Legacy SQL envelopes can look like acknowledged SQL rejections to
             // the frontend. An unproven TYPE result must remain unknown there too.
-            return result.map_err(|error| crate::backend_error::BackendError::from_legacy_backend(&error.to_string()));
+            return result.map_err(|error| {
+                Box::new(crate::backend_error::BackendError::from_legacy_backend(&error.to_string()))
+            });
         }
     }
-    result.map_err(crate::query::QueryExecutionError::into_backend_error)
+    result.map_err(|error| Box::new(error.into_backend_error()))
 }
 
 #[derive(Clone, Default)]

@@ -102,8 +102,9 @@ fn process_matches_managed_agent(
 fn stop_external_managed_agent_processes_blocking(target: ManagedAgentProcessTarget) -> Result<(), String> {
     use sysinfo::{get_current_pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind};
 
-    let refresh = ProcessRefreshKind::new().with_cmd(UpdateKind::Always).with_exe(UpdateKind::Always);
-    let mut system = System::new_with_specifics(RefreshKind::new().with_processes(refresh));
+    let refresh = ProcessRefreshKind::nothing().with_cmd(UpdateKind::Always).with_exe(UpdateKind::Always);
+    let mut system = System::new_with_specifics(RefreshKind::nothing().with_processes(refresh))
+        .map_err(|error| format!("Unable to inspect managed processes before replacement: {error}"))?;
     system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh);
     let current_pid = get_current_pid().ok();
     let mut matched = Vec::new();

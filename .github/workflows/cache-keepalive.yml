@@ -26,6 +26,7 @@ env:
 
 jobs:
   rust-test-keepalive:
+    if: github.event_name == 'workflow_dispatch' || github.repository == 't8y2/dbx'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -124,6 +125,7 @@ jobs:
         run: ${SCCACHE_PATH} --show-stats
 
   prune-sccache-entries:
+    if: github.event_name == 'workflow_dispatch' || github.repository == 't8y2/dbx'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

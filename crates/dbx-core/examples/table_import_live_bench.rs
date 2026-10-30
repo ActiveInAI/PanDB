@@ -294,12 +294,14 @@ struct PeakRssSampler {
 impl PeakRssSampler {
     fn start() -> Result<Self, String> {
         let pid = get_current_pid().map_err(|error| error.to_string())?;
-        let mut system =
-            System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new().with_memory()));
+        let mut system = System::new_with_specifics(
+            RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_memory()),
+        )
+        .map_err(|error| format!("Unable to initialize process memory sampler: {error}"))?;
         system.refresh_processes_specifics(
             ProcessesToUpdate::Some(&[pid]),
             true,
-            ProcessRefreshKind::new().with_memory(),
+            ProcessRefreshKind::nothing().with_memory(),
         );
         let baseline_bytes = system.process(pid).map(|process| process.memory()).unwrap_or(0);
         let peak_bytes = Arc::new(AtomicU64::new(baseline_bytes));
@@ -307,13 +309,11 @@ impl PeakRssSampler {
         let peak_for_thread = peak_bytes.clone();
         let stop_for_thread = stop.clone();
         let handle = thread::spawn(move || {
-            let mut system =
-                System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new().with_memory()));
             while !stop_for_thread.load(Ordering::Relaxed) {
                 system.refresh_processes_specifics(
                     ProcessesToUpdate::Some(&[pid]),
                     true,
-                    ProcessRefreshKind::new().with_memory(),
+                    ProcessRefreshKind::nothing().with_memory(),
                 );
                 if let Some(process) = system.process(pid) {
                     peak_for_thread.fetch_max(process.memory(), Ordering::Relaxed);

@@ -3332,7 +3332,7 @@ fn format_hex_uuid_literal(text: &str) -> Option<String> {
     let hex_bytes = hex.as_bytes();
     if hex_bytes.len() == 72 && hex_bytes.iter().all(|b| b.is_ascii_hexdigit()) {
         let mut bytes = Vec::with_capacity(36);
-        for chunk in hex_bytes.chunks_exact(2) {
+        for chunk in hex_bytes.as_chunks::<2>().0 {
             let s = std::str::from_utf8(chunk).ok()?;
             let byte = u8::from_str_radix(s, 16).ok()?;
             bytes.push(byte);

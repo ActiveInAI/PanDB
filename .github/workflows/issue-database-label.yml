@@ -48,7 +48,7 @@ jobs:
 
   sync:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'issues' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 't8y2/dbx') }}
     steps:
       - uses: actions/checkout@v7.0.1
 

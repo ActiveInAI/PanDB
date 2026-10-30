@@ -51,7 +51,7 @@ fn interval_matches(after: &NativeJobDetails, expected: &str) -> bool {
     let Some(Value::String(value)) = value.get("INTERVAL") else {
         return false;
     };
-    let (integer, fraction) = value.split_once('.').map_or((value.as_str(), ""), |parts| parts);
+    let (integer, fraction) = value.split_once('.').unwrap_or((value.as_str(), ""));
     !integer.is_empty()
         && integer.bytes().all(|byte| byte.is_ascii_digit())
         && fraction.bytes().all(|byte| byte == b'0')

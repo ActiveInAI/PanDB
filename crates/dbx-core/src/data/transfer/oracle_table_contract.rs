@@ -48,7 +48,7 @@ pub(crate) fn planned_columns(sql: &str, owner: &str, name: &str) -> Result<BTre
         .name
         .0
         .iter()
-        .map(|part| part.as_ident().map(&effective).ok_or("The table target is not an exact identifier"))
+        .map(|part| part.as_ident().map(effective).ok_or("The table target is not an exact identifier"))
         .collect::<Result<Vec<_>, _>>()?;
     if !matches!(parts.as_slice(), [table] if table == name)
         && !matches!(parts.as_slice(), [schema, table] if schema == owner && table == name)
@@ -85,7 +85,7 @@ pub(super) fn table_shape(
         .name
         .0
         .iter()
-        .map(|part| part.as_ident().map(&effective).ok_or("The table target is not an exact identifier"))
+        .map(|part| part.as_ident().map(effective).ok_or("The table target is not an exact identifier"))
         .collect::<Result<Vec<_>, _>>()?;
     let matches = match parts.as_slice() {
         [table] => table == name,

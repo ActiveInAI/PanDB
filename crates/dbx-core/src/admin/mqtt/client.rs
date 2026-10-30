@@ -2123,7 +2123,7 @@ mod tests {
                 let (mut stream, _) = listener.accept().await.unwrap();
                 let frame = read_mqtt_frame(&mut stream).await.unwrap();
                 let mut bytes = BytesMut::from(&frame[..]);
-                let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+                let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
                 match packet {
                     rumqttc::mqttbytes::v4::Packet::Connect(connect) => assert_eq!(connect.protocol, expected_protocol),
                     other => panic!("unexpected packet: {other:?}"),
@@ -2132,7 +2132,7 @@ mod tests {
                 stream.write_all(&[0x20, 0x02, 0x00, 0x00]).await.unwrap();
                 let frame = read_mqtt_frame(&mut stream).await.unwrap();
                 let mut bytes = BytesMut::from(&frame[..]);
-                let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+                let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
                 assert!(matches!(packet, rumqttc::mqttbytes::v4::Packet::Disconnect));
             }
         });
@@ -2165,7 +2165,7 @@ mod tests {
 
             let frame = read_mqtt_frame(&mut second).await.unwrap();
             let mut bytes = BytesMut::from(&frame[..]);
-            let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+            let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
             assert!(matches!(packet, rumqttc::mqttbytes::v4::Packet::Disconnect));
         });
         (port, disconnect_tx, restored_rx, handle)
@@ -2202,7 +2202,7 @@ mod tests {
 
             let frame = read_mqtt_frame(&mut stream).await.unwrap();
             let mut bytes = BytesMut::from(&frame[..]);
-            let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+            let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
             let unsubscribe_pkid = match packet {
                 rumqttc::mqttbytes::v4::Packet::Unsubscribe(unsubscribe) => unsubscribe.pkid,
                 other => panic!("unexpected packet: {other:?}"),
@@ -2349,7 +2349,7 @@ mod tests {
 
             let frame = read_mqtt_frame(&mut stream).await.unwrap();
             let mut bytes = BytesMut::from(&frame[..]);
-            let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+            let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
             let unsubscribe_pkid = match packet {
                 rumqttc::mqttbytes::v4::Packet::Unsubscribe(unsubscribe) => unsubscribe.pkid,
                 other => panic!("unexpected packet: {other:?}"),
@@ -2372,7 +2372,7 @@ mod tests {
 
         let frame = read_mqtt_frame(stream).await.unwrap();
         let mut bytes = BytesMut::from(&frame[..]);
-        match rumqttc::mqttbytes::v4::read(&mut bytes, 32 * 1024 * 1024).unwrap() {
+        match rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 32 * 1024 * 1024).unwrap() {
             rumqttc::mqttbytes::v4::Packet::Publish(publish) => publish,
             other => panic!("unexpected packet: {other:?}"),
         }
@@ -2415,7 +2415,7 @@ mod tests {
 
         let frame = read_mqtt_frame(stream).await.unwrap();
         let mut bytes = BytesMut::from(&frame[..]);
-        let packet = rumqttc::mqttbytes::v4::read(&mut bytes, 1024 * 1024).unwrap();
+        let packet = rumqttc::mqttbytes::v4::Packet::read(&mut bytes, 1024 * 1024).unwrap();
         match packet {
             rumqttc::mqttbytes::v4::Packet::Subscribe(subscribe) => subscribe.pkid,
             other => panic!("unexpected packet: {other:?}"),

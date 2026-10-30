@@ -28,6 +28,7 @@ os-keyring = ["dep:keyring", "dep:secret-service"]
 system-fonts = ["font-kit"]
 
 [dependencies]
+zeroize = "1.9.1"
 dbx-drivers = { path = "../dbx-drivers", default-features = false }
 dbx-sql = { path = "../dbx-sql", default-features = false }
 dbx-plugin-runtime = { path = "../dbx-plugin-runtime" }

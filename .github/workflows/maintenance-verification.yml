@@ -22,6 +22,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2.9.3
         with:
           shared-key: pandb-maintenance-windows
+          cache-on-failure: true
       - name: Check Windows desktop and security extensions
         env:
           CXXFLAGS: /std:c++17 /EHsc

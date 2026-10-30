@@ -5795,7 +5795,7 @@ where
     }
 
     let mut items = Vec::with_capacity(entries.len() / 2);
-    for pair in entries.chunks_exact(2) {
+    for pair in entries.as_chunks::<2>().0.iter() {
         let member = redis_value_to_bytes(pair[0].clone())
             .map(|bytes| redis_blob_from_bytes(&bytes))
             .ok_or_else(|| "Invalid ZRANGE member payload".to_string())?;
@@ -12524,7 +12524,7 @@ mod tests {
         let mut config = redis_test_connection_config();
         config.ssl = true;
         config.client_cert_path = "/tmp/only-cert.pem".to_string();
-        let error = load_redis_tls_certificates(&config).err().expect("expected certificate error");
+        let error = load_redis_tls_certificates(&config).expect_err("expected certificate error");
         assert!(error.contains("configured together"), "{error}");
     }
 
@@ -12533,7 +12533,7 @@ mod tests {
         let mut config = redis_test_connection_config();
         config.ssl = true;
         config.ca_cert_path = "/tmp/dbx-missing-ca-certificate.pem".to_string();
-        let error = load_redis_tls_certificates(&config).err().expect("expected certificate error");
+        let error = load_redis_tls_certificates(&config).expect_err("expected certificate error");
         assert!(error.contains("Failed to read Redis TLS CA certificate"), "{error}");
         assert!(error.contains("/tmp/dbx-missing-ca-certificate.pem"), "{error}");
     }
