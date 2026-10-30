@@ -172,3 +172,11 @@
 ## 2026-10-30 最终主分支 CI 复查
 
 363ef653a 已推送并独立读回；新 CI 确认 windows-win7-bundle skipped，旧任务已自动取消。主分支首次 frontend 安装失败为 pnpm12 的 ERR_PNPM_IGNORED_BUILDS，cbor-extract@2.2.2 未声明策略；显式 allowBuilds=false，保持纯 JS 回退及脚本拒绝策略。GitHub Dependabot 指出独立 Windows AI 代理工具 Cargo.lock 为旧依赖图；按已更新清单刷新到主图当前依赖，Rustls0.23.46/WebPKI0.103.16，重新审计7锁文件1062包版本，此工具0命中。Linux cargo check 依赖通过后在 Windows 注册表模块失败（平台不适用），未宣称本机原生检查通过，已加入现有标准 Windows CI。四个 Go Windows x64 agent 交叉编译exit0、MZ头及go1.27.3元数据验证通过。
+
+## 2026-10-30 11:55 UTC 持续收口，不能在 CI 排队时交回
+
+用户明确要求继续直到必要 CI 明确结果。工作树 validated-main-20261030，远端 main=e5f92aeeec8c4babd4e69aae475dfaf6a0152410。CI41048830184已有42成功、Win7跳过；标准 Windows desktop 与 AI proxy proof 原生检查都成功。尚在跑 packages publish dry-run、Linux DuckDB tests、workspace nextest，等待完成以保存编译缓存，不要反复取消。两个已知失败：逐文件 rustfmt 在 crates/dbx-core/src/schema/providers/native.rs 两个长条件，已仅换行并按原 CI 命令 exit0；DuckDB MSVC 的 sccache0.16将cc-rs的分离-Tp与/WX-重排，MSVC认为/WX-是源码。已读官方tag源码并核实预处理参数顺序，修复为与agents-release相同直接MSVC C++，保留Rust缓存，回归测试先red后全321pass。
+
+不再维持Pageant旧Win7约束：官方API确认最新稳定0.2.5、归档SHA256及Apache2许可；替换到官方0.2.5并保留映射长度/游标/空view/可变read目标/响应边界保护，保留现代Windows用户名规范化及8项回归。移除自管SID与Win7 binding aliases。Windows target check+clippy -Dwarnings exit0，Linux用户名8项pass，Windows原生13项尚待新CI，不要拿旧0.2.1的13项代替。root与DuckDB两个锁文件已通过在线cargo update仅更新Pageant和删旧WinSDK，未降级；最初offline解析曾尝试降级4个包，已丢弃该临时解析并在线重做。TDengine图不含Pageant，无需改它。所有7锁文件1053registry版本已再审计，Pageant0.2.5单独OSV=0。
+
+下一步：将本轮修复提交推送已授权maintenance分支，复用现有maintenance-verification工作流验证最新Pageant真实Windows内核13项、macOS、Nix；继续等待旧main剩余3项结果并修复新失败；随后快进main到已验收提交，等待main必要CI完成，最后更新真实报告/回执。禁止为了加速跳过或弱化失败检查，禁止重新投入Win7/Win10适配，不发安装包或部署生产。日志在work/pandb-upgrade-20261030/logs，后台watch会话54182监看旧main整轮。

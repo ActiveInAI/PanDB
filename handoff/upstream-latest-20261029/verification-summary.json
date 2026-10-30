@@ -96,7 +96,6 @@
   "sql_core_tests": 713,
   "sql_analysis_regressions": 46,
   "dialect_regressions": 173,
-  "pageant_windows_release_tests": 13,
   "sqlite_cipher_compatibility": {
     "old_core": "3.51.3",
     "new_core": "3.54.1",
@@ -171,7 +170,26 @@
   },
   "rust_lockfile_audit": {
     "lockfiles": 7,
-    "registry_versions": 1062,
+    "registry_versions": 1053,
     "ai_proxy_tool_findings": 0
+  },
+  "pageant_previous_0.2.1_windows_release_tests": 13,
+  "pageant_current": {
+    "version": "0.2.5",
+    "target_check": "passed",
+    "target_clippy_deny_warnings": "passed",
+    "username_unit_passed": 8,
+    "native_windows_release": "pending"
+  },
+  "current_delta": {
+    "baseline_main_commit": "e5f92aeeec8c4babd4e69aae475dfaf6a0152410",
+    "baseline_main_ci": 41048830184,
+    "standard_windows_and_ai_proxy": "passed",
+    "ci_rustfmt_issue": "two line wraps fixed; exact CI command exit0",
+    "duckdb_msvc_issue": "sccache 0.16 preprocess argument ordering: direct MSVC C++ path retained; native rebuild pending",
+    "github_scripts": {
+      "passed": 321,
+      "failed": 0
+    }
   }
 }

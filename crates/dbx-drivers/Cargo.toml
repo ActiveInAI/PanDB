@@ -61,7 +61,7 @@ reqwest = { version = "0.13.5", default-features = false, features = ["query", "
 futures = "0.3.34"
 aws-sdk-dynamodb = { version = "1.135.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 russh = "0.65.0"
-pageant = "=0.2.1"
+pageant = "=0.2.5"
 portpicker = "0.1.1"
 csv = "1.4.0"
 base64 = "0.23.1"

@@ -330,6 +330,9 @@ jobs:
         with:
           targets: aarch64-pc-windows-msvc
 
+      - name: Pageant shared-memory security regression
+        run: cargo test --locked -p pageant --lib --release
+
       - name: Windows PE stack reserve audit tests
         shell: pwsh
         run: ./.github/scripts/assert-windows-stack-reserve.test.ps1
@@ -861,9 +864,9 @@ jobs:
       # Linux target caches when thousands of GHA sccache entries pile up.
       SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
       SCCACHE_GHA_VERSION: duckdb-windows-v1
-      # libduckdb-sys uses cc-rs for its bundled C++ sources.
-      CC: "sccache cl.exe"
-      CXX: "sccache cl.exe"
+      # Keep Rust cached, but use MSVC directly for bundled DuckDB C++.
+      # sccache 0.16 places /WX- after cc-rs's separate -Tp and MSVC then
+      # interprets /WX- as the source filename. Match agents-release.yml.
     steps:
       - uses: actions/checkout@v7.0.1
 

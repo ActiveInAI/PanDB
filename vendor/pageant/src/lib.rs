@@ -11,16 +11,11 @@
     clippy::panic
 )]
 
-#[cfg(all(windows, target_vendor = "win7"))]
-pub(crate) use windows_win7 as windows;
-#[cfg(all(windows, not(target_vendor = "win7")))]
-pub(crate) use windows_modern as windows;
+#[cfg(any(windows, test))]
+mod username;
 
 mod error;
 pub use error::*;
-
-#[cfg(any(windows, test))]
-mod username;
 
 #[cfg(all(windows, feature = "wmmessage"))]
 pub mod wmmessage;

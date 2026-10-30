@@ -24,7 +24,7 @@
       "total": 0
     }
   },
-  "rust_registry_versions_queried": 1062,
+  "rust_registry_versions_queried": 1053,
   "rust_unresolved_inventory": [
     {
       "name": "block-buffer",
@@ -434,11 +434,9 @@
     },
     {
       "name": "pageant",
-      "version": "0.2.1",
+      "version": "0.2.5",
       "path": "vendor/pageant",
-      "ids": [
-        "GHSA-g4mp-vgx3-xrvm"
-      ]
+      "ids": []
     },
     {
       "name": "wry",
@@ -453,7 +451,18 @@
       "ids": []
     }
   ],
-  "pageant": "GHSA-g4mp-vgx3-xrvm backported with bounds and lifetime fixes. Windows target check/clippy and native Windows release tests13/13 passed.",
+  "pageant": {
+    "version": "0.2.5",
+    "source": "vendor/pageant/PANDB-SOURCE.json",
+    "osv_ids": [],
+    "windows_target_check_exit": 0,
+    "windows_clippy_deny_warnings_exit": 0,
+    "username_tests_passed": 8,
+    "windows_native_tests": "pending new CI",
+    "previous_0.2.1_native_tests_passed": 13,
+    "legacy_binding_aliases_removed": true,
+    "custom_token_sid_storage_removed": true
+  },
   "sqlite_native_core": {
     "mc_base": "v2.6.1",
     "mc_commit": "45d4ed3487bc02cb08ac73afff47c031c3f88ee0",

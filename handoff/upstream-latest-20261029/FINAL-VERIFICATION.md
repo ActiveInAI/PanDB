@@ -10,7 +10,7 @@
 | Rust严格检查 | CI全工作区、all-targets、`-D warnings`通过 |
 | Linux桌面 | 默认功能完整native build/link通过，包含最新3.54.1多密码SQLite |
 | Windows / macOS / Nix | [交付验收CI41043514043](https://github.com/ActiveInAI/PanDB/actions/runs/41043514043)全部成功；Nix实际构建pnpm包、JS依赖、Rust源vendor并验证Git固定哈希 |
-| Windows Pageant | 真实内核mapping release回归及既有用例合计13通过，包括恶意长度、边界与SID生命周期 |
+| Windows Pageant | 当前 0.2.5：Windows target/Clippy、本机账户名 8 项通过；原生 13 项待本轮 CI。此前 0.2.1 原生结果仅历史证据 |
 | 前端 | Node26下format/lint/typecheck/全量test及生产build通过 |
 | 文档 | Node26生产build及postbuild通过；266索引页、270本地化页、1486导出文件 |
 | GitHub脚本 | 321通过，含3项现代Windows支持策略回归和4项保留手工/停用配置选择检查 |
@@ -41,3 +41,5 @@ DOCX绝对路径：`/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区�
 2026-10-30 支持策略调整：Windows 桌面以 Windows 11+ 为目标；停用 Win7 自动安装包与发布任务，保留标准 Windows 检查，DuckDB/TDengine Windows x64 使用标准 Rust 1.99.1 目标，Go 发布构建统一到 1.27.3。321 项脚本测试全通过，3 个 YAML 与 58 段 Bash 语法验证通过；应用功能代码未改变。
 
 现代 Windows Go agent 交叉编译额外验证：Oracle、RabbitMQ、Xugu、Kingbase 四个 x64 PE 均生成成功，构建信息均为 Go1.27.3。主分支首次安装发现 cbor-extract 可选脚本策略缺失，已显式禁用其原生加速构建并保留纯 JS 回退，未开启任意依赖脚本。独立 AI 代理工具锁文件同步、安全审计范围扩展和 Windows 检查见安全复查。
+
+本轮后续：修复 CI 逐文件 Rustfmt 发现的两处换行；DuckDB Windows CI 保持 Rust sccache，C++ 与既有发布流程一样直接调用 MSVC，修复 sccache 0.16 将 /WX- 排入 -Tp 源文件参数位置的问题。当前版本 Pageant 升级至 0.2.5；7 锁文件 1053 包版本重新审计，Pageant OSV 无命中。标准 Windows 桌面与独立 AI 代理工具已在 main e5f92aeee 的 CI 原生检查通过，其余正在完成；最新组件原生验收仍需本轮 CI 结果。

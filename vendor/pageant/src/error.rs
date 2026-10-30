@@ -22,7 +22,7 @@ pub enum Error {
 
     #[cfg(windows)]
     #[error(transparent)]
-    WindowsError(#[from] crate::windows::core::Error),
+    WindowsError(#[from] windows::core::Error),
 
     #[error(transparent)]
     IoError(#[from] std::io::Error),
@@ -34,11 +34,6 @@ pub enum Error {
 impl Error {
     #[cfg(windows)]
     pub(crate) fn from_win32() -> Self {
-        #[cfg(target_vendor = "win7")]
-        let error = crate::windows::core::Error::from_win32();
-        #[cfg(not(target_vendor = "win7"))]
-        let error = crate::windows::core::Error::from_thread();
-
-        Self::WindowsError(error)
+        Self::WindowsError(windows::core::Error::from_thread())
     }
 }

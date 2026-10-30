@@ -1,0 +1,24 @@
+{
+  "crate": "pageant",
+  "version": "0.2.5",
+  "source": "https://crates.io/api/v1/crates/pageant/0.2.5/download",
+  "sha256": "e0bc922d9aa8cfcf598de27b3c6122cb2eeda9d6fe71527a22ebcb7f633540ff",
+  "verified": "2026-10-30",
+  "license": "Apache-2.0",
+  "license_source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+  "supported_desktop": "Windows 11+",
+  "local_patch_files": [
+    "src/wmmessage.rs",
+    "src/lib.rs",
+    "src/namedpipes.rs",
+    "src/username.rs"
+  ],
+  "local_patches": [
+    "checked mapping length and write cursor arithmetic",
+    "null mapping view cleanup with preserved Win32 error",
+    "mutable destination buffer for mapped reads",
+    "bounded response framing and native Windows regressions",
+    "Retain account-name normalization and empty-principal fallback on modern Windows"
+  ],
+  "removed_legacy": "Win7 binding aliases and custom token/SID storage removed; modern account-name regressions retained"
+}

@@ -10,7 +10,6 @@
 | PostgreSQL | 固定GaussDB兼容fork ac8ad476 | 保留GaussDB与现有协议扩展；未将源码不同的上游fork HEAD盲目替换 |
 | SQL Server | tiberius0.12.3 + 自有补丁 | 注册表0.13缺少send_attention、旧TDS、损坏UTF16恢复；使用当前OpenSSL保留功能 |
 | 本机更新器 | 2.10.1 + 安全扩展，ZIP9 | 注册表2.14缺package_kind、签名离线restore_update与受控安装接口；移除其旧ZIP4间接依赖 |
-| Pageant | 0.2.1 + 边界/SID修复 | 保留用户身份检查；本轮补回CVE-2026-102820读界限与SID/安全属性生命周期修复，Windows真实内核mapping release回归13项通过 |
 | Kafka旧broker支持 | Java client3.9.2维护线 | 4.4移除alterConfigs，现有不支持incrementalAlterConfigs的broker需此fallback；107项unit通过 |
 | MongoDB旧服务兼容 | mongodb-driver-sync3.12.14 | 单独旧服务驱动使用维护兼容线，现代MongoDB路径独立 |
 | IRIS / GBase厂商发布线 | intersystems-jdbc3.11.0 / gbasedbt jdbc3.6.5.21 | 保留厂商提供的现有支持线，避免用不对应的Maven变体替换数据库协议 |
@@ -21,3 +20,5 @@
 新组件主线：Node26.13.0 LTS、pnpm12.16.1、Rust1.99.1、Gradle9.8.2；Wry0.57.1和WebView2 sys0.39.1已迁移并保留自有恢复、剪贴板；历史Win7 loader素材仅保留归档，不纳入支持承诺。
 
 Windows agents 与标准目标统一：Go 1.27.3、Rust 1.99.1、`x86_64-pc-windows-msvc`；Win7 发布作业停用，其余发布任务不依赖这些停用作业。
+
+Pageant 已迁移至官方当前稳定版 0.2.5（注册表 API 与归档 SHA256 已核对），不再因 Win7 固定旧版。保留映射边界保护及现代 Windows 账户名规范化；Windows 目标与严格 Clippy、本机账户名 8 项回归已通过，13 项 Windows 原生回归等待本轮 CI。

@@ -8,7 +8,8 @@ pub(in crate::schema) async fn list_databases(
 ) -> Result<Vec<db::DatabaseInfo>, String> {
     match pool {
         PoolKind::Mysql(p, _)
-            if config.is_some_and(|c| db::mysql_compatible::uses_show_metadata(c) || super::super::is_mycat_config(c)) =>
+            if config
+                .is_some_and(|c| db::mysql_compatible::uses_show_metadata(c) || super::super::is_mycat_config(c)) =>
         {
             db::mysql::list_databases_show(p)
                 .await
@@ -41,7 +42,8 @@ pub(in crate::schema) async fn list_tables(
 ) -> Result<Vec<db::TableInfo>, String> {
     match pool {
         PoolKind::Mysql(p, _)
-            if config.is_some_and(|c| db::mysql_compatible::uses_show_metadata(c) || super::super::is_mycat_config(c)) =>
+            if config
+                .is_some_and(|c| db::mysql_compatible::uses_show_metadata(c) || super::super::is_mycat_config(c)) =>
         {
             db::mysql::list_tables_show(p, database).await
         }
