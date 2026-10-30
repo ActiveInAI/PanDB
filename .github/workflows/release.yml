@@ -596,6 +596,8 @@ jobs:
           }
 
   build-windows-7-offline:
+    # Retired: supported Windows desktop releases target Windows 11+.
+    if: false
     needs: release-ready
     runs-on: windows-2022
     environment: release-signing
@@ -764,6 +766,8 @@ jobs:
           }
 
   build-windows-7-static-browser:
+    # Retired: supported Windows desktop releases target Windows 11+.
+    if: false
     needs: release-ready
     runs-on: windows-2022
     strategy:
@@ -996,7 +1000,7 @@ jobs:
         run: ${SCCACHE_PATH} --show-stats
 
   cleanup-release-signatures:
-    needs: [build, build-windows, build-windows-7-offline]
+    needs: [build, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Remove standalone updater signature assets

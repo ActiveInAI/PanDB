@@ -43,7 +43,8 @@
   "github_script_tests": {
     "passed": 321,
     "failed": 0,
-    "nightly_selection_regressions": 7
+    "nightly_selection_regressions": 4,
+    "modern_windows_policy_regressions": 3
   },
   "go_modules": {
     "toolchain": "go1.27.3",
@@ -127,5 +128,15 @@
     "Live vendor databases and legacy Windows machines were not used for acceptance.",
     "Compatibility pins and upstream unresolved RSA/maintenance advisories are documented; no claim of globally zero vulnerabilities."
   ],
-  "win7_build_toolchain": "All seven existing nightly jobs explicitly set RUSTUP_TOOLCHAIN; modern matrix legs retain1.99.1. Regression tests red before the fix and green after it. No legacy OS runtime acceptance claimed."
+  "win7_build_toolchain": "All seven existing nightly jobs explicitly set RUSTUP_TOOLCHAIN; modern matrix legs retain1.99.1. Regression tests red before the fix and green after it. No legacy OS runtime acceptance claimed.",
+  "windows_support_policy": {
+    "minimum_desktop": "Windows 11",
+    "legacy_bundle_ci": false,
+    "legacy_bundle_release": false,
+    "rust_target": "x86_64-pc-windows-msvc",
+    "rust_toolchain": "1.99.1",
+    "go_toolchain": "1.27.3",
+    "workflow_yaml_files_parsed": 3,
+    "bash_steps_syntax_checked": 58
+  }
 }

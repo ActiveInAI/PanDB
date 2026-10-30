@@ -845,13 +845,13 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     env:
-      RUSTUP_TOOLCHAIN: nightly-2026-10-25
+      RUSTUP_TOOLCHAIN: 1.99.1
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/duckdb-driver
       # An env RUSTFLAGS replaces .cargo/config.toml target rustflags, so the
       # 8 MiB main-thread stack must be repeated here: without it the Windows PE
       # keeps the 1 MiB linker default and deep connect/serde call stacks abort
-      # with 0xC00000FD ("DBX 已停止工作"). Guarded by assert-win7-pe-compat.ps1.
+      # with 0xC00000FD ("DBX 已停止工作"). The standard Windows stack check covers the same reservation.
       RUSTFLAGS: -C debuginfo=line-tables-only -C target-feature=+crt-static -C link-arg=/STACK:8388608
       RUSTC_WRAPPER: sccache
       # Prefer S3 when available; GitHub's 10 GB cache quota evicts the shared
@@ -864,11 +864,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - name: Setup Rust for Windows 7
-        uses: dtolnay/rust-toolchain@nightly
+      - name: Setup Rust for supported Windows
+        uses: dtolnay/rust-toolchain@1.99.1
         with:
           toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
-          components: rust-src
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
@@ -907,12 +906,12 @@ jobs:
       - name: Build DuckDB Windows driver
         shell: pwsh
         working-directory: agents/drivers/duckdb
-        run: cargo build --locked --release --bin dbx-duckdb-driver --target x86_64-win7-windows-msvc -Z build-std=std,panic_abort
+        run: cargo build --locked --release --bin dbx-duckdb-driver --target x86_64-pc-windows-msvc
 
       - name: Validate DuckDB Windows driver
         shell: bash
         run: |
-          DRIVER="target/duckdb-driver/x86_64-win7-windows-msvc/release/dbx-duckdb-driver.exe"
+          DRIVER="target/duckdb-driver/x86_64-pc-windows-msvc/release/dbx-duckdb-driver.exe"
           python agents/scripts/validate_windows_pe_dependencies.py "$DRIVER"
           "$DRIVER" < /dev/null
 

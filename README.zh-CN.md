@@ -10,6 +10,8 @@
 
 </div>
 
+Windows 桌面支持目标为 Windows 11 及以上；不再维护 Windows 7/10 兼容构建与验证。
+
 ## 为什么选择 PanDB？
 
 <table>

@@ -164,3 +164,7 @@
 - 首次main推送被GitHub index-pack拒绝，main仍为b74f8b14，未更新。原因是上游浅历史中缺失ancestor对象efcdabe；已从原上游补全历史（67→9262提交，is-shallow=false），缺失对象可读取，connectivity fsck通过。后续改用完整pack传输，关闭followTags，保持普通fast-forward推送。
 - 在推送前复查发现新rust-toolchain.toml会覆盖仅rustup-default的Win7 nightly job；dtolnay action确实只设置default。七条既有nightly job现显式RUSTUP_TOOLCHAIN，混合agent matrix的现代leg仍用项目1.99.1。新增7回归先红后绿，脚本总计321通过，4份YAML解析通过。
 - 这是CI配置修复，运行时源码仍与f2a5相同。旧88854bf7 rollout未成功推送，保留为本地草稿。最终release将重新以原main为第一父节点，单个merge可revert。
+
+## 2026-10-30 Windows 支持范围收敛
+
+用户明确要求停止 Win7/Win10 适配投入。上游/依赖整合已以 23a4e4b60b2c5e383c6fd670db639c6203c8057a 推送 main 并独立读回。此后仅调整 Windows CI/发布策略与说明：Win7 bundle 分流恒 false、两个遗留发布作业停用并解除发布后续依赖、原生驱动标准 Windows 目标与 Go1.27.3，保留标准 Windows 编译及启动/PE检查。应用功能代码未改变。新增策略测试先 3 项失败、修复后全量脚本 321/321 通过；3 工作流 YAML 解析、58 Bash 步骤语法与 git diff --check 通过。历史源码/手工工具未做无关清理，不再承诺旧 Windows 验收。

@@ -10,6 +10,8 @@
 
 </div>
 
+Supported Windows desktop: Windows 11 and later. Windows 7/10 compatibility builds and validation are no longer maintained.
+
 ## Why PanDB?
 
 <table>

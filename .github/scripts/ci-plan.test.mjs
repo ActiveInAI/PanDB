@@ -139,7 +139,7 @@ test("old Win7 Rust paths remain candidates through the dependency graph", () =>
   }
 });
 
-test("Win7 infrastructure changes remain candidates outside the Cargo graph", () => {
+test("Windows infrastructure changes retain standard checks without legacy bundles", () => {
   for (const file of [
     ".github/scripts/assert-win7-pe-compat.ps1",
     ".github/scripts/assert-windows-stack-reserve.ps1",
@@ -170,7 +170,7 @@ test("Win7 infrastructure changes remain candidates outside the Cargo graph", ()
     const result = plan([file]);
     assert.equal(result.windows_win7_candidate, true, file);
     assert.equal(result.windows_standard, true, file);
-    assert.equal(result.windows_win7_bundle, true, file);
+    assert.equal(result.windows_win7_bundle, false, file);
   }
 });
 
@@ -182,27 +182,27 @@ test("Windows stack test changes run the standard Windows checks", () => {
   }
 });
 
-test("Win7 dependency inputs fail open", () => {
+test("dependency inputs retain standard Windows coverage without legacy bundles", () => {
   for (const file of ["Cargo.toml", "Cargo.lock", "src-tauri/Cargo.toml", "crates/dbx-cli/Cargo.toml"]) {
     assert.equal(plan([file]).windows_win7_candidate, true, file);
     assert.equal(plan([file]).windows_standard, true, file);
-    assert.equal(plan([file]).windows_win7_bundle, true, file);
+    assert.equal(plan([file]).windows_win7_bundle, false, file);
   }
 });
 
-test("unknown Rust changes and unknown diffs remain Win7 candidates", () => {
+test("unknown Rust changes retain standard Windows coverage without legacy bundles", () => {
   for (const files of [["crates/new-engine/src/lib.rs"], null]) {
     const result = plan(files);
     assert.equal(result.windows_win7_candidate, true);
     assert.equal(result.windows_standard, true);
-    assert.equal(result.windows_win7_bundle, true);
+    assert.equal(result.windows_win7_bundle, false);
   }
   const fixture = structuredClone(metadata);
   fixture.workspace_members.push("new-engine");
   fixture.packages.push({ id: "new-engine", name: "new-engine", manifest_path: `${root}/crates/new-engine/Cargo.toml`, dependencies: [] });
   const result = plan(["crates/dbx-web/src/lib.rs"], { metadata: fixture });
   assert.equal(result.windows_standard, true);
-  assert.equal(result.windows_win7_bundle, true);
+  assert.equal(result.windows_win7_bundle, false);
   assert.equal(result.windows_win7_reasons.unknown_member, true);
   assert.equal(plan(["docs/README.md"], { metadata: fixture }).windows_win7_bundle, false);
 });

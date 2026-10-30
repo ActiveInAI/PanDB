@@ -13,7 +13,7 @@
 | Windows Pageant | 真实内核mapping release回归及既有用例合计13通过，包括恶意长度、边界与SID生命周期 |
 | 前端 | Node26下format/lint/typecheck/全量test及生产build通过 |
 | 文档 | Node26生产build及postbuild通过；266索引页、270本地化页、1486导出文件 |
-| GitHub脚本 | 321通过，含7个nightly选择回归 |
+| GitHub脚本 | 321通过，含3项现代Windows支持策略回归和4项保留手工/停用配置选择检查 |
 | Go | Go1.27.3下21模块build和short unit命令通过 |
 | Java | 持久JUnit报告读回527通过，无失败和跳过 |
 | 插件SDK | Node26开发宿主build及58测试通过；Rust CLI23、packager8通过 |
@@ -30,10 +30,12 @@
 
 这是源码、依赖、构建与隔离功能验证；未对真实业务数据库或旧Windows实机执行迁移和运行验收。370项平台/显式集成用例按原配置跳过。
 
-**不能宣称每个依赖均为其注册表最新大版本，也不能宣称全项目零漏洞。** API/ABI、旧格式和操作系统的维护兼容线见[兼容性说明](COMPATIBILITY.md)；RSA上游无已修复版本及其它维护状态告警、Go未使用依赖图告警的分类见[安全复查](SECURITY-REVIEW.md)。未添加审计忽略项。
+**不能宣称每个依赖均为其注册表最新大版本，也不能宣称全项目零漏洞。** API/ABI与旧格式的维护兼容线见[兼容性说明](COMPATIBILITY.md)；RSA上游无已修复版本及其它维护状态告警、Go未使用依赖图告警的分类见[安全复查](SECURITY-REVIEW.md)。未添加审计忽略项。
 
 ## 文档交付与证据
 
 DOCX绝对路径：`/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区相关内容.docx`。ZIP完整性与逐段社区词/链接复查均通过。
 
 结构化结果见[verification-summary.json](verification-summary.json)。原始日志与隔离验收文件位于 `/home/arch-gpt--notebook001/work/pandb-upgrade-20261030`；本地开发工作树为 `/home/arch-gpt--notebook001/dev/worktrees/pandb/upstream-latest-dependencies-20261029`。
+
+2026-10-30 支持策略调整：Windows 桌面以 Windows 11+ 为目标；停用 Win7 自动安装包与发布任务，保留标准 Windows 检查，DuckDB/TDengine Windows x64 使用标准 Rust 1.99.1 目标，Go 发布构建统一到 1.27.3。321 项脚本测试全通过，3 个 YAML 与 58 段 Bash 语法验证通过；应用功能代码未改变。

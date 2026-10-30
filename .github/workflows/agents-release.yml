@@ -169,7 +169,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
       - name: Test Oracle native agent
         working-directory: agents/drivers/oracle-go
         run: go test ./...
@@ -195,20 +195,20 @@ jobs:
             CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$output" .
           done
           ls -lh ../../../release-native
-      # Go 1.20 is the last release that supports Windows 7; keep other targets on Go 1.22.
-      - name: Set up Go for Windows 7-compatible Oracle agent
+      # Windows x64 uses the same current stable Go toolchain as the other targets.
+      - name: Set up Go for Windows x64 Oracle agent
         uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
           cache-dependency-path: agents/drivers/oracle-go/go.sum
-      - name: Build Windows 7-compatible Oracle agent
+      - name: Build Windows x64 Oracle agent
         shell: bash
         working-directory: agents/drivers/oracle-go
         run: |
           output="../../../release-native/dbx-agent-oracle-windows-x64.exe"
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o "$output" .
           go version -m "$output" | tee /tmp/oracle-windows-x64-build-info.txt
-          grep -q ': go1\.20\.14$' /tmp/oracle-windows-x64-build-info.txt
+          grep -q ': go1\.27\.3$' /tmp/oracle-windows-x64-build-info.txt
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: oracle-native
@@ -225,7 +225,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          # godror 需要 Go >= 1.21；thin 的 Windows 7 兼容线仍由 build-oracle-native 用 Go 1.20 构建。
+          # godror 与 thin 变体使用同一当前稳定 Go 工具链。
           go-version: "1.27.x"
           cache-dependency-path: agents/drivers/oracle-go/go.sum
       - name: Prepare MinGW-w64 and the Oracle Instant Client
@@ -290,7 +290,7 @@ jobs:
         run: |
           mkdir -p ../../../release-native
           output="../../../release-native/dbx-agent-oracle-oci-windows-x64.exe"
-          # go.mod 的 go 指令保持 1.20（thin 的 Windows 7 兼容线）；OCI 变体要求更高，
+          # OCI 变体的构建目标要求更高的 Go 语言基线，
           # 因此允许就地更新 go.mod —— 只影响本任务的检出目录，不会被提交。
           go build -mod=mod -tags oci -trimpath -ldflags="-s -w" -o "$output" .
           ls -lh ../../../release-native
@@ -307,7 +307,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
       - name: Test Xugu native agent
         working-directory: agents/drivers/xugu
         run: GONOSUMDB=gitee.com/XuguDB/go-xugu-driver go test ./...
@@ -347,7 +347,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
       - name: Test RabbitMQ native agent
         working-directory: agents/drivers/rabbitmq
         run: go test ./...
@@ -373,20 +373,20 @@ jobs:
             CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="-s -w" -o "$output" .
           done
           ls -lh ../../../release-native
-      # Go 1.20 is the last release that supports Windows 7; keep other targets on Go 1.22.
-      - name: Set up Go for Windows 7-compatible RabbitMQ agent
+      # Windows x64 uses the same current stable Go toolchain as the other targets.
+      - name: Set up Go for Windows x64 RabbitMQ agent
         uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
           cache-dependency-path: agents/drivers/rabbitmq/go.sum
-      - name: Build Windows 7-compatible RabbitMQ agent
+      - name: Build Windows x64 RabbitMQ agent
         shell: bash
         working-directory: agents/drivers/rabbitmq
         run: |
           output="../../../release-native/dbx-agent-rabbitmq-windows-x64.exe"
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o "$output" .
           go version -m "$output" | tee /tmp/rabbitmq-windows-x64-build-info.txt
-          grep -q ': go1\.20\.14$' /tmp/rabbitmq-windows-x64-build-info.txt
+          grep -q ': go1\.27\.3$' /tmp/rabbitmq-windows-x64-build-info.txt
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: rabbitmq-native
@@ -680,7 +680,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.20.14"
+          go-version: "1.27.3"
       - name: Test Kingbase native agent
         working-directory: agents/drivers/kingbase-go
         run: go test ./...
@@ -900,13 +900,12 @@ jobs:
             platform: windows-aarch64
             extension: .exe
           - runner: windows-2022
-            target: x86_64-win7-windows-msvc
+            target: x86_64-pc-windows-msvc
             platform: windows-x64
             extension: .exe
-            win7: true
     runs-on: ${{ matrix.runner }}
     env:
-      RUSTUP_TOOLCHAIN: ${{ matrix.win7 == true && 'nightly-2026-10-25' || '1.99.1' }}
+      RUSTUP_TOOLCHAIN: 1.99.1
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/duckdb-driver
       RUSTC_WRAPPER: sccache
@@ -914,15 +913,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@1.99.1
-        if: runner.os != 'Linux' && matrix.win7 != true
+        if: runner.os != 'Linux'
         with:
           targets: ${{ matrix.target }}
-      - name: Setup Rust for Windows 7
-        if: matrix.win7 == true
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
-          components: rust-src
       - uses: actions/setup-python@v7.1.0
         if: runner.os == 'Windows'
         with:
@@ -965,7 +958,7 @@ jobs:
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             # An env RUSTFLAGS replaces .cargo/config.toml target rustflags; keep
-            # the 8 MiB main-thread stack of the DBX app for the Win7 driver too.
+            # the 8 MiB main-thread stack of the DBX app for the Windows driver too.
             export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-feature=+crt-static -C link-arg=/STACK:8388608"
           fi
           if [ -n "${{ matrix.manylinux_image }}" ]; then
@@ -1013,18 +1006,13 @@ jobs:
                 fi
               '
           else
-            BUILD_STD=()
-            if [ "${{ matrix.win7 }}" = "true" ]; then
-              BUILD_STD=(-Z build-std=std,panic_abort)
-            fi
             pushd agents/drivers/duckdb
             cargo build \
               --manifest-path Cargo.toml \
               --locked \
               --release \
               --bin dbx-duckdb-driver \
-              --target "${{ matrix.target }}" \
-              "${BUILD_STD[@]}"
+              --target "${{ matrix.target }}"
             popd
           fi
           mkdir -p release-native
@@ -1135,14 +1123,13 @@ jobs:
             platform: windows-aarch64
             extension: .exe
           - runner: windows-2022
-            target: x86_64-win7-windows-msvc
+            target: x86_64-pc-windows-msvc
             platform: windows-x64
             extension: .exe
             smoke: true
-            win7: true
     runs-on: ${{ matrix.runner }}
     env:
-      RUSTUP_TOOLCHAIN: ${{ matrix.win7 == true && 'nightly-2026-10-25' || '1.99.1' }}
+      RUSTUP_TOOLCHAIN: 1.99.1
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/tdengine-driver
       RUSTC_WRAPPER: sccache
@@ -1150,15 +1137,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@1.99.1
-        if: runner.os != 'Linux' && matrix.win7 != true
+        if: runner.os != 'Linux'
         with:
           targets: ${{ matrix.target }}
-      - name: Setup Rust for Windows 7
-        if: matrix.win7 == true
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: ${{ env.RUSTUP_TOOLCHAIN }}
-          components: rust-src
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         with:
           version: "v0.16.0"
@@ -1240,17 +1221,12 @@ jobs:
                 fi
               '
           else
-            BUILD_STD=()
-            if [ "${{ matrix.win7 }}" = "true" ]; then
-              BUILD_STD=(-Z build-std=std,panic_abort)
-            fi
             cargo build \
               --manifest-path agents/drivers/tdengine/Cargo.toml \
               --locked \
               --release \
               --bin dbx-tdengine-driver \
-              --target "${{ matrix.target }}" \
-              "${BUILD_STD[@]}"
+              --target "${{ matrix.target }}"
           fi
           mkdir -p release-native
           cp \

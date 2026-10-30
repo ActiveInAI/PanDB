@@ -147,7 +147,8 @@ export function planCi({ files, metadata, root, eventName = "pull_request", rust
     duckdb_changed: nativeChanges.has("duckdb"),
     duckdb_windows: sharedRust || files.some((file) => file.startsWith("agents/drivers/duckdb/")),
     windows_standard: windowsWin7Candidate || files.some((file) => file === ".github/scripts/assert-windows-stack-reserve.test.ps1" || file === ".github/scripts/test-windows-stack-reserve.ps1"),
-    windows_win7_bundle: win7InfrastructureChanged || win7DependencyChanged || unknownRust || (rust && unknownMember),
+    // Windows 11+ is the supported desktop baseline; legacy bundles are retired.
+    windows_win7_bundle: false,
     windows_win7_candidate: windowsWin7Candidate,
     windows_win7_affected_packages: [...win7Affected].sort(),
     windows_win7_reasons: windowsWin7Reasons,
