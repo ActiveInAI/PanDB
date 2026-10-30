@@ -1296,7 +1296,7 @@ impl DbxMcpServer {
         sql: &str,
         allow_database_switch: bool,
         defer_token_consumption: bool,
-    ) -> Result<(McpGlobalPolicy, Option<String>), CallToolResult> {
+    ) -> Result<(McpGlobalPolicy, Option<String>), Box<CallToolResult>> {
         let high_risk = classify_sql_risk_for_database(sql, connection.db_type).is_ok_and(|risk| risk == SqlRisk::Ddl)
             || is_dangerous_sql_for_database(sql, connection.db_type);
         if !high_risk {
@@ -1309,7 +1309,7 @@ impl DbxMcpServer {
         );
         if decision == McpCallDecision::Deny {
             validate_sql_policy(connection, policy, database, sql, allow_database_switch)?;
-            return Err(tool_error("SQL_BLOCKED", "High-risk SQL exceeds the effective MCP permission."));
+            return Err(Box::new(tool_error("SQL_BLOCKED", "High-risk SQL exceeds the effective MCP permission.")));
         }
         if decision == McpCallDecision::Allow {
             return Ok((policy.clone(), None));
@@ -1334,7 +1334,7 @@ impl DbxMcpServer {
             })
             .await?;
         if refreshed.connection != *connection {
-            return Err(tool_error("SQL_BLOCKED", "Connection changed while awaiting approval."));
+            return Err(Box::new(tool_error("SQL_BLOCKED", "Connection changed while awaiting approval.")));
         }
         self.resolve_database(Some(database.to_string()), &refreshed)?;
         ensure_sql_database_scope(&refreshed.database_scope, connection, database, sql)?;
@@ -1348,7 +1348,7 @@ impl DbxMcpServer {
                 true,
             ) != McpCallDecision::Confirm
         {
-            return Err(tool_error("SQL_BLOCKED", "High-risk SQL approval was revoked."));
+            return Err(Box::new(tool_error("SQL_BLOCKED", "High-risk SQL approval was revoked.")));
         }
         if current.confirmation_policy() == McpConfirmPolicy::Full {
             current.allow_dangerous_sql = true;
@@ -1376,12 +1376,15 @@ impl DbxMcpServer {
         database: &str,
         sql: &str,
         token: Option<&str>,
-    ) -> Result<dbx_core::agent_tools::AgentSqlPermissions, CallToolResult> {
+    ) -> Result<dbx_core::agent_tools::AgentSqlPermissions, Box<CallToolResult>> {
         let high_risk = classify_sql_risk_for_database(sql, connection.db_type).is_ok_and(|risk| risk == SqlRisk::Ddl)
             || is_dangerous_sql_for_database(sql, connection.db_type);
         if high_risk {
             if current.confirmation_policy() != admitted_policy.confirmation_policy() {
-                return Err(tool_error("SQL_BLOCKED", "SQL confirmation policy changed while queued. Retry the call."));
+                return Err(Box::new(tool_error(
+                    "SQL_BLOCKED",
+                    "SQL confirmation policy changed while queued. Retry the call.",
+                )));
             }
             let decision = current.confirmation_policy().decide(
                 McpAccessLevel::from_flags(current.read_only, current.allow_dangerous_sql),
@@ -1390,10 +1393,10 @@ impl DbxMcpServer {
             );
             if decision == McpCallDecision::Confirm {
                 if token.is_none() {
-                    return Err(tool_error(
+                    return Err(Box::new(tool_error(
                         "SQL_BLOCKED",
                         "Queued high-risk SQL requires confirmation. Retry the call.",
-                    ));
+                    )));
                 }
                 if current.confirmation_policy() == McpConfirmPolicy::Full {
                     current.allow_dangerous_sql = true;
@@ -2157,7 +2160,7 @@ impl DbxMcpServer {
         }
         let (rows, note) = match self.plugin_tool_catalog().await {
             Ok(catalog) => catalog,
-            Err(error) => return error,
+            Err(error) => return *error,
         };
         let filter = request.filter.as_deref().map(str::trim).filter(|value| !value.is_empty());
         let mut lines = Vec::new();
@@ -2228,7 +2231,7 @@ impl DbxMcpServer {
         };
         let allowed_connections = match self.allowed_plugin_connections_for(plugin_id).await {
             Ok(allowed) => allowed,
-            Err(error) => return error,
+            Err(error) => return *error,
         };
         let read_only_by_connection = self.plugin_connection_read_only_if_unconfigured().await;
         if self.scope.enabled() && allowed_connections.is_empty() {
@@ -2361,7 +2364,7 @@ impl DbxMcpServer {
         }
         let dispatched = match self.call_plugin_by_id(plugin_id, tool, arguments).await {
             Ok(result) => result,
-            Err(error) => return error,
+            Err(error) => return *error,
         };
         self.postprocess_plugin_result(plugin_id, tool, &request.dbx_connection, dispatched).await
     }
@@ -2851,7 +2854,7 @@ impl DbxMcpServer {
             .await
         {
             Ok(approval) => approval,
-            Err(error) => return error,
+            Err(error) => return *error,
         };
         if approval_token.is_some() {
             if let Err(error) = self.ensure_tool_allowed("dbx_execute_query").await {
@@ -2936,7 +2939,7 @@ impl DbxMcpServer {
                 .await
             {
                 Ok(permissions) => permissions,
-                Err(error) => return error,
+                Err(error) => return *error,
             };
             if let Err(error) = validate_transaction_sql_shape(&request.sql) {
                 return tool_error("TRANSACTION_SQL_BLOCKED", error);
@@ -3189,7 +3192,7 @@ impl DbxMcpServer {
             .await
         {
             Ok(approval) => approval,
-            Err(error) => return error,
+            Err(error) => return *error,
         };
         if approval_token.is_some() {
             if let Err(error) = self.ensure_tool_allowed("dbx_execute_batch").await {
@@ -3272,7 +3275,7 @@ impl DbxMcpServer {
                 .await
             {
                 Ok(permissions) => permissions,
-                Err(error) => return error,
+                Err(error) => return *error,
             };
             if let Some(message) = confirmed_batch_sql_block_reason(
                 sql,
@@ -4442,7 +4445,7 @@ impl DbxMcpServer {
         } else {
             match self.approved_sql_policy(connection, &policy, &database, &request.sql, false, true).await {
                 Ok(approval) => approval,
-                Err(error) => return error,
+                Err(error) => return *error,
             }
         };
         if approval_token.is_some() {
@@ -5581,7 +5584,7 @@ impl DbxMcpServer {
     /// note instead of failing `dbx_plugin_list`.
     async fn plugin_tool_catalog(
         &self,
-    ) -> Result<(Vec<(String, String, usize, usize)>, Option<String>), CallToolResult> {
+    ) -> Result<(Vec<(String, String, usize, usize)>, Option<String>), Box<CallToolResult>> {
         let providers = match self.backend.list_plugin_mcp_tools().await {
             Ok(providers) => providers,
             Err(error) => {
@@ -5669,7 +5672,10 @@ impl DbxMcpServer {
 
     /// Resolves the policy-allowed connections of one plugin for the meta
     /// tools. Fails closed on policy errors (same as flat calls).
-    async fn allowed_plugin_connections_for(&self, plugin_id: &str) -> Result<Vec<(String, String)>, CallToolResult> {
+    async fn allowed_plugin_connections_for(
+        &self,
+        plugin_id: &str,
+    ) -> Result<Vec<(String, String)>, Box<CallToolResult>> {
         let allowed = self.allowed_plugin_connections().await?;
         Ok(allowed.get(plugin_id).cloned().unwrap_or_default())
     }
@@ -5679,7 +5685,7 @@ impl DbxMcpServer {
     /// when no explicit rule says otherwise) on both the listing and the call
     /// path so a tool never advertises where it cannot run, and never hides
     /// where it can.
-    async fn plugin_connection_read_only(&self) -> Result<HashMap<String, bool>, CallToolResult> {
+    async fn plugin_connection_read_only(&self) -> Result<HashMap<String, bool>, Box<CallToolResult>> {
         let connections =
             self.backend.load_connections().await.map_err(|error| tool_error("CONNECTION_LOAD_ERROR", error))?;
         Ok(connections
@@ -5712,21 +5718,21 @@ impl DbxMcpServer {
         plugin_id: &str,
         tool: &str,
         mut arguments: serde_json::Value,
-    ) -> Result<serde_json::Value, CallToolResult> {
+    ) -> Result<serde_json::Value, Box<CallToolResult>> {
         let providers = match self.backend.list_plugin_mcp_tools().await {
             Ok(providers) => providers,
-            Err(error) => return Err(backend_tool_error("DBX_TOOL_ERROR", error)),
+            Err(error) => return Err(Box::new(backend_tool_error("DBX_TOOL_ERROR", error))),
         };
         let entry = crate::plugin_tools::build_catalog(&providers)
             .into_iter()
             .find(|entry| entry.plugin_id == plugin_id && entry.tool.name == tool);
         let Some(entry) = entry else {
-            return Err(tool_error(
+            return Err(Box::new(tool_error(
                 "TOOL_NOT_FOUND",
                 format!(
                     "Plugin \"{plugin_id}\" does not provide a tool named \"{tool}\". Use dbx_plugin_tools to list this plugin's tools."
                 ),
-            ));
+            )));
         };
         // Lazy calls are governed by the same per-tool allowlist as the flat
         // surface: gate on the exposed name so an allowlist cannot be bypassed
@@ -5741,17 +5747,17 @@ impl DbxMcpServer {
         }
         let allowed = match self.allowed_plugin_connections().await {
             Ok(allowed) => allowed.get(plugin_id).cloned().unwrap_or_default(),
-            Err(error) => return Err(error),
+            Err(error) => return Err(Box::new(error)),
         };
         let bound = match crate::plugin_tools::select_connection(&allowed, selector.as_deref()) {
             Ok(bound) => bound.cloned(),
-            Err(message) => return Err(tool_error("CONNECTION_NOT_FOUND", message)),
+            Err(message) => return Err(Box::new(tool_error("CONNECTION_NOT_FOUND", message))),
         };
         if entry.requires_connection() && bound.is_none() {
-            return Err(tool_error(
+            return Err(Box::new(tool_error(
                 "CONNECTION_NOT_FOUND",
                 format!("Plugin tool \"{}\" requires an allowed plugin connection.", entry.exposed_name),
-            ));
+            )));
         }
         if let Some((connection_id, connection_name)) = &bound {
             let _ = CALL_HISTORY.try_with(|history| {
@@ -5777,7 +5783,7 @@ impl DbxMcpServer {
                 &arguments,
             )
             .await
-            .map_err(|error| backend_tool_error("DBX_TOOL_ERROR", error))
+            .map_err(|error| Box::new(backend_tool_error("DBX_TOOL_ERROR", error)))
     }
 
     /// Renders a `dbx_plugin_call` answer: converts the plugin result,

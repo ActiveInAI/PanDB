@@ -80,7 +80,7 @@ fn activate_links(pending: &Mutex<PendingDeepLinks>) -> Vec<String> {
         return Vec::new();
     };
     pending.frontend_ready = true;
-    pending.links.drain(..).collect()
+    std::mem::take(&mut pending.links)
 }
 
 pub fn connection_deep_links_from_args<I, S>(args: I) -> Vec<String>

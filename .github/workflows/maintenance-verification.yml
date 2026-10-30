@@ -28,6 +28,19 @@ jobs:
           CXXFLAGS: /std:c++17 /EHsc
         run: cargo check --locked -p dbx --target x86_64-pc-windows-msvc --no-default-features --features sqlite-multiple-ciphers,os-keyring,sqlserver-native-attention
 
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: Swatinem/rust-cache@v2.9.3
+        with:
+          shared-key: pandb-maintenance-macos
+          cache-on-failure: true
+      - name: Check macOS desktop and native integrations
+        run: cargo check --locked -p dbx --no-default-features --features sqlite-multiple-ciphers,os-keyring,sqlserver-native-attention
+
   nix:
     runs-on: ubuntu-24.04
     timeout-minutes: 40

@@ -10486,6 +10486,21 @@ fn map_from_sql_err(err: serde_json::Error) -> rusqlite::Error {
     rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(err))
 }
 
+// SQLite INTEGER is signed. Preserve checked unsigned conversions at the storage boundary.
+struct SqlU64(u64);
+impl rusqlite::ToSql for SqlU64 {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let value = i64::try_from(self.0).map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+        Ok(value.into())
+    }
+}
+impl rusqlite::types::FromSql for SqlU64 {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        let value = value.as_i64()?;
+        u64::try_from(value).map(Self).map_err(|_| rusqlite::types::FromSqlError::OutOfRange(value))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -16842,20 +16857,5 @@ mod tests {
         assert_eq!(detail.transfer.unwrap().selected_object_count, Some(0));
         assert!(reopened.delete_task_run(&run.run_id).await.unwrap());
         assert!(reopened.get_task_run_detail(&run.run_id).await.unwrap().is_none());
-    }
-}
-
-// SQLite INTEGER is signed. Preserve checked unsigned conversions at the storage boundary.
-struct SqlU64(u64);
-impl rusqlite::ToSql for SqlU64 {
-    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
-        let value = i64::try_from(self.0).map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
-        Ok(value.into())
-    }
-}
-impl rusqlite::types::FromSql for SqlU64 {
-    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
-        let value = value.as_i64()?;
-        u64::try_from(value).map(Self).map_err(|_| rusqlite::types::FromSqlError::OutOfRange(value))
     }
 }

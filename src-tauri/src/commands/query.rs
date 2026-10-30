@@ -71,7 +71,7 @@ pub async fn execute_query(
     client_session_id: Option<String>,
     timeout_secs: Option<u64>,
     execution_mode: Option<dbx_core::query::QueryExecutionMode>,
-) -> Result<db::QueryResult, BackendError> {
+) -> Result<db::QueryResult, Box<BackendError>> {
     let execution_id = execution_id.filter(|id| !id.trim().is_empty());
     let registered_query = execution_id.as_ref().map(|id| {
         state.running_queries.register_task(
@@ -112,7 +112,7 @@ pub async fn execute_query(
         registered_query.finish(&result);
     }
 
-    result.map_err(dbx_core::query::QueryExecutionError::into_backend_error)
+    result.map_err(|error| Box::new(error.into_backend_error()))
 }
 
 #[tauri::command]
@@ -134,7 +134,7 @@ pub async fn execute_conditional_update(
     timeout_secs: Option<u64>,
     execution_mode: Option<dbx_core::query::QueryExecutionMode>,
     type_recovery: Option<dbx_core::storage::TypeRecoveryContext>,
-) -> Result<db::QueryResult, BackendError> {
+) -> Result<db::QueryResult, Box<BackendError>> {
     let execution_id =
         execution_id.filter(|id| !id.trim().is_empty()).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
     let recovery = type_recovery.map(|context| dbx_core::storage::TypeExecutionBinding {
@@ -188,8 +188,7 @@ pub async fn execute_conditional_update(
             recovery.as_ref(),
             result,
         )
-        .await
-        .map_err(|error| *error);
+        .await;
         let _ = result_tx.send(result);
     });
 
@@ -198,26 +197,26 @@ pub async fn execute_conditional_update(
             Ok(Ok(result)) => result,
             Ok(Err(_)) => {
                 let message = "Conditional update execution task stopped unexpectedly";
-                Err(if durable_recovery {
+                Err(Box::new(if durable_recovery {
                     BackendError::from_legacy_backend(message)
                 } else {
                     BackendError::from_sql_detail(message)
-                })
+                }))
             }
-            Err(_) => Err(BackendError::from_timeout_detail(&format!(
+            Err(_) => Err(Box::new(BackendError::from_timeout_detail(&format!(
                 "Query timed out after {} seconds",
                 timeout.as_secs().max(1)
-            ))),
+            )))),
         },
         None => match result_rx.await {
             Ok(result) => result,
             Err(_) => {
                 let message = "Conditional update execution task stopped unexpectedly";
-                Err(if durable_recovery {
+                Err(Box::new(if durable_recovery {
                     BackendError::from_legacy_backend(message)
                 } else {
                     BackendError::from_sql_detail(message)
-                })
+                }))
             }
         },
     }
@@ -249,7 +248,7 @@ pub async fn execute_multi(
     execution_mode: Option<dbx_core::query::QueryExecutionMode>,
     preserve_explicit_transaction: Option<bool>,
     defer_lobs: Option<bool>,
-) -> Result<Vec<dbx_core::query::ExecuteMultiResult>, BackendError> {
+) -> Result<Vec<dbx_core::query::ExecuteMultiResult>, Box<BackendError>> {
     let execution_id = execution_id.filter(|id| !id.trim().is_empty());
     let registered_query = execution_id.as_ref().map(|id| {
         state.running_queries.register_task(
@@ -345,7 +344,7 @@ pub async fn execute_multi(
         registered_query.finish(&result);
     }
 
-    result.map_err(dbx_core::query::QueryExecutionError::into_backend_error)
+    result.map_err(|error| Box::new(error.into_backend_error()))
 }
 
 #[tauri::command]
@@ -1373,6 +1372,15 @@ pub fn build_create_user_sql(username: String, password: String, tablespace: Str
 mod tests {
     use super::*;
     use std::sync::Arc;
+
+    #[test]
+    fn boxed_query_command_error_preserves_the_invoke_envelope() {
+        let error = BackendError::from_legacy_backend("synthetic command error");
+        let plain: tauri::ipc::InvokeError = error.clone().into();
+        let boxed: tauri::ipc::InvokeError = Box::new(error).into();
+        assert_eq!(plain.0, boxed.0);
+        assert_eq!(boxed.0["code"], "DBX-LEGACY-0001");
+    }
 
     async fn test_app_state() -> Arc<AppState> {
         let dir = std::env::temp_dir().join(format!("dbx-query-test-{}", uuid::Uuid::new_v4()));
