@@ -1,22 +1,22 @@
-#[cfg(feature = "use-rustls")]
-use rustls_pemfile::Item;
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
+use tokio_rustls::rustls::pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer};
+#[cfg(feature = "use-rustls-no-provider")]
 use tokio_rustls::rustls::{
     self,
     pki_types::{InvalidDnsNameError, ServerName},
     ClientConfig, RootCertStore,
 };
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use tokio_rustls::TlsConnector as RustlsConnector;
 
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use std::convert::TryFrom;
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use std::io::{BufReader, Cursor};
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 use std::sync::Arc;
 
-use crate::framed::N;
+use crate::framed::AsyncReadWrite;
 use crate::TlsConfiguration;
 
 #[cfg(feature = "use-native-tls")]
@@ -36,27 +36,27 @@ pub enum Error {
     /// I/O related error
     #[error("I/O: {0}")]
     Io(#[from] io::Error),
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// Certificate/Name validation error
     #[error("Web Pki: {0}")]
     WebPki(#[from] webpki::Error),
     /// Invalid DNS name
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     #[error("DNS name")]
     DNSName(#[from] InvalidDnsNameError),
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// Error from rustls module
     #[error("TLS error: {0}")]
     TLS(#[from] rustls::Error),
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// No valid CA cert found
     #[error("No valid CA certificate provided")]
     NoValidCertInChain,
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// No valid client cert found
     #[error("No valid certificate for client authentication in chain")]
     NoValidClientCertInChain,
-    #[cfg(feature = "use-rustls")]
+    #[cfg(feature = "use-rustls-no-provider")]
     /// No valid key found
     #[error("No valid key in chain")]
     NoValidKeyInChain,
@@ -65,7 +65,7 @@ pub enum Error {
     NativeTls(#[from] NativeTlsError),
 }
 
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 pub async fn rustls_connector(tls_config: &TlsConfiguration) -> Result<RustlsConnector, Error> {
     let config = match tls_config {
         TlsConfiguration::Simple {
@@ -75,8 +75,8 @@ pub async fn rustls_connector(tls_config: &TlsConfiguration) -> Result<RustlsCon
         } => {
             // Add ca to root store if the connection is TLS
             let mut root_cert_store = RootCertStore::empty();
-            let certs = rustls_pemfile::certs(&mut BufReader::new(Cursor::new(ca)))
-                .collect::<Result<Vec<_>, _>>()?;
+            let certs = CertificateDer::pem_reader_iter(&mut BufReader::new(Cursor::new(ca)))
+                .collect::<Result<Vec<_>, _>>().map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
 
             root_cert_store.add_parsable_certificates(certs);
 
@@ -89,8 +89,8 @@ pub async fn rustls_connector(tls_config: &TlsConfiguration) -> Result<RustlsCon
             // Add der encoded client cert and key
             let mut config = if let Some(client) = client_auth.as_ref() {
                 let certs =
-                    rustls_pemfile::certs(&mut BufReader::new(Cursor::new(client.0.clone())))
-                        .collect::<Result<Vec<_>, _>>()?;
+                    CertificateDer::pem_reader_iter(&mut BufReader::new(Cursor::new(client.0.clone())))
+                        .collect::<Result<Vec<_>, _>>().map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
                 if certs.is_empty() {
                     return Err(Error::NoValidClientCertInChain);
                 }
@@ -98,23 +98,12 @@ pub async fn rustls_connector(tls_config: &TlsConfiguration) -> Result<RustlsCon
                 // Create buffer for key file
                 let mut key_buffer = BufReader::new(Cursor::new(client.1.clone()));
 
-                // Read PEM items until we find a valid key.
-                let key = loop {
-                    let item = rustls_pemfile::read_one(&mut key_buffer)?;
-                    match item {
-                        Some(Item::Sec1Key(key)) => {
-                            break key.into();
-                        }
-                        Some(Item::Pkcs1Key(key)) => {
-                            break key.into();
-                        }
-                        Some(Item::Pkcs8Key(key)) => {
-                            break key.into();
-                        }
-                        None => return Err(Error::NoValidKeyInChain),
-                        _ => {}
+                let key = PrivateKeyDer::from_pem_reader(&mut key_buffer).map_err(|error| {
+                    match error {
+                        tokio_rustls::rustls::pki_types::pem::Error::NoItemsFound => Error::NoValidKeyInChain,
+                        error => Error::Io(io::Error::new(io::ErrorKind::InvalidData, error)),
                     }
-                };
+                })?;
 
                 config.with_client_auth_cert(certs, key)?
             } else {
@@ -155,6 +144,7 @@ pub async fn native_tls_connector(
             connector_builder.build()?
         }
         TlsConfiguration::Native => native_tls::TlsConnector::new()?,
+        TlsConfiguration::NativeConnector(connector) => connector.to_owned(),
         #[allow(unreachable_patterns)]
         _ => unreachable!("This cannot be called for other TLS backends than Native TLS"),
     };
@@ -166,17 +156,19 @@ pub async fn tls_connect(
     addr: &str,
     _port: u16,
     tls_config: &TlsConfiguration,
-    tcp: Box<dyn N>,
-) -> Result<Box<dyn N>, Error> {
-    let tls: Box<dyn N> = match tls_config {
-        #[cfg(feature = "use-rustls")]
+    tcp: Box<dyn AsyncReadWrite>,
+) -> Result<Box<dyn AsyncReadWrite>, Error> {
+    let tls: Box<dyn AsyncReadWrite> = match tls_config {
+        #[cfg(feature = "use-rustls-no-provider")]
         TlsConfiguration::Simple { .. } | TlsConfiguration::Rustls(_) => {
             let connector = rustls_connector(tls_config).await?;
             let domain = ServerName::try_from(addr)?.to_owned();
             Box::new(connector.connect(domain, tcp).await?)
         }
         #[cfg(feature = "use-native-tls")]
-        TlsConfiguration::Native | TlsConfiguration::SimpleNative { .. } => {
+        TlsConfiguration::Native
+        | TlsConfiguration::NativeConnector(_)
+        | TlsConfiguration::SimpleNative { .. } => {
             let connector = native_tls_connector(tls_config).await?;
             Box::new(connector.connect(addr, tcp).await?)
         }

@@ -143,7 +143,7 @@ describe("AgentOfflineExportDialog", () => {
     expect(document.getElementById("offline-export-reason-kafka")?.textContent).toContain("Locally imported");
 
     buttonContaining("Export 2 driver(s)")?.click();
-    expect(onConfirm).toHaveBeenCalledWith(["duckdb", "redis"]);
+    expect(onConfirm).toHaveBeenCalledWith(["duckdb", "redis"], true);
   });
 
   it("disables export after clearing the selection", async () => {
@@ -177,7 +177,7 @@ describe("AgentOfflineExportDialog", () => {
     i18n.global.locale.value = "en";
     await mountDialog({ open: true, preview: { platform: "linux-x64", candidates: [] } satisfies AgentOfflineExportPreview });
 
-    expect(document.body.textContent).toContain("No eligible DBX-managed Agent drivers are installed.");
+    expect(document.body.textContent).toContain("No eligible PanDB-managed Agent drivers are installed.");
     expect(buttonContaining("Export 0 driver(s)")?.disabled).toBe(true);
   });
 });

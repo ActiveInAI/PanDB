@@ -1,6 +1,6 @@
 "use client";
 
-import { create } from "@orama/orama";
+import { create } from "zbsearch";
 import { useDocsSearch } from "fumadocs-core/search/client";
 import { SearchDialog, SearchDialogClose, SearchDialogContent, SearchDialogFooter, SearchDialogHeader, SearchDialogIcon, SearchDialogInput, SearchDialogList, SearchDialogOverlay } from "fumadocs-ui/components/dialog/search";
 import type { SharedProps } from "fumadocs-ui/contexts/search";
@@ -18,7 +18,7 @@ export function StaticSearchDialog(props: SharedProps) {
     locale,
     tag,
     delayMs: 100,
-    initOrama: (dbLocale) => {
+    initDB: (dbLocale) => {
       if (dbLocale === "cn") {
         return create({
           schema: { _: "string" },

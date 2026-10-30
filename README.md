@@ -15,8 +15,8 @@
 <table>
   <tr>
     <td width="50%">
-      <h3>🪶 20 MB, zero runtime bloat</h3>
-      <p>No Java JRE. No Python venv. No bundled Chromium. PanDB ships as a single small binary — download, install, connect. DBeaver needs Java; TablePlus is macOS-only. PanDB runs everywhere with nothing extra.</p>
+      <h3>🪶 25 MB, zero runtime bloat</h3>
+      <p>No Java JRE. No Python venv. No bundled Chromium. PanDB ships as a single small binary — download, install, connect. DBeaver needs Java; TablePlus is Freemium. PanDB runs everywhere with nothing extra.</p>
     </td>
     <td width="50%">
       <h3>🤖 AI that lives in your editor</h3>
@@ -31,6 +31,16 @@
     <td>
       <h3>🌐 Desktop + Docker + Web</h3>
       <p>Native app on macOS, Windows, and Linux. Self-host via Docker for team access. Web version for browser-only environments. Same feature set. Same connections.</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>📨 Not just databases</h3>
+      <p>Message queues and middleware get first-class consoles: Kafka, RocketMQ, RabbitMQ, Pulsar, and MQTT, plus Nacos, Consul, ZooKeeper, and etcd. Inspect topics and messages next to your databases — no extra tool.</p>
+    </td>
+    <td>
+      <h3>🧩 Plugin ecosystem</h3>
+      <p>Extend DBX with signed, sandboxed plugins from the built-in store — S3, Kubernetes, LDAP, and more. Build your own with the Go / TypeScript SDK.</p>
     </td>
   </tr>
 </table>
@@ -78,6 +88,18 @@ Virtual-scrolled table that handles large result sets. Inline editing, SQL previ
 
 - **Redis** — key pattern search, batch key operations, command runner, TTL editing, and all data types (String, Hash, List, Set, ZSet, Stream)
 - **MongoDB** — document CRUD with pagination, Atlas & replica set URL connection
+
+### Message Queue & Middleware Consoles
+
+- **Kafka / RocketMQ / RabbitMQ / Pulsar** — topics, consumer groups, message browsing, query and trace, broker monitoring, permissions and policies
+- **MQTT** — topic tree navigation, subscribe, and publish
+- **Nacos / Consul / ZooKeeper / etcd** — service discovery, KV / config browsing, health, and ACL
+
+### Plugin System
+
+- **Extensible by design** — new connection types and tools arrive as plugins: S3 browsing, Kubernetes, LDAP, and more from the built-in store
+- **Signed & sandboxed** — every plugin package is signature-verified before install; plugin UI runs sandboxed with its own sidecar process
+- **Build your own** — Go / TypeScript SDKs with `npx @dbx-app/plugin-cli` scaffolding; publish to the Marketplace via [`t8y2/dbx-store`](https://github.com/t8y2/dbx-store)
 
 ### Safety & Connectivity
 
@@ -219,6 +241,8 @@ make docs
 
 The official PanDB documentation site lives in `docs/`. If you want to improve the website content or documentation pages, edit the files under `docs/` and run `make docs` to preview the site locally.
 
+Plugin authors should start with [Develop and Submit DBX Plugins](https://dbxio.com/en/docs/plugin-development). Plugin source normally stays in its own repository; Marketplace listing pull requests go to [`t8y2/dbx-store`](https://github.com/t8y2/dbx-store), while plugin host, SDK, and CLI changes go to this repository.
+
 For clean, reproducible local database instances, use the versioned Docker Compose recipes under [`deploy/database/`](deploy/database/README.md):
 
 ```bash
@@ -242,6 +266,8 @@ make package
 ```
 
 The installer will be in `src-tauri/target/release/bundle/`.
+
+`pnpm build` explicitly removes the previous root `dist/` directory before running Vite, so desktop packaging starts with fresh frontend output.
 
 ## Tech Stack
 
@@ -300,7 +326,7 @@ Open an issue on <a href="https://github.com/ActiveInAI/PanDB/issues">GitHub Iss
 ## Contributors
 
 <a href="https://github.com/ActiveInAI/PanDB/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB" />
+  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB&max=300&columns=15" />
 </a>
 
 ## Star History

@@ -1,0 +1,57 @@
+{
+  "workspace_npm": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "docs_npm": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "github_script_tests": {
+    "passed": 314,
+    "failed": 0
+  },
+  "go_modules": {
+    "built": 21,
+    "unit_short_passed": 21,
+    "source": "previous observed execution before temporary logs were cleared"
+  },
+  "docs": {
+    "content_pages": 42,
+    "seo_tests_passed": 10,
+    "indexable_pages": 266,
+    "localized_pages": 270,
+    "build": "passed"
+  },
+  "frontend": {
+    "previous_complete_check": "passed before final branding edits and Node26 alignment",
+    "current_check": "running; durable log in ~/work/pandb-upgrade-20261030/logs"
+  },
+  "rust": {
+    "default_desktop_check": "passed earlier",
+    "default_desktop_link": "running",
+    "workspace_nextest": "running; canonical protocol codes and ZIP9 fixture APIs fixed"
+  },
+  "publication": "maintenance branch preparation; main not updated",
+  "phase": "2026-10-30 maintenance branch verification in progress",
+  "java": {
+    "unit_passed": 527,
+    "source": "previous observed execution before temporary logs were cleared"
+  },
+  "browser": {
+    "login": "passed",
+    "query_editor_and_grid": "passed; screenshot visually inspected before temporary profile cleared",
+    "mcp_readonly": "explicit configured read-only denied INSERT; legacy unconfigured default is writable and was not misreported as read-only"
+  },
+  "sqlite_compatibility": {
+    "old": "encrypted SQLite3.51.3",
+    "new": "SQLite3MultipleCiphers2.6.1/SQLite3.54.0",
+    "result": "read-only data readback passed; wrong key rejected; before/after SHA256 identical; original temporary evidence no longer available"
+  }
+}

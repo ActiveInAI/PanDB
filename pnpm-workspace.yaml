@@ -1,8 +1,34 @@
 packages:
   - "packages/*"
 
+overrides:
+  source-map-resolve>decode-uri-component: "0.5.1"
+  postcss@^8: ">=8.5.23"
+  nanoid@^3: ">=3.3.18"
+
 allowBuilds:
   better-sqlite3: true
   esbuild: true
   keytar: true
   vue-demi: false
+
+minimumReleaseAgeExclude:
+  - "@dbx-app/cli-darwin-arm64@0.4.135"
+  - "@dbx-app/cli-darwin-x64@0.4.135"
+  - "@dbx-app/cli-linux-arm64-gnu@0.4.135"
+  - "@dbx-app/cli-linux-x64-gnu@0.4.135"
+  - "@dbx-app/cli-win32-arm64@0.4.135"
+  - "@dbx-app/cli-win32-x64@0.4.135"
+  - "@dbx-app/mcp-darwin-arm64@0.4.135"
+  - "@dbx-app/mcp-darwin-x64@0.4.135"
+  - "@dbx-app/mcp-linux-x64-gnu@0.4.135"
+  - "@dbx-app/mcp-win32-arm64@0.4.135"
+  - "@dbx-app/mcp-win32-x64@0.4.135"
+  - "@lucide/vue@1.64.0"
+  - "@types/node@26.6.6"
+  - elkjs@0.12.1
+
+patchedDependencies:
+  dayjs@1.11.23: patches/dayjs@1.11.23.patch
+  happy-dom@21.0.4: patches/happy-dom@21.0.4.patch
+  source-map-resolve@0.6.0: patches/source-map-resolve@0.6.0.patch

@@ -15,8 +15,8 @@
 <table>
   <tr>
     <td width="50%">
-      <h3>🪶 20 MB，极致轻量</h3>
-      <p>无需 Java 运行环境，无需 Python 虚拟环境，不内嵌 Chromium。PanDB 是单个小巧的二进制文件——下载、安装、连接。DBeaver 依赖 Java；TablePlus 仅限 macOS。PanDB 全平台可用，无需额外运行时。</p>
+      <h3>🪶 25 MB，极致轻量</h3>
+      <p>无需 Java 运行环境，无需 Python 虚拟环境，不内嵌 Chromium。PanDB 是单个小巧的二进制文件——下载、安装、连接。DBeaver 依赖 Java；TablePlus 是 Freemium。PanDB 全平台可用，无需额外运行时。</p>
     </td>
     <td width="50%">
       <h3>🤖 AI 原生集成在编辑器里</h3>
@@ -31,6 +31,16 @@
     <td>
       <h3>🌐 桌面端 + Docker + Web</h3>
       <p>macOS、Windows、Linux 原生应用。通过 Docker 自托管供团队访问。Web 版本适配纯浏览器环境。同样的功能，同样的连接配置。</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>📨 不止数据库</h3>
+      <p>消息队列与中间件同样是一等公民：Kafka、RocketMQ、RabbitMQ、Pulsar、MQTT 控制台，外加 Nacos、Consul、ZooKeeper、etcd。在数据库旁边直接查看主题与消息，无需再开一个工具。</p>
+    </td>
+    <td>
+      <h3>🧩 插件生态</h3>
+      <p>从内置商店安装经过签名校验的沙箱插件扩展 DBX——S3、Kubernetes、LDAP 等。也可以用 Go / TypeScript SDK 开发自己的插件。</p>
     </td>
   </tr>
 </table>
@@ -78,6 +88,18 @@ CodeMirror 6 语法高亮、元数据感知自动补全、`Cmd+Enter` 执行、�
 
 - **Redis** — 模式匹配搜索、批量键操作、命令执行器、TTL 编辑，全数据类型支持（String、Hash、List、Set、ZSet、Stream）
 - **MongoDB** — 文档增删改查、分页浏览，支持 Atlas 和副本集 URL 直连
+
+### 消息队列与中间件控制台
+
+- **Kafka / RocketMQ / RabbitMQ / Pulsar** — 主题、消费组、消息浏览 / 查询 / 追踪、Broker 监控、权限与策略
+- **MQTT** — 主题树导航、订阅与发布
+- **Nacos / Consul / ZooKeeper / etcd** — 服务发现、KV / 配置浏览、健康状态与 ACL
+
+### 插件系统
+
+- **为扩展而生** — 新的连接类型与工具以插件形式接入：S3 浏览、Kubernetes、LDAP 等，内置商店一键安装
+- **签名与沙箱** — 插件包安装前签名校验，插件 UI 运行在沙箱中并拥有独立 sidecar 进程
+- **开发你的插件** — Go / TypeScript SDK，`npx @dbx-app/plugin-cli` 一行起步，通过 [`t8y2/dbx-store`](https://github.com/t8y2/dbx-store) 发布到商店
 
 ### 安全与连接
 
@@ -241,6 +263,8 @@ make package
 
 安装包输出在 `src-tauri/target/release/bundle/` 目录。
 
+`pnpm build` 会在运行 Vite 前显式清理根目录的 `dist/`，确保桌面打包使用重新生成的前端资源。
+
 ## 技术栈
 
 | 层级   | 技术                                                                                                                                                                                                             |
@@ -268,7 +292,7 @@ make package
 
 <details>
 <summary><strong>PanDB 会收集用户数据吗？</strong></summary>
-不会。PanDB 不收集任何遥测数据。自动更新功能仅检查 GitHub Releases 获取新版本——你可以在设置中禁用它。
+不会。PanDB 不收集任何遥测数据。开启更新通知时，桌面端会通过所选更新源检查新版本并静默下载安装包；下载并校验完成后，更新入口显示提示，只有点击“重启并更新”才会安装。已下载的安装包会保留到下次启动，也可忽略该版本。你可以在设置中关闭自动检查和下载。
 </details>
 
 <details>
@@ -295,7 +319,7 @@ MySQL、PostgreSQL、SQLite、Cloudflare D1、Redis、MongoDB、DuckDB、ClickHo
 ## 贡献者
 
 <a href="https://github.com/ActiveInAI/PanDB/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB" />
+  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB&max=300&columns=15" />
 </a>
 
 ## Star History

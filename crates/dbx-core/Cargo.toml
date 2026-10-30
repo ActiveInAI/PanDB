@@ -5,105 +5,105 @@ edition = "2021"
 license = "Apache-2.0"
 
 [features]
-default = ["duckdb-sidecar", "sqlite-sqlcipher", "system-fonts"]
-duckdb-sidecar = []
-# Retained only to emit a clear migration error in `src/lib.rs`.
-dynamodb = []
-mq-admin = ["dep:rumqttc"]
-sqlite-sqlcipher = ["rusqlite/bundled-sqlcipher-vendored-openssl"]
-sqlite-multiple-ciphers = ["dep:libsqlite3-hotbundle"]
+test-support = []
+default = ["duckdb-sidecar", "dynamodb", "mq-admin", "sqlite-sqlcipher", "system-fonts"]
+duckdb-sidecar = ["dbx-sql/duckdb-sidecar", "dbx-drivers/duckdb-sidecar"]
+dynamodb = ["dbx-drivers/dynamodb"]
+mq-admin = ["dep:rumqttc", "dbx-types/mq-admin", "dbx-drivers/mq-admin"]
+# SQL Server native TDS ATTENTION on interrupt (SQL Server 2000 batch abort).
+# Requires the vendored tiberius patched in by the root workspace; standalone
+# agent driver workspaces build dbx-core without it. Desktop enables this.
+sqlserver-native-attention = ["dbx-drivers/sqlserver-native-attention"]
+sqlite-sqlcipher = ["rusqlite/bundled-sqlcipher-vendored-openssl", "dbx-drivers/sqlite-sqlcipher"]
+sqlite-multiple-ciphers = ["dbx-drivers/sqlite-multiple-ciphers"]
 # Keeps bundled SQLite for consumers that enable no other sqlite source
 # (dbx-cli, dbx-mcp); do not combine with the cipher features.
-sqlite-bundled = ["rusqlite/bundled"]
-openapi = ["dep:utoipa"]
+sqlite-bundled = ["rusqlite/bundled", "dbx-drivers/sqlite-bundled"]
+openapi = ["dbx-types/openapi", "dbx-sql/openapi"]
+# OS keyring storage for the secret-store key material: macOS/Windows
+# keychain via the keyring crate, Linux Secret Service via the pure-Rust
+# secret-service/zbus client so cross builds (zigbuild) link no C libdbus.
+# Desktop and native package builds enable this.
+os-keyring = ["dep:keyring", "dep:secret-service"]
 system-fonts = ["font-kit"]
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["arbitrary_precision", "preserve_order"] }
-utoipa = { version = "5.5", optional = true }
-unicode-width = "0.2"
-unicode-ident = "1"
-serde_yaml_ng = "0.10"
-json5 = "0.4"
-regex = "1"
-winnow = "1.0"
-rayon = "1"
-percent-encoding = "2"
-encoding_rs = "0.8"
-log = "0.4"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7", features = ["compat"] }
-chrono = { version = "0.4", features = ["serde"] }
-httpdate = "1"
-rust_decimal = { version = "1", features = ["serde", "db-postgres"] }
-anyhow = "1"
-uuid = { version = "1", features = ["v4", "serde"] }
-tokio-postgres = { version = "0.7", features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
-deadpool-postgres = { version = "0.14", features = ["rt_tokio_1"] }
-tokio-postgres-rustls = "0.13"
-postgres-openssl = "0.5"
-openssl = { version = "0.10", features = ["vendored"] }
-webpki-roots = "0.26"
-rusqlite = { version = "0.32", default-features = false, features = ["load_extension", "backup", "functions", "column_decltype"] }
-libsqlite3-hotbundle = { git = "https://github.com/zipg/libsqlite3-hotbundle.git", rev = "7f12f203b4f4694a273410bd9b02d77f82b6114e", features = ["cipher-sqlcipher"], optional = true }
-mysql_async = { version = "0.37", default-features = false, features = ["default-rustls", "client_ed25519", "chrono", "rust_decimal"] }
-sqlparser = { version = "0.62.0", features = ["visitor"] }
-redis = { version = "0.32.2", features = ["tokio-comp", "tls-rustls", "tls-rustls-insecure", "tokio-rustls-comp", "sentinel", "cluster-async"] }
-rustls = { version = "0.23", features = ["aws-lc-rs"] }
-rustls-pemfile = "2.2"
-tiberius = { version = "0.12.3", default-features = false, features = ["tds73", "chrono", "rust_decimal", "vendored-openssl", "sql-browser-tokio"] }
-reqwest = { version = "0.12", default-features = false, features = ["cookies", "json", "stream", "rustls-tls", "socks"] }
-prometheus-parse = "=0.2.5"
-futures = "0.3"
-mongodb = { version = "3.2.5", features = ["socks5-proxy"] }
-rumqttc = { version = "0.24", features = ["websocket"], optional = true }
-russh = "0.62.5"
-pageant = "0.2"
+dbx-drivers = { path = "../dbx-drivers", default-features = false }
+dbx-sql = { path = "../dbx-sql", default-features = false }
+dbx-plugin-runtime = { path = "../dbx-plugin-runtime" }
+dbx-formats = { path = "../dbx-formats" }
+dbx-types = { path = "../dbx-types", default-features = false }
+dbx-ai-provider = { path = "../dbx-ai-provider" }
+dbx-platform = { path = "../dbx-platform", features = ["host-prompts", "downloads"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["arbitrary_precision", "preserve_order"] }
+serde_yaml_ng = "0.10.0"
+regex = "1.13.1"
+rayon = "1.12.0"
+percent-encoding = "2.3.2"
+encoding_rs = "0.8.42"
+log = "0.4.34"
+tokio = { version = "1.54.1", features = ["full"] }
+tokio-util = { version = "0.7.20", features = ["compat", "rt"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+chrono-tz = "0.10.4"
+fs2 = "0.4.3"
+uuid = { version = "1.29.0", features = ["v4", "serde"] }
+tokio-postgres = { version = "0.7.18", features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
+deadpool-postgres = { version = "0.14.2", features = ["rt_tokio_1"] }
+webpki-roots = "1.0.11"
+rusqlite = { version = "0.41.1", default-features = false, features = ["load_extension", "backup", "functions", "column_decltype"] }
+mysql_async = { version = "=0.37.0", default-features = false, features = ["default-rustls", "client_ed25519", "chrono", "rust_decimal"] }
+sqlparser = { version = "0.63.0", features = ["visitor"] }
+redis = { version = "1.8.0", features = ["tokio-comp", "tls-rustls", "tls-rustls-insecure", "tokio-rustls-comp", "sentinel", "cluster-async"] }
+rustls = { version = "0.23.46", features = ["aws-lc-rs"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["query", "form", "cookies", "json", "stream", "rustls", "socks"] }
+prometheus-parse = "0.2.5"
+futures = "0.3.34"
+mongodb = { version = "3.9.1", features = ["socks5-proxy"] }
+rumqttc = { version = "0.25.1", features = ["websocket"], optional = true }
 portpicker = "0.1.1"
-csv = "1"
-calamine = { version = "0.30.1", features = ["dates"] }
+csv = "1.4.0"
+calamine = { version = "0.37.0", features = ["dates"] }
 ssfmt = { version = "0.1.2", default-features = false }
-quick-xml = "0.37"
-base64 = "0.22"
-jsonwebtoken = "10.3.0"
-aes-gcm = "0.10"
-aes = "0.8"
-cbc = "0.1"
-argon2 = "0.5"
-sha2 = "0.10"
-async-trait = "0.1"
-bytes = "1"
+quick-xml = "0.42.0"
+base64 = "0.23.1"
+jsonwebtoken = "11.1.0"
+aes-gcm = "0.11.1"
+aes = "0.9.3"
+cbc = "0.2.1"
+argon2 = "0.6.0"
+# macOS/Windows keychain backend. The crate's own Linux backend requires
+# C libdbus (cannot cross-compile); Linux uses the secret-service crate below
+# with the same on-disk attribute layout instead.
+keyring = { version = "4.2.0", default-features = false, optional = true, features = ["v1"] }
+sha2 = "0.11.1"
+async-trait = "0.1.92"
+bytes = "1.12.1"
 font-kit = { version = "0.14.3", optional = true }
-zip = { version = "4", default-features = false, features = ["deflate"] }
-flate2 = "1"
-tar = "0.4"
-zstd = "0.13"
-sysinfo = { version = "0.32", features = ["system"] }
-serde_yaml = "0.9"
-minijinja = "2"
-notify = { version = "7", default-features = false, features = ["macos_kqueue"] }
-arc-swap = "1"
-insta = { version = "1", features = ["json", "glob"] }
-tempfile = "3"
-
-[target.'cfg(not(all(windows, target_vendor = "win7")))'.dependencies]
-iana-time-zone = "0.1"
-
+zip = { version = "9.1.3", default-features = false, features = ["deflate"] }
+flate2 = "1.1.10"
+crc = "3.4.0"
+sha1 = "0.11.0"
+tar = "0.4.46"
+sysinfo = { version = "0.40.0", features = ["system"] }
+minijinja = "3.0.4"
+notify = { version = "8.2.1", default-features = false, features = ["macos_kqueue"] }
+arc-swap = "1.9.3"
+tempfile = "3.27.0"
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_Foundation", "Win32_Security"] }
-
+windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem", "Win32_Foundation", "Win32_Security"] }
+[dev-dependencies]
+dbx-core = { path = ".", default-features = false, features = ["test-support"] }
+zstd = "0.14.3"
+dbx-drivers = { path = "../dbx-drivers", default-features = false, features = ["test-support"] }
+dbx-plugin-runtime = { path = "../dbx-plugin-runtime", features = ["test-support"] }
+dbx-platform = { path = "../dbx-platform", features = ["test-support"] }
+tokio = { version = "1.54.1", features = ["test-util"] }
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 nix = { version = "0.31.3", features = ["user"] }
-
-[dev-dependencies]
-mysql_common = { git = "https://github.com/t8y2/rust_mysql_common.git", rev = "47740d85a8277167a5717afac785d37b46a36296", default-features = false }
-tokio = { version = "1", features = ["test-util"] }
-tokio-openssl = "0.6"
-
-[build-dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml_ng = "0.10"
+[target.'cfg(target_os = "linux")'.dependencies]
+# Pure-Rust (zbus) Secret Service client; speaks the session-bus protocol
+# directly so zigbuild targets need no system libdbus. Attribute names match
+# what the keyring crate writes (target/service/username) for interop.
+secret-service = { version = "5.2.0", optional = true, default-features = false, features = ["rt-tokio-crypto-rust"] }

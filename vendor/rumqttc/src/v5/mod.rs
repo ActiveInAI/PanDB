@@ -19,11 +19,13 @@ use crate::{NetworkOptions, Transport};
 
 use mqttbytes::v5::*;
 
-pub use client::{AsyncClient, Client, ClientError, Connection, Iter};
+pub use client::{
+    AsyncClient, Client, ClientError, Connection, Iter, RecvError, RecvTimeoutError, TryRecvError,
+};
 pub use eventloop::{ConnectionError, Event, EventLoop};
 pub use state::{MqttState, StateError};
 
-#[cfg(feature = "use-rustls")]
+#[cfg(feature = "use-rustls-no-provider")]
 pub use crate::tls::Error as TlsError;
 
 #[cfg(feature = "proxy")]
@@ -47,6 +49,12 @@ pub enum Request {
     Unsubscribe(Unsubscribe),
     UnsubAck(UnsubAck),
     Disconnect,
+}
+
+impl From<Subscribe> for Request {
+    fn from(subscribe: Subscribe) -> Self {
+        Self::Subscribe(subscribe)
+    }
 }
 
 #[cfg(feature = "websocket")]
@@ -75,7 +83,7 @@ pub struct MqttOptions {
     /// client identifier
     client_id: String,
     /// username and password
-    credentials: Option<(String, String)>,
+    credentials: Option<Login>,
     /// request (publish, subscribe) channel capacity
     request_channel_capacity: usize,
     /// Max internal request batching
@@ -89,7 +97,7 @@ pub struct MqttOptions {
     conn_timeout: u64,
     /// Default value of for maximum incoming packet size.
     /// Used when `max_incomming_size` in `connect_properties` is NOT available.
-    default_max_incoming_size: usize,
+    default_max_incoming_size: u32,
     /// Connect Properties
     connect_properties: Option<ConnectProperties>,
     /// If set to `true` MQTT acknowledgements are not sent automatically.
@@ -209,6 +217,11 @@ impl MqttOptions {
         self.request_modifier.clone()
     }
 
+    pub fn set_client_id(&mut self, client_id: String) -> &mut Self {
+        self.client_id = client_id;
+        self
+    }
+
     pub fn set_transport(&mut self, transport: Transport) -> &mut Self {
         self.transport = transport;
         self
@@ -259,12 +272,12 @@ impl MqttOptions {
         username: U,
         password: P,
     ) -> &mut Self {
-        self.credentials = Some((username.into(), password.into()));
+        self.credentials = Some(Login::new(username, password));
         self
     }
 
     /// Security options
-    pub fn credentials(&self) -> Option<(String, String)> {
+    pub fn credentials(&self) -> Option<Login> {
         self.credentials.clone()
     }
 
@@ -310,6 +323,27 @@ impl MqttOptions {
     /// get connection properties
     pub fn connect_properties(&self) -> Option<ConnectProperties> {
         self.connect_properties.clone()
+    }
+
+    /// set session expiry interval on connection properties
+    pub fn set_session_expiry_interval(&mut self, interval: Option<u32>) -> &mut Self {
+        if let Some(conn_props) = &mut self.connect_properties {
+            conn_props.session_expiry_interval = interval;
+            self
+        } else {
+            let mut conn_props = ConnectProperties::new();
+            conn_props.session_expiry_interval = interval;
+            self.set_connect_properties(conn_props)
+        }
+    }
+
+    /// get session expiry interval on connection properties
+    pub fn session_expiry_interval(&self) -> Option<u32> {
+        if let Some(conn_props) = &self.connect_properties {
+            conn_props.session_expiry_interval
+        } else {
+            None
+        }
     }
 
     /// set receive maximum on connection properties
@@ -584,12 +618,12 @@ impl std::convert::TryFrom<url::Url> for MqttOptions {
             // Encrypted connections are supported, but require explicit TLS configuration. We fall
             // back to the unencrypted transport layer, so that `set_transport` can be used to
             // configure the encrypted transport layer with the provided TLS configuration.
-            #[cfg(feature = "use-rustls")]
+            #[cfg(feature = "use-rustls-no-provider")]
             "mqtts" | "ssl" => (Transport::tls_with_default_config(), 8883),
             "mqtt" | "tcp" => (Transport::Tcp, 1883),
             #[cfg(feature = "websocket")]
             "ws" => (Transport::Ws, 8000),
-            #[cfg(all(feature = "use-rustls", feature = "websocket"))]
+            #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
             "wss" => (Transport::wss_with_default_config(), 8000),
             _ => return Err(OptionError::Scheme),
         };
@@ -719,7 +753,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[cfg(all(feature = "use-rustls", feature = "websocket"))]
+    #[cfg(all(feature = "use-rustls-no-provider", feature = "websocket"))]
     fn no_scheme() {
         use crate::{TlsConfiguration, Transport};
         let mut mqttoptions = MqttOptions::new("client_a", "a3f8czas.iot.eu-west-1.amazonaws.com/mqtt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=MyCreds%2F20201001%2Feu-west-1%2Fiotdevicegateway%2Faws4_request&X-Amz-Date=20201001T130812Z&X-Amz-Expires=7200&X-Amz-Signature=9ae09b49896f44270f2707551581953e6cac71a4ccf34c7c3415555be751b2d1&X-Amz-SignedHeaders=host", 443);

@@ -1,0 +1,30 @@
+{
+  "name": "@dbx-app/plugin-dev-host-source",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test --test-timeout=30000 tests/*.test.mjs",
+    "lint": "oxlint --vue-plugin --deny-warnings *.mjs ui tests",
+    "fmt": "oxfmt \"*.mjs\" \"ui/**/*.{js,vue,css,html}\" \"tests/**/*.mjs\"",
+    "fmt:check": "oxfmt --check \"*.mjs\" \"ui/**/*.{js,vue,css,html}\" \"tests/**/*.mjs\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@vitejs/plugin-vue": "6.0.10",
+    "daisyui": "5.7.50",
+    "esbuild": "0.28.2",
+    "jsdom": "30.1.3",
+    "oxfmt": "0.75.0",
+    "oxlint": "1.90.0",
+    "semver": "7.8.5",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.5",
+    "vite-plugin-singlefile": "2.3.4",
+    "vue": "3.5.44",
+    "@lucide/vue": "1.64.0"
+  }
+}

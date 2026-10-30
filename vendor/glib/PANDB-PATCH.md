@@ -1,0 +1,1 @@
+Backport RUSTSEC-2024-0429 from https://github.com/gtk-rs/gtk-rs-core/pull/1343: use a mutable pointer binding and mutable reference for the C output parameter. Keep GTK 0.18 ABI. Original licenses retained.

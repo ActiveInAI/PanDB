@@ -141,7 +141,14 @@ impl Connect {
 
         // update connect flags
         buffer[flags_index] = connect_flags;
-        Ok(len)
+        Ok(1 + count + len)
+    }
+
+    pub fn size(&self) -> usize {
+        let len = self.len();
+        let remaining_len_size = len_len(len);
+
+        1 + remaining_len_size + len
     }
 }
 
@@ -200,7 +207,7 @@ impl LastWill {
     fn write(&self, buffer: &mut BytesMut) -> Result<u8, Error> {
         let mut connect_flags = 0;
 
-        connect_flags |= 0x04 | (self.qos as u8) << 3;
+        connect_flags |= 0x04 | ((self.qos as u8) << 3);
         if self.retain {
             connect_flags |= 0x20;
         }

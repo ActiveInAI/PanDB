@@ -22,13 +22,12 @@ jobs:
       PROJECT_OWNER: t8y2
       PROJECT_NUMBER: "1"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 22.13.0
-
+          node-version: 26.13.0
       - name: Validate project token
         run: |
           if [ -z "$PROJECT_TOKEN" ]; then

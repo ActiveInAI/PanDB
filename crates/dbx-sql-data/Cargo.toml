@@ -1,0 +1,21 @@
+[package]
+name = "dbx-sql-data"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[features]
+default = []
+openapi = ["dep:utoipa", "dbx-types/openapi"]
+
+[dependencies]
+dbx-sql-core = { path = "../dbx-sql-core" }
+dbx-sql-dialect = { path = "../dbx-sql-dialect" }
+dbx-types = { path = "../dbx-types", default-features = false }
+chrono = "0.4.45"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["arbitrary_precision", "preserve_order"] }
+sqlparser = { version = "0.63.0", features = ["visitor"] }
+unicode-width = "0.2.3"
+utoipa = { version = "6.0.0", optional = true }

@@ -168,7 +168,7 @@ jobs:
 
       - name: Upload encrypted operator bundle
         if: startsWith(github.ref_name, 'trustasia-vsign-init-run-')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: vsign-operator-${{ github.run_id }}
           path: ${{ env.VSIGN_BUNDLE_PATH }}

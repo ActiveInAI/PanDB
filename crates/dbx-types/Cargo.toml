@@ -1,0 +1,22 @@
+[package]
+name = "dbx-types"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[features]
+default = []
+mq-admin = ["dep:uuid"]
+openapi = ["dep:utoipa"]
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["arbitrary_precision", "preserve_order"] }
+percent-encoding = "2.3.2"
+utoipa = { version = "6.0.0", optional = true }
+uuid = { version = "1.29.0", features = ["v4"], optional = true }
+[build-dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+serde_yaml_ng = "0.10.0"

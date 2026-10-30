@@ -1,0 +1,46 @@
+[package]
+name = "libsqlite3-hotbundle"
+version = "1.540000.0"
+authors = [
+    "Kent Ross",
+    "The rusqlite developers",
+]
+edition = "2021"
+repository = "https://github.com/mumbleskates/libsqlite3-hotbundle"
+description = "bundled libsqlite3 library"
+license = "MIT"
+build = "build.rs"
+keywords = ["sqlite", "ffi"]
+
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[features]
+default = []
+
+# sqlite library features
+double-quoted-string-literals = []
+preupdate_hook = []
+unlock_notify = []
+session = []
+# more build options
+wasm32-wasi-vfs = []
+with-asan = []
+
+# SQLite3MultipleCiphers: Default cipher selection (mutually exclusive)
+# If none specified, ChaCha20 is used as default
+cipher-aes128 = []
+cipher-aes256 = []
+cipher-sqlcipher = []
+cipher-ascon = []
+cipher-aegis = []
+# ChaCha20 is the default - no feature flag needed
+
+[build-dependencies]
+cc = { version = "1.2.27" }
+
+[dev-dependencies]
+rusqlite = "0.41.1"
+
+[workspace]
+# This prevents the package from being part of the parent workspace
