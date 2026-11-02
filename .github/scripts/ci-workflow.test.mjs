@@ -406,6 +406,10 @@ test("DuckDB Windows builds cache Rust and invoke MSVC C++ directly", () => {
   assert.ok(content.includes("0b201ec74fa43914dc39ae48a89fd1d8cb592756"));
   assert.ok(content.includes("fc920bf0ec8de6ee65d409111f7ec508035751ba"));
   assert.ok(content.includes('version: "v0.16.0"'));
+  assert.ok(content.includes("Swatinem/rust-cache@v2.9.3"));
+  assert.ok(content.includes('workspaces: "agents/drivers/duckdb -> ../../../target/duckdb-driver"'));
+  assert.ok(content.includes("shared-key: ci-duckdb-windows-driver-x86_64-pc-windows-msvc"));
+  assert.ok(content.includes("save-if: ${{ github.ref == 'refs/heads/main' }}"));
 });
 
 test("Windows compatibility jobs cache Rust compilation without wrapping C or C++", () => {
@@ -416,6 +420,9 @@ test("Windows compatibility jobs cache Rust compilation without wrapping C or C+
   assert.ok(standard.includes("SCCACHE_GHA_VERSION: windows-standard-v1"));
   assert.ok(standard.includes("fc920bf0ec8de6ee65d409111f7ec508035751ba"));
   assert.ok(standard.includes('version: "v0.16.0"'));
+  const securityTest = standard.indexOf("name: Pageant shared-memory security regression");
+  assert.ok(securityTest > standard.indexOf("uses: mozilla-actions/sccache-action@"));
+  assert.ok(securityTest < standard.indexOf("name: Check standard Windows dependency path"));
   assert.ok(standard.includes("cargo check --locked --package dbx --no-default-features --target x86_64-pc-windows-msvc"));
   assert.ok(standard.includes("sccache --show-stats"));
 

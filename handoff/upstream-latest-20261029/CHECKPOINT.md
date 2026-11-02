@@ -180,3 +180,13 @@
 不再维持Pageant旧Win7约束：官方API确认最新稳定0.2.5、归档SHA256及Apache2许可；替换到官方0.2.5并保留映射长度/游标/空view/可变read目标/响应边界保护，保留现代Windows用户名规范化及8项回归。移除自管SID与Win7 binding aliases。Windows target check+clippy -Dwarnings exit0，Linux用户名8项pass，Windows原生13项尚待新CI，不要拿旧0.2.1的13项代替。root与DuckDB两个锁文件已通过在线cargo update仅更新Pageant和删旧WinSDK，未降级；最初offline解析曾尝试降级4个包，已丢弃该临时解析并在线重做。TDengine图不含Pageant，无需改它。所有7锁文件1053registry版本已再审计，Pageant0.2.5单独OSV=0。
 
 下一步：将本轮修复提交推送已授权maintenance分支，复用现有maintenance-verification工作流验证最新Pageant真实Windows内核13项、macOS、Nix；继续等待旧main剩余3项结果并修复新失败；随后快进main到已验收提交，等待main必要CI完成，最后更新真实报告/回执。禁止为了加速跳过或弱化失败检查，禁止重新投入Win7/Win10适配，不发安装包或部署生产。日志在work/pandb-upgrade-20261030/logs，后台watch会话54182监看旧main整轮。
+
+## 2026-10-30T12:15:47.778815+00:00 当前继续状态
+
+926b9b5dbd74b1e5a2f88b66100aa93ed3686a83 已正常推送维护分支与 main 并远端读回。maintenance CI41051741668 Windows/macOS/Nix 全 success；完整 Windows 日志明确 running13、13passed0failed，日志 pageant-modern-native-windows-green.log。旧 main CI41048830184 完成：packages publish dry-run、Windows desktop/AI proxy、Linux DuckDB 等通过；仅 fmt/CXX缓存配置失败（已修）和 workspace Nextest runner shutdown143（无测试断言结果，下一轮重验）。旧 watch54182已 exit1 正常收尾。
+
+当前 main CI41052876225/source926正在跑，Github脚本/多数Go/前端部分已通过；Windows standard快速失败因新 Pageant 测试在 mozilla sccache setup之前，RUSTC_WRAPPER=sccache但程序不存在（日志main-926-windows-security-step-failure.log）。已在本地改为setup之后、heavy desktop check之前；并给DuckDB原生driver增加现有Swatinem2.9.3产物缓存。缓存workspaces必须是 agents/drivers/duckdb -> ../../../target/duckdb-driver（三级上溯，已Path.resolve实证），cache-on-failure=false/save仅main，envvars含VCTools/WindowsSDK/WindowsSdk避免跨MSVC/SDK污染。回归检查先red后全321pass；YAML/Bash和实际缓存目标路径校验pass。此CI修复与报告当前尚未commit/push。不要提前push取消正在跑的DuckDB C++构建，它没有旧产物缓存且要20多分钟；等此轮结果并修复新失败再推进main。
+
+GitHub Dependabot API开放项当前0（此前5），从未dismiss；实际OSV仍有RSA无补丁与维护状态风险。已浏览官方RUSTSEC2023-0071并确认明确rc18仍受影响，不能清零伪报；cargo tree已确认普通生产图只经russh0.65.0/ssh-key0.7.0-rc.11。结果文件github-open-alerts-pageant-modern.json，保护日志都在work/pandb-upgrade-20261030/logs。
+
+最终需要：让main必要CI得到明确结果，不能因为排队结束；最后报告更新为实际新CI结果、回执/远端SHA/清洁树/绝对DOCX路径。原始repo和运行中的其它服务未动；不做旧Windows适配、安装系统包、改真实DB、发邮件或发布安装包。

@@ -458,7 +458,11 @@
     "windows_target_check_exit": 0,
     "windows_clippy_deny_warnings_exit": 0,
     "username_tests_passed": 8,
-    "windows_native_tests": "pending new CI",
+    "windows_native_tests": {
+      "run": 41051741668,
+      "passed": 13,
+      "failed": 0
+    },
     "previous_0.2.1_native_tests_passed": 13,
     "legacy_binding_aliases_removed": true,
     "custom_token_sid_storage_removed": true
@@ -504,5 +508,11 @@
     "osv_findings": [],
     "platform": "Windows registry proof tool",
     "native_check": "Added to standard Windows CI; Linux check unsupported because registry module is Windows-specific"
+  },
+  "github_dependency_alerts": {
+    "verified_at": "2026-10-30T12:15:47.778815+00:00",
+    "open": 0,
+    "previous_open": 5,
+    "dismissed_by_agent": false
   }
 }

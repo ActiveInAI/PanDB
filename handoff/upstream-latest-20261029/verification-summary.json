@@ -179,7 +179,9 @@
     "target_check": "passed",
     "target_clippy_deny_warnings": "passed",
     "username_unit_passed": 8,
-    "native_windows_release": "pending"
+    "native_windows_release": "passed",
+    "native_windows_release_passed": 13,
+    "native_windows_release_failed": 0
   },
   "current_delta": {
     "baseline_main_commit": "e5f92aeeec8c4babd4e69aae475dfaf6a0152410",
@@ -191,5 +193,29 @@
       "passed": 321,
       "failed": 0
     }
+  },
+  "verified_current_runtime_code_commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
+  "current_platform_ci": {
+    "run": 41051741668,
+    "code_commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
+    "conclusion": "success",
+    "jobs": {
+      "windows": "success",
+      "macos": "success",
+      "nix": "success"
+    }
+  },
+  "current_main_ci": {
+    "run": 41052876225,
+    "commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
+    "status": "in_progress",
+    "known_issue": "Pageant test called before sccache setup; step order fixed locally, not yet pushed"
+  },
+  "github_dependency_alerts": {
+    "verified_at": "2026-10-30T12:15:47.778815+00:00",
+    "open": 0,
+    "previous_open": 5,
+    "dismissed_by_agent": false,
+    "scope": "GitHub Dependabot alerts only; upstream RSA advisory remains recorded"
   }
 }

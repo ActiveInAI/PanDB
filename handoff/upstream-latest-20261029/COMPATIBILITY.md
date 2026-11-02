@@ -21,4 +21,4 @@
 
 Windows agents 与标准目标统一：Go 1.27.3、Rust 1.99.1、`x86_64-pc-windows-msvc`；Win7 发布作业停用，其余发布任务不依赖这些停用作业。
 
-Pageant 已迁移至官方当前稳定版 0.2.5（注册表 API 与归档 SHA256 已核对），不再因 Win7 固定旧版。保留映射边界保护及现代 Windows 账户名规范化；Windows 目标与严格 Clippy、本机账户名 8 项回归已通过，13 项 Windows 原生回归等待本轮 CI。
+Pageant 已迁移至官方当前稳定版 0.2.5（注册表 API 与归档 SHA256 已核对），不再因 Win7 固定旧版。保留映射边界保护及现代 Windows 账户名规范化；Windows 目标与严格 Clippy、本机账户名 8 项回归已通过；[CI41051741668](https://github.com/ActiveInAI/PanDB/actions/runs/41051741668) 的 Windows 原生 13 项全部通过。

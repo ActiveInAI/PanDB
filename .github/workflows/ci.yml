@@ -330,9 +330,6 @@ jobs:
         with:
           targets: aarch64-pc-windows-msvc
 
-      - name: Pageant shared-memory security regression
-        run: cargo test --locked -p pageant --lib --release
-
       - name: Windows PE stack reserve audit tests
         shell: pwsh
         run: ./.github/scripts/assert-windows-stack-reserve.test.ps1
@@ -383,6 +380,9 @@ jobs:
       - name: Verify x64 and ARM64 executable stack reserves
         shell: pwsh
         run: ./.github/scripts/test-windows-stack-reserve.ps1
+
+      - name: Pageant shared-memory security regression
+        run: cargo test --locked -p pageant --lib --release
 
       - name: Check standard Windows dependency path
         run: cargo check --locked --package dbx --no-default-features --target x86_64-pc-windows-msvc
@@ -908,6 +908,17 @@ jobs:
             echo "AWS_ACCESS_KEY_ID=${CACHE_ACCESS_KEY_ID}"
             echo "AWS_SECRET_ACCESS_KEY=${CACHE_SECRET_ACCESS_KEY}"
           } >> "$GITHUB_ENV"
+
+      - name: Cache DuckDB native build outputs
+        uses: Swatinem/rust-cache@v2.9.3
+        with:
+          prefix-key: v1-rust-complete
+          shared-key: ci-duckdb-windows-driver-x86_64-pc-windows-msvc
+          workspaces: "agents/drivers/duckdb -> ../../../target/duckdb-driver"
+          env-vars: "CARGO CC CFLAGS CXX CMAKE RUST VCTools WindowsSDK WindowsSdk"
+          cache-workspace-crates: true
+          cache-on-failure: false
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build DuckDB Windows driver
         shell: pwsh
