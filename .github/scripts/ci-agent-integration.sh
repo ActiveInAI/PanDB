@@ -13,19 +13,25 @@ case "$scenario" in
     docker rm -fv "$name" >/dev/null 2>&1 || true
     docker run -d --name "$name" -p 2181:2181 "zookeeper:$version"
     cleanup() {
+      local status=$?
+      if [ "$status" -ne 0 ]; then
+        docker logs --tail 100 "$name" || true
+      fi
       docker rm -fv "$name" >/dev/null 2>&1 || true
+      return "$status"
     }
     trap cleanup EXIT
     ready=false
     for _ in $(seq 1 90); do
-      if timeout 1 bash -c '</dev/tcp/127.0.0.1/2181' >/dev/null 2>&1; then
+      if timeout 1 bash -c '</dev/tcp/127.0.0.1/2181' >/dev/null 2>&1 \
+        && timeout 3 docker exec "$name" zkServer.sh status >/dev/null 2>&1; then
         ready=true
         break
       fi
       sleep 2
     done
     if [ "$ready" != true ]; then
-      docker logs "$name"
+      echo "ZooKeeper did not become ready" >&2
       exit 1
     fi
     DBX_ZOOKEEPER_TEST_CONNECT_STRING=127.0.0.1:2181 \
@@ -53,19 +59,25 @@ EOF
       -e JVMFLAGS="-Djava.security.auth.login.config=/conf/server-jaas.conf -Dzookeeper.sasl.serverconfig=Server -Dzookeeper.sessionRequireClientSASLAuth=true" \
       zookeeper:3.7.0
     cleanup() {
+      local status=$?
+      if [ "$status" -ne 0 ]; then
+        docker logs --tail 100 "$name" || true
+      fi
       docker rm -fv "$name" >/dev/null 2>&1 || true
+      return "$status"
     }
     trap cleanup EXIT
     ready=false
     for _ in $(seq 1 90); do
-      if timeout 1 bash -c '</dev/tcp/127.0.0.1/2181' >/dev/null 2>&1; then
+      if timeout 1 bash -c '</dev/tcp/127.0.0.1/2181' >/dev/null 2>&1 \
+        && timeout 3 docker exec "$name" zkServer.sh status >/dev/null 2>&1; then
         ready=true
         break
       fi
       sleep 2
     done
     if [ "$ready" != true ]; then
-      docker logs "$name"
+      echo "ZooKeeper did not become ready" >&2
       exit 1
     fi
     DBX_ZOOKEEPER_TEST_CONNECT_STRING=127.0.0.1:2181 \

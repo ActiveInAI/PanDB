@@ -2,7 +2,10 @@ packages:
   - "packages/*"
 
 overrides:
-  source-map-resolve>decode-uri-component: "0.5.1"
+  # Keep Vite's optional Stylus compiler on its maintained glob/minimatch API.
+  stylus: "0.64.0"
+  stylus>glob: "14.0.3"
+  glob@14.0.3>minimatch: "11.0.3"
   postcss@^8: ">=8.5.23"
   nanoid@^3: ">=3.3.18"
 
@@ -33,4 +36,3 @@ minimumReleaseAgeExclude:
 patchedDependencies:
   dayjs@1.11.23: patches/dayjs@1.11.23.patch
   happy-dom@21.0.4: patches/happy-dom@21.0.4.patch
-  source-map-resolve@0.6.0: patches/source-map-resolve@0.6.0.patch

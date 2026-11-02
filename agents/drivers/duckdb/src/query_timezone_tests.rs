@@ -137,7 +137,8 @@ fn ordinary_queries_preserve_extension_settings_and_connection_reuse() {
 #[test]
 fn session_timezone_tracks_set_and_connection_local_state() {
     let con = duckdb::Connection::open_in_memory().unwrap();
-    con.execute_batch("LOAD icu").unwrap();
+    // This test requires IANA timezone data even on a clean extension cache.
+    con.execute_batch("INSTALL icu; LOAD icu").unwrap();
     let other = con.try_clone().unwrap();
     other.execute_batch("SET TimeZone = 'Asia/Shanghai'").unwrap();
     for (zone, winter, summer) in [

@@ -152,20 +152,12 @@ test("Tauri VSign script resolves from the src-tauri working directory", () => {
   assert.equal(existsSync(resolve(repoRoot, "src-tauri", scriptPath)), true);
 });
 
-test("Windows 7 release build does not use sccache", () => {
+test("unsupported Windows release jobs stay disabled", () => {
   const workflow = readFileSync(releaseWorkflow, "utf8");
-  const start = workflow.indexOf("  build-windows-7-offline:");
-  const end = workflow.indexOf("\n  static-browser:", start);
-
-  assert.notEqual(start, -1);
-  assert.notEqual(end, -1);
-  const win7Job = workflow
-    .slice(start, end)
-    // Ignore comments; the job itself documents why sccache is absent.
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("#"))
-    .join("\n");
-  assert.doesNotMatch(win7Job, /RUSTC_WRAPPER|SCCACHE_|sccache/i);
+  for (const name of ["build-windows-7-offline", "build-windows-7-static-browser"]) {
+    const block = workflow.split(`\n  ${name}:\n`)[1]?.split(/\n  [\w-]+:\n/)[0] ?? "";
+    assert.match(block, /^    if: false\s*$/m, name);
+  }
 });
 
 test("Linux releases pin the Wayland-capable AppImage bundler before upload", () => {

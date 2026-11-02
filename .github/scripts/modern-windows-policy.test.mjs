@@ -23,7 +23,7 @@ test("DuckDB Windows CI uses the supported stable target", () => {
   assert.match(driver, /--target x86_64-pc-windows-msvc/);
   assert.doesNotMatch(driver, /nightly|build-std|win7|Windows 7/);
   assert.match(driver, /validate_windows_pe_dependencies\.py/);
-  assert.match(driver, /"\$DRIVER" < \/dev\/null/);
+  assert.match(driver, /smoke_duckdb_worker\.py "\$DRIVER"/);
 });
 
 test("Windows agent release matrices and Go compilers use modern targets", () => {

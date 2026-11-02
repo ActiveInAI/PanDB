@@ -44,6 +44,11 @@ const args = process.argv.slice(2);
 const env = Object.fromEntries(${JSON.stringify(environmentKeys)}.filter(name => process.env[name] !== undefined).map(name => [name, process.env[name]]));
 fs.appendFileSync(process.env.CI_STUB_LOG, JSON.stringify({tool,args,cwd:process.cwd(),env})+'\\n');
 if (process.env.CI_STUB_FAIL === tool) process.exit(23);
+if (tool === 'timeout' && args.includes('zkServer.sh') && process.env.CI_STUB_ZOOKEEPER_READY_AFTER) {
+  const calls = fs.readFileSync(process.env.CI_STUB_LOG, 'utf8').trim().split('\\n').map(line => JSON.parse(line));
+  const probes = calls.filter(call => call.tool === 'timeout' && call.args.includes('zkServer.sh')).length;
+  if (probes < Number(process.env.CI_STUB_ZOOKEEPER_READY_AFTER)) process.exit(1);
+}
 if (tool === 'docker' && args.includes('taos')) console.log('| ready |');
 `,
     { mode: 0o755 },
@@ -62,6 +67,26 @@ if (tool === 'docker' && args.includes('taos')) console.log('| ready |');
     rmSync(directory, { recursive: true, force: true });
   }
 }
+
+test("ZooKeeper waits for protocol readiness before starting integration tests", () =>
+  withToolStubs((env, commands) => {
+    const result = spawnSync("/bin/bash", [".github/scripts/ci-agent-integration.sh", "zookeeper", "3.5.5"], { cwd: root, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const calls = commands();
+    const probes = calls.filter((call) => call.tool === "timeout" && call.args.includes("zkServer.sh"));
+    assert.equal(probes.length, 3);
+    assert.ok(calls.indexOf(calls.find((call) => call.tool === "go")) > calls.indexOf(probes.at(-1)));
+  }, { CI_STUB_ZOOKEEPER_READY_AFTER: "3" }));
+
+test("unready ZooKeeper never runs tests and preserves logs before cleanup", () =>
+  withToolStubs((env, commands) => {
+    const result = spawnSync("/bin/bash", [".github/scripts/ci-agent-integration.sh", "zookeeper", "3.5.5"], { cwd: root, env, encoding: "utf8", timeout: 20000 });
+    assert.equal(result.status, 1, result.stderr);
+    const calls = commands();
+    assert.equal(calls.some((call) => call.tool === "go"), false);
+    assert.ok(calls.some((call) => call.tool === "docker" && call.args[0] === "logs"));
+    assert.deepEqual(calls.at(-1).args.slice(0, 2), ["rm", "-fv"]);
+  }, { CI_STUB_ZOOKEEPER_READY_AFTER: "999" }));
 
 for (const agent of goAgents) {
   test(`Go job preserves ${agent.driver} tests and target builds without executing compilers`, () =>

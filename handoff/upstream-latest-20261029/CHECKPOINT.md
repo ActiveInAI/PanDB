@@ -200,3 +200,17 @@ GitHub Dependabot API开放项当前0（此前5），从未dismiss；实际OSV�
 取消失败在test219，probe报DuckDB worker process exited。生产query/mod.rs1900分支早已注册operation_cancel.cancel的同步操作级回调；测试仍tokio::spawn调用client.cancel终止整个worker，且pinned future从未在sleep前被poll。这会让迟到旧kill杀掉新probe。已使测试与生产一致，使用与registry token不同的操作token，注册回调只能取消它；tokio::select实际驱动long_query，再取消，并断言该独立token已取消；保持5s取消/后续查询成功断言，不改生产代码、不增加超时、不跳过用例。
 
 321脚本全通过，两个YAML与37 Bash语法通过，DuckDB测试rustfmt与diffcheck通过。正在本机编译并运行修复case，会话72347，600秒deadline；日志duckdb-registered-cancel-fixed.log，复用旧maintenance/agents/drivers/duckdb/target，libduckdb-sys重新编译。接下来需要观察该结果并运行组件70项/取消case稳定性验证，同时GitHub新main CI验证真实MSVC无wrapper及全部必要检查。不能因排队结束。
+
+## 2026-11-02T02:49:25.529401+00:00 Nov02 候选已在本地验收，下一步维护分支实测
+
+main=f95f8b77f7ec6a2e00e1f1110a01492ea3e94503，CI41374325582已完成，仅ZooKeeper3.5.5连接超时及两个汇总失败。Windows标准检查/AI proof/Pageant、WindowsDuckDB原生release构建与PE验证、Rootworkspace Nextest/Clippy、LinuxDuckDB和包演练等均通过。WindowsDuckDB任务125051254780于02:08:28成功，首次20分22秒；RustCache实际条目9852395440、547396310bytes已在main保存，后续应复用，不能假称运行性能提升。
+
+本地候选新增：ZooKeeper就绪在TCP之外检查docker exec zkServer.sh status（官方3.5.5脚本返回Mode才成功），普通/SASL皆更新，失败保存100行日志且保留原退出码。模拟延迟与永久未就绪两测试先red后green，ci-execution33pass。ICU时区用例原先LOAD假设共享缓存，被其它自动安装用例的先后次序影响；显式INSTALL+LOAD保留全部IANA/DST/连接隔离断言。本地DuckDB70/70通过，取消case20/20稳定。新增跨平台Python stdio smoke，实际v2.0.0 SQL中文/DECIMAL/Parquet/关闭重开4checks通过，已接入WindowsCI以覆盖真实引擎，不仅空stdin启动。
+
+完整社区复查找到上游残留publish-packages QQ广播job、14locale废弃标签、4个无人引用的QR/logo（QQ、WeChat、QQ icon、Linuxdo avatar），已移除并有社区策略回归；GitHub反馈保留，仓库API证实has_discussions=false/has_issues=true，docs反馈页改为Issues。上游专用Homebrew/Scoop/R2发布两根job按github.repository=t8y2/dbx隔离，未替用户配置外部目标或执行分发。root release.test过期Win7无sccache断言改为两个legacy job必须disabled，不投入旧OS适配。
+
+最新安全回查：Rust7锁1053版本，仍仅RSA无补丁+既有维护告警，无新可修复CVE；docs pnpm与devhost npm审计0。root pnpm发现旧可选Stylus0.57->glob7->minimatch3通告；设置可选链版本约束Stylus0.64/glob14.0.3/minimatch11.0.3，淘汰旧可选链及已不再需要的source-map-resolve补丁/override，不关闭unused patch检查。锁重新生成并frozen成功；实装复查发现原node_modules仍复用旧peer，已移到work/pandb-upgrade-20261030/backups/node_modules-before-style-peer-refresh保留，再干净frozen重装。当前应用未引入无用Stylus，实际旧链已消失且audit0；隔离style-interop QA工程验证上述可选版本与项目Vite8.3.5的glob样式导入通过，15包audit0，没往应用新增依赖。源与license/integrity记录nov02-style-dependency-sources.json。
+
+本地验收：全前端check五项全pass（test488.71s，type107.31s），生产build14.54s；docs反馈改后build+SEO/postbuild全pass，278indexable/282localized/1546files，out无4个已删图。脚本/发布测试340pass；跨平台DuckDB smoke4pass；70组件+20取消循环pass。所有日志保存在work/pandb-upgrade-20261030/logs。新增maintenance-verification两行ZooKeeper真实矩阵（3.5.5和SASL3.7），复用现有脚本/Go1.27.3，15mindeadline。
+
+下一步：提交候选推maintenance分支，等windows/macOS/nix及真实ZK2场景明确结果；pnpm锁变更使flake.nix旧pnpmDeps hash需重新核对。现有maintenance Nix自动捕获正确got hash、重build并上传pandb-nix-verified-hash.patch；下载本轮artifact，确认仅改正确JSdeps hash后应用，再以正常快进推main，等必要CI实际全通过。不要因排队结束，不发送群消息、不发安装包、不改真实DB或系统服务。最终重写STATUS/FINAL/verification-summary为真实新结果与风险，再给绝对DOCX路径和远端SHA。

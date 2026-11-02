@@ -903,7 +903,7 @@ jobs:
         run: |
           DRIVER="target/duckdb-driver/x86_64-pc-windows-msvc/release/dbx-duckdb-driver.exe"
           python agents/scripts/validate_windows_pe_dependencies.py "$DRIVER"
-          "$DRIVER" < /dev/null
+          python agents/scripts/smoke_duckdb_worker.py "$DRIVER"
 
   rust-fmt-clippy:
     needs:
