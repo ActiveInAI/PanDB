@@ -214,3 +214,7 @@ main=f95f8b77f7ec6a2e00e1f1110a01492ea3e94503，CI41374325582已完成，仅ZooK
 本地验收：全前端check五项全pass（test488.71s，type107.31s），生产build14.54s；docs反馈改后build+SEO/postbuild全pass，278indexable/282localized/1546files，out无4个已删图。脚本/发布测试340pass；跨平台DuckDB smoke4pass；70组件+20取消循环pass。所有日志保存在work/pandb-upgrade-20261030/logs。新增maintenance-verification两行ZooKeeper真实矩阵（3.5.5和SASL3.7），复用现有脚本/Go1.27.3，15mindeadline。
 
 下一步：提交候选推maintenance分支，等windows/macOS/nix及真实ZK2场景明确结果；pnpm锁变更使flake.nix旧pnpmDeps hash需重新核对。现有maintenance Nix自动捕获正确got hash、重build并上传pandb-nix-verified-hash.patch；下载本轮artifact，确认仅改正确JSdeps hash后应用，再以正常快进推main，等必要CI实际全通过。不要因排队结束，不发送群消息、不发安装包、不改真实DB或系统服务。最终重写STATUS/FINAL/verification-summary为真实新结果与风险，再给绝对DOCX路径和远端SHA。
+
+## 2026-11-02T02:57:57.645163+00:00 edb0860维护验收进展
+
+维护分支41379885119：Nix通过，自动重建证实新的JS依赖hash为sha256-xWn8a47H2M+7LC1Fexbo4MgS9mCTNmE/NNiKHzh4veE=。已下载artifact pandb-nix-verified-hash，内部文件pandb-nix-hash.patch，人工核对仅flake.nix第234行一项hash变化并应用；未猜hash。ZK两任务未执行任何业务测试即exit126，因为新维护job直接执行仓库100644脚本；主CI原来通过bash调用。已按主CI惯例修为bash .github/scripts/ci-agent-integration.sh，未改文件权限或放宽断言，需新提交后重新实测。Windows/macOS当前结果以41379885119任务状态为准。下一步小commit hash+调用修复并推维护分支，五项全绿后推进main并等完整CI（含Windows真实SQL4项）通过。

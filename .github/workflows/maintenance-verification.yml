@@ -48,7 +48,7 @@ jobs:
           go-version: "1.27.3"
           cache-dependency-path: agents/drivers/zookeeper/go.sum
       - name: Verify real broker readiness and integration
-        run: .github/scripts/ci-agent-integration.sh "${{ matrix.scenario }}" "${{ matrix.version }}"
+        run: bash .github/scripts/ci-agent-integration.sh "${{ matrix.scenario }}" "${{ matrix.version }}"
 
   macos:
     runs-on: macos-15
