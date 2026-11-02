@@ -1,15 +1,12 @@
-# PanDB 交付验证状态（2026-10-30）
+# PanDB 交付验证状态（2026-11-02）
 
-源码与依赖迁移的验收结果见[最终验证报告](FINAL-VERIFICATION.md)及[结构化结果](verification-summary.json)。交付目标为 `ActiveInAI/PanDB/main`，上游基线为 `6bac6034`。
+已验证代码提交：`afe3de9b41923439e34508458d23cc07726e84d0`，已推送 `ActiveInAI/PanDB/main`。本轮上游基线：`6bac6034b5b3e17780d49b80363db026b6a7003e`。
 
-- Rust11526通过、0失败；370按原配置跳过。
-- 严格Clippy与最新3.54.1多密码引擎的默认Linux桌面build/link通过。
-- Windows、macOS、Nix交付CI41043514043全部通过，包括真实Windows Pageant release回归与实际Rust源vendor哈希验证。
-- 前端与文档Node26全量检查/构建、Go21模块、Java527、插件与SQL回归通过。
-- 实际HTTP/MCP/浏览器和DuckDB2.0.0隔离操作、七种旧加密格式兼容性通过。
+- [主分支CI41381463333](https://github.com/ActiveInAI/PanDB/actions/runs/41381463333)：**50成功、0失败、2按配置跳过**。旧Win7构建停用；旧JDBC汇总路径由现有独立Java验收覆盖。
+- [维护验收CI41380834793](https://github.com/ActiveInAI/PanDB/actions/runs/41380834793)：Windows、macOS、Nix及两个真实ZooKeeper场景全部成功。
+- Rust工作区11564通过、0失败、375按既有配置跳过；全工作区all-targets严格Clippy通过。
+- 实际Windows DuckDB v2.0.0执行SQL、中文/DECIMAL、Parquet与关闭重开4项通过；Pageant0.2.5真实Windows原生13项通过。
+- 本机前端五项检查与生产构建、文档build/postbuild、340脚本/发布检查、DuckDB70项和取消稳定性20轮均通过。
+- 三套npm审计0；独立Rust OSV仍保留RSA上游无补丁与维护状态告警，不宣称全项目零风险。
 
-保留必要API/ABI/旧格式维护兼容线，RSA与维护状态告警没有被隐藏；详见[兼容性说明](COMPATIBILITY.md)和[安全复查](SECURITY-REVIEW.md)。
-
-开发验证工作树：`/home/arch-gpt--notebook001/dev/worktrees/pandb/upstream-latest-dependencies-20261029`。持久证据：`/home/arch-gpt--notebook001/work/pandb-upgrade-20261030`。文档输出：`/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区相关内容.docx`。
-
-当前源码提交 `926b9b5d` 已推送 main，其三平台验收 CI41051741668 全部通过（Pageant0.2.5 原生13项）。主分支全量 CI41052876225 仍在执行；已知仅新增安全测试步骤早于 sccache 初始化，顺序修复和 DuckDB 原生缓存已在本地验证，等待正在跑的构建结束后推送。GitHub 开放依赖告警实读为 0，仍保留 RSA 上游无补丁风险。
+Windows桌面支持目标为Windows11+。完整证据与范围见[最终验证报告](FINAL-VERIFICATION.md)、[结构化结果](verification-summary.json)、[安全复查](SECURITY-REVIEW.md)及[兼容性说明](COMPATIBILITY.md)。文档交付文件为 `PanDB_已删除社区相关内容.docx`，ZIP/XML核验无社区文字、链接和嵌入图片残留。

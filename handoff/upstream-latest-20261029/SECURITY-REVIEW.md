@@ -1,29 +1,26 @@
-# 安全复查（2026-10-30）
+# 安全复查（2026-11-02）
 
-本次没有添加审计忽略项，没有关闭权限、证书、签名、主机密钥或安装包校验。原始module级清单见security-inventory.json。
+本轮未添加审计忽略项，未关闭证书、主机密钥、签名、安装包或补丁校验。完整版本清单及逐项结果见 [security-inventory.json](security-inventory.json)。GitHub 告警数量与实际代码风险分别记录。
 
 | 范围 | 观察结果与处置 |
 | --- | --- |
-| npm根工作区、文档、dev-host | 当前三套锁定依赖审计均零告警 |
-| 旧Rust TLS链 | 删除AWS默认旧HTTPS后端及旧pemfile；MQTT明确安全最低版本；SQL Server保留项目补丁并使用当前OpenSSL |
-| ZIP / LRU | 主图及独立packager升级ZIP9；主图和DuckDB独立测试图使用已修复LRU0.18.5 |
-| GLib RUSTSEC-2024-0429 | 保留GTK0.18 ABI，回移官方PR1343到VariantStrIter::impl_get。校验官方crate SHA后，以其未修复源码进行release回归，复现SIGSEGV；项目修复后相同测试通过 |
-| Pageant CVE-2026-102820 | 已从旧 0.2.1 回移版迁移到官方最新稳定 0.2.5；SHA256 与 Apache-2.0 来源已核对。移除 Win7 bindings 与自管 token/SID 内存，保留映射边界/空指针/可变读目标保护及账户名行为；Windows target/Clippy 与本机 8 项回归通过，Windows 原生 13 项在 CI41051741668 全通过 |
-| 原生SQLite | 稳定MultipleCiphers2.6.1保持不变，内核移植官方3.54.1维护补丁；已核对官方SHA3和全部加密钩子，七种旧加密格式读回/wrong-key/只读SHA验证通过 |
-| block-buffer GHSA-qwgh-2vcv-g2f7 | 保留registry告警记录。0.10.4的cursor独立于block数据，源码没有被报告的ReadBuffer；公开panic场景本地验证cursor不变且后续digest正常，不能把针对inline cursor的缺陷直接映射到此实现 |
-| RSA RUSTSEC-2023-0071 | 上游明确无已修复版本，当前russh/ssh-key仍依赖它；保留为上游残余风险，不能宣称已修复或全Rust零漏洞 |
-| Rust维护状态 | proc-macro-error、unsafe-libyaml、zvariant相关、paste、scc等仍有维护状态告警。它们与已证实可达CVE不同，未以隐藏告警替代修复，也未为消除元数据提示删掉既有功能 |
-| Go | 21个模块在当前Go1.27.3下build与short unit通过；实际驱动和基准工具的可升级依赖已更新。module构建列表仍含未进入生产import图的历史工具/测试依赖。x/crypto0.58.0为官方当前latest，其OpenPGP弃用告警未在生产导入中命中 |
-| 凭据与旧数据 | Argon2 0.6验证旧0.5 PHC成功，错误密码拒绝；七种密码算法的新SQLite3.54读取旧3.51.3加密文件，错误key拒绝，只读前后SHA一致 |
+| npm 根工作区、文档、开发宿主 | 2026-11-02 分别使用各自锁文件对应的 pnpm/npm 审计，当前均零告警 |
+| 可选样式依赖 | 根工作区旧 Stylus/glob/minimatch 可选链已从实际依赖图清除；安全版本约束为 0.64.0 / 14.0.3 / 11.0.3，隔离工程验证与项目 Vite8.3.5 的 glob 导入兼容，15包审计0。应用未新增必需编译器依赖；过期 source-map-resolve 补丁随依赖退出而移除，严格补丁检查保留 |
+| Rust registry | 重新查询全部7个锁文件、1053个包版本；仍有下述上游风险和维护状态记录，不能宣称全Rust零漏洞 |
+| GLib RUSTSEC-2024-0429 | 保留 GTK0.18 ABI，回移官方PR1343到 VariantStrIter::impl_get；校验官方crate SHA后，原始源码release回归复现SIGSEGV，项目补丁同测通过 |
+| Pageant CVE-2026-102820 | 已升级官方0.2.5，校验SHA256及Apache-2.0许可；移除Win7绑定与自管SID内存，保留映射长度、游标溢出、空view及可变读目标保护。Windows目标/严格Clippy、本机账户名8项及真实Windows release13项通过 |
+| 独立AI代理工具 | 同步遗漏的独立锁文件，Rustls0.23.46 / WebPKI0.103.16；独立图OSV无命中，已在标准Windows CI实际编译验证 |
+| 原生SQLite | 稳定MultipleCiphers2.6.1密码实现，内核移植官方3.54.1维护补丁；官方SHA3与全部加密钩子匹配，七种旧加密文件正确读回、错误key拒绝、只读SHA不变 |
+| ZIP / LRU | 主图和独立打包器使用ZIP9，主图和DuckDB测试图使用已修复LRU0.18.5；尺寸保护与异常路径回归通过 |
+| block-buffer | 0.10.4源码无被报告的inline ReadBuffer实现，公开panic场景验证cursor不变、后续digest正确；本次最新OSV查询已不再命中此前的过宽范围映射 |
+| RSA RUSTSEC-2023-0071 | 官方公告仍明确0.10.0-rc.18受影响且无已修复版本。普通依赖反向图经russh0.65.0/ssh-key0.7.0-rc.11引入；保留为上游残余风险，未删除现有SSH能力或隐藏告警 |
+| Rust维护状态 | proc-macro-error、unsafe-libyaml、zvariant相关、paste、scc仍有维护状态告警，原始ID完整保留；不以更改版本号或忽略配置消除提示 |
+| Go | 21模块在Go1.27.3下build/short unit通过；module列表仍含未进入生产import图的历史工具/测试依赖，x/crypto OpenPGP弃用未在生产导入中命中 |
+| 发布边界 | 删除QQ群广播任务及未引用的社区二维码/图标；固定指向上游Homebrew/Scoop/R2目标的两根发布作业限定在上游仓库运行。未替用户创建或使用其它发布目标 |
+| 凭据与旧数据 | Argon2新版本验证旧PHC及错误密码拒绝通过；隔离HTTP/MCP验证认证拒绝与显式只读拒写，未使用真实业务数据库或迁移用户凭据 |
 
-本地及GitHub验证不等于所有真实数据库、供应商环境、旧Windows主机的用户验收。未对用户真实数据库执行迁移、未更改凭据和服务，未发布安装包。
+Windows DuckDB构建失败来自cc-rs隐式继承RUSTC_WRAPPER与sccache0.16的MSVC参数重排；使用按锁文件、Rust工具链、MSVC/SDK环境隔离的原生产物缓存，保持实际编译和运行检查。该路径已通过Windows SQL、中文/DECIMAL、Parquet、checkpoint与重开验收。
 
-来源：[GLib公告](https://rustsec.org/advisories/RUSTSEC-2024-0429.html)、[官方修复](https://github.com/gtk-rs/gtk-rs-core/pull/1343)、[RSA公告](https://rustsec.org/advisories/RUSTSEC-2023-0071.html)、[block-buffer公告](https://osv.dev/vulnerability/GHSA-qwgh-2vcv-g2f7)、[Go OpenPGP公告](https://pkg.go.dev/vuln/GO-2026-5932)。
+本地及CI证据不等于所有供应商环境的业务验收。真实数据库迁移、安装包发布和生产部署不属于此次执行范围。源代码兼容性例外见 [COMPATIBILITY.md](COMPATIBILITY.md)。
 
-最终 GitHub 告警复查发现独立 Windows AI 代理验证工具锁文件遗漏同步；已按其现有清单刷新依赖并对齐 Rustls 0.23.46 / WebPKI 0.103.16。重新查询全部 7 个 Rust 锁文件、1053 个 registry 包版本，此独立工具无 OSV 命中。其注册表证明模块只适用于 Windows，本机 Linux 编译不适用；已加入标准 Windows CI 原生检查。此前 Pageant 0.2.1 采用本地安全回移；当前已升级官方 0.2.5，并重新查询 OSV 无命中，不通过手动 dismiss 隐藏 GitHub 告警。
-
-WebPKI 修复依据：[RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)。
-
-Pageant 0.2.5 来源与差异见 [PANDB-SOURCE.json](../../vendor/pageant/PANDB-SOURCE.json)，上游版本见 [官方发布包](https://crates.io/crates/pageant/0.2.5)。当前 0.2.5 的 13 项原生检查已由 CI41051741668 验证，旧 0.2.1 结果仅为历史证据。
-
-GitHub Dependabot API 再读回：开放告警从此前 5 项降至 0 项，未执行任何 dismiss。此结果仅代表 GitHub 元数据告警；[RSA 官方公告](https://rustsec.org/advisories/RUSTSEC-2023-0071.html) 当前仍明确 0.10.0-rc.18 受影响且没有已修复版本，不能以 GitHub 0 项替代完整风险清单。实际普通依赖反向图确认 RSA 经 russh0.65.0 / ssh-key0.7.0-rc.11 引入，未更改 SSH 算法或账户配置以隐藏风险。
+来源：[GLib公告](https://rustsec.org/advisories/RUSTSEC-2024-0429.html)、[官方修复](https://github.com/gtk-rs/gtk-rs-core/pull/1343)、[RSA公告](https://rustsec.org/advisories/RUSTSEC-2023-0071.html)、[Pageant官方包](https://crates.io/crates/pageant/0.2.5)、[WebPKI公告](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)、[minimatch公告](https://github.com/advisories/GHSA-g3hv-75wg-m249)、[Go OpenPGP公告](https://pkg.go.dev/vuln/GO-2026-5932)。

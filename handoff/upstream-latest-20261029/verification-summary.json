@@ -1,26 +1,78 @@
 {
-  "verified_on": "2026-10-30",
+  "verified_on": "2026-11-02",
   "upstream_commit": "6bac6034b5b3e17780d49b80363db026b6a7003e",
-  "verified_runtime_code_commit": "f2a5f0b810b624760513e120b41413c2cb73080d",
-  "verified_ci_commit": "a1be700aa57c21b41e2ea723b8886a115cc564dd",
-  "ci_run": 41043514043,
+  "verified_runtime_code_commit": "afe3de9b41923439e34508458d23cc07726e84d0",
+  "verified_ci_commit": "afe3de9b41923439e34508458d23cc07726e84d0",
+  "ci_run": 41381463333,
   "ci_conclusion": "success",
   "ci_jobs": {
-    "windows": "success",
-    "nix": "success",
-    "macos": "success"
+    "changes": "success",
+    "packages": "success",
+    "frontend-test (2/2)": "success",
+    "frontend-test (1/2)": "success",
+    "duckdb-windows-driver": "success",
+    "nix-packaging": "success",
+    "github-scripts": "success",
+    "frontend-checks": "success",
+    "agent-checks": "success",
+    "frontend-typecheck": "success",
+    "windows-standard-check": "success",
+    "fast-checks": "success",
+    "offline-jdbc-release": "success",
+    "windows-win7-bundle": "skipped",
+    "jdbc": "skipped",
+    "rust-fmt-clippy": "success",
+    "rust-test (workspace)": "success",
+    "agent-rust (tdengine)": "success",
+    "agent-rust (duckdb)": "success",
+    "agent-java": "success",
+    "agent-go (cassandra-go, cassandra, false)": "success",
+    "agent-go (rabbitmq, rabbitmq, false)": "success",
+    "agent-go (nebula-go, nebula, false)": "success",
+    "agent-go (hive-go, hive, false)": "success",
+    "agent-go (rocketmq, rocketmq, true)": "success",
+    "agent-go (oracle-go, oracle, false)": "success",
+    "agent-go (iotdb, iotdb, false)": "success",
+    "agent-go (zookeeper, zookeeper, true)": "success",
+    "agent-go (neo4j-go, neo4j, false)": "success",
+    "agent-go (kingbase-go, kingbase, false)": "success",
+    "agent-go (xugu, xugu, false)": "success",
+    "agent-go (vastbase-go, vastbase, false)": "success",
+    "agent-integration (zookeeper, 3.5.5)": "success",
+    "agent-integration (zookeeper, 3.9.5)": "success",
+    "agent-integration (zookeeper, 3.4.14)": "success",
+    "agent-integration (tdengine, 2.6.0.34)": "success",
+    "agent-integration (cassandra, 3.11.19)": "success",
+    "agent-integration (rocketmq, 5.3.1)": "success",
+    "agent-integration (tdengine, 3.4.2.2)": "success",
+    "agent-integration (cassandra, 5.0.6)": "success",
+    "agent-integration (tdengine, 3.3.6.13)": "success",
+    "agent-integration (rocketmq, 4.9.8)": "success",
+    "agent-integration (tdengine, 2.4.0.14)": "success",
+    "agent-integration (zookeeper-sasl, 3.7.0)": "success",
+    "agent-integration (tdengine, 3.0.7.1)": "success",
+    "agent-integration (zookeeper, 3.7.0)": "success",
+    "agent-integration (rabbitmq, 4.3)": "success",
+    "agent-integration (rabbitmq, 3.13)": "success",
+    "frontend": "success",
+    "agents": "success",
+    "rust": "success",
+    "ci": "success"
   },
   "rust_workspace": {
-    "passed": 11526,
+    "passed": 11564,
     "failed": 0,
-    "skipped": 370,
+    "skipped": 375,
     "stack_bytes": 8388608,
-    "debug_info": "line-tables-only"
+    "debug_info": "line-tables-only",
+    "nextest_execution_seconds": 180.266,
+    "run": 41381463333
   },
   "rust_clippy": {
     "all_targets": true,
     "deny_warnings": true,
-    "exit": 0
+    "exit": 0,
+    "run": 41381463333
   },
   "linux_desktop_native_build": {
     "exit": 0,
@@ -41,10 +93,10 @@
     "exported_files": 1486
   },
   "github_script_tests": {
-    "passed": 321,
+    "passed": 327,
     "failed": 0,
-    "nightly_selection_regressions": 4,
-    "modern_windows_policy_regressions": 3
+    "root_release_tests_passed": 13,
+    "combined_local_script_tests_passed": 340
   },
   "go_modules": {
     "toolchain": "go1.27.3",
@@ -79,7 +131,8 @@
         "toolchain": "go1.27.3",
         "pe_header": "MZ"
       }
-    ]
+    ],
+    "current_main_matrix": "success"
   },
   "java_junit": {
     "passed": 527,
@@ -183,39 +236,98 @@
     "native_windows_release_passed": 13,
     "native_windows_release_failed": 0
   },
-  "current_delta": {
-    "baseline_main_commit": "e5f92aeeec8c4babd4e69aae475dfaf6a0152410",
-    "baseline_main_ci": 41048830184,
-    "standard_windows_and_ai_proxy": "passed",
-    "ci_rustfmt_issue": "two line wraps fixed; exact CI command exit0",
-    "duckdb_msvc_issue": "sccache 0.16 preprocess argument ordering: direct MSVC C++ path retained; native rebuild pending",
-    "github_scripts": {
-      "passed": 321,
-      "failed": 0
-    }
-  },
-  "verified_current_runtime_code_commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
+  "verified_current_runtime_code_commit": "afe3de9b41923439e34508458d23cc07726e84d0",
   "current_platform_ci": {
-    "run": 41051741668,
-    "code_commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
+    "run": 41380834793,
+    "code_commit": "afe3de9b41923439e34508458d23cc07726e84d0",
     "conclusion": "success",
     "jobs": {
+      "zookeeper-readiness (zookeeper, 3.5.5)": "success",
+      "nix": "success",
       "windows": "success",
-      "macos": "success",
-      "nix": "success"
+      "zookeeper-readiness (zookeeper-sasl, 3.7.0)": "success",
+      "macos": "success"
     }
   },
   "current_main_ci": {
-    "run": 41052876225,
-    "commit": "926b9b5dbd74b1e5a2f88b66100aa93ed3686a83",
-    "status": "in_progress",
-    "known_issue": "Pageant test called before sccache setup; step order fixed locally, not yet pushed"
+    "run": 41381463333,
+    "commit": "afe3de9b41923439e34508458d23cc07726e84d0",
+    "status": "completed",
+    "conclusion": "success",
+    "passed_jobs": 50,
+    "skipped_jobs": [
+      "windows-win7-bundle",
+      "jdbc"
+    ],
+    "failed_jobs": []
   },
   "github_dependency_alerts": {
-    "verified_at": "2026-10-30T12:15:47.778815+00:00",
+    "verified_at": "2026-11-02T03:29:58.041992+00:00",
     "open": 0,
-    "previous_open": 5,
     "dismissed_by_agent": false,
-    "scope": "GitHub Dependabot alerts only; upstream RSA advisory remains recorded"
-  }
+    "scope": "GitHub alert metadata; independent npm/OSV results reported separately"
+  },
+  "candidate_code_commit": "afe3de9b41923439e34508458d23cc07726e84d0",
+  "current_local_verification": {
+    "frontend_check_tasks_passed": 5,
+    "frontend_test_seconds": 488.71,
+    "frontend_build_seconds": 14.54,
+    "docs_build": "passed",
+    "docs_indexable_pages": 278,
+    "docs_localized_pages": 282,
+    "docs_exported_files": 1546,
+    "script_and_release_tests_passed": 340,
+    "duckdb_component_passed": 70,
+    "duckdb_component_failed": 0,
+    "duckdb_cancellation_stability_runs_passed": 20,
+    "portable_duckdb_stdio_checks_passed": 4,
+    "locale_typecheck": "passed"
+  },
+  "windows_duckdb": {
+    "job": 125073062227,
+    "conclusion": "success",
+    "native_engine": "v2.0.0",
+    "sql_parquet_reopen_checks_passed": 4,
+    "release_build_cold_seconds": 1126,
+    "release_build_cached_seconds": 44.52,
+    "metric_scope": "cargo release build, not application runtime"
+  },
+  "docx_current": {
+    "path": "/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区相关内容.docx",
+    "sha256": "064ad4bd24fdb0952c1336dd987e7638a8dc057cea2d541862993ccbb1adb56f",
+    "zip_valid": true,
+    "xml_valid": true,
+    "community_matches": 0,
+    "media_parts": 0
+  },
+  "community_cleanup": {
+    "qq_broadcast_job_removed": true,
+    "unused_locale_contact_labels_removed": true,
+    "removed_qr_and_logo_assets": 4,
+    "feedback_target": "https://github.com/ActiveInAI/PanDB/issues",
+    "upstream_distribution_roots_restricted_to_upstream": true
+  },
+  "npm_current_audits": {
+    "root": 0,
+    "docs": 0,
+    "devhost": 0,
+    "date": "2026-11-02"
+  },
+  "optional_stylus_chain": {
+    "old_chain": "absent from the installed application graph",
+    "compatibility_test": "isolated fixture passed with project Vite8.3.5",
+    "versions": {
+      "stylus": "0.64.0",
+      "glob": "14.0.3",
+      "minimatch": "11.0.3"
+    },
+    "application_dependency_added": false
+  },
+  "nix_pnpm_deps_hash": "sha256-xWn8a47H2M+7LC1Fexbo4MgS9mCTNmE/NNiKHzh4veE=",
+  "baseline_runtime_code_commit": "f2a5f0b810b624760513e120b41413c2cb73080d",
+  "main_ci_jobs_passed": 50,
+  "main_ci_jobs_skipped": [
+    "windows-win7-bundle",
+    "jdbc"
+  ]
 }

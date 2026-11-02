@@ -1,47 +1,31 @@
-# PanDB 同步与依赖升级验收（2026-10-30）
+# PanDB 同步与依赖升级验收（2026-11-02）
 
-交付目标：`ActiveInAI/PanDB/main`。上游基线：`6bac6034b5b3e17780d49b80363db026b6a7003e`。原始整体功能验收基线为 `f2a5f0b8`；当前新增 Pageant0.2.5 与现代 Windows 构建修复的源码提交为 `926b9b5d`，已通过 Windows/macOS/Nix 三平台验收 CI41051741668。最后的插件发布模板默认值与项目 Node26.13.0 / Go1.27.3 / CLI0.1.9 对齐，321项工作流脚本再次通过。
+已验证代码提交：`afe3de9b41923439e34508458d23cc07726e84d0`，目标为 `ActiveInAI/PanDB/main`。本轮冻结上游基线为 `6bac6034b5b3e17780d49b80363db026b6a7003e`。Windows支持目标收敛到Windows11+，停用Win7自动构建与发布。
 
-## 观察到的通过结果
+[主分支CI41381463333](https://github.com/ActiveInAI/PanDB/actions/runs/41381463333)已完成：**50项成功、0失败、2项按配置跳过**。跳过项为停用的Win7 bundle及旧JDBC汇总路径；Java测试、离线打包和仓库认证由独立任务验收。另有[维护验收CI41380834793](https://github.com/ActiveInAI/PanDB/actions/runs/41380834793)五项全部成功。
 
-| 验证 | 结果 |
+| 验证 | 观察结果 |
 | --- | --- |
-| Rust 工作区 nextest | **11526通过、0失败、370按原有规则跳过**；8MiB栈，line-tables-only调试信息 |
-| Rust严格检查 | CI全工作区、all-targets、`-D warnings`通过 |
-| Linux桌面 | 默认功能完整native build/link通过，包含最新3.54.1多密码SQLite |
-| Windows / macOS / Nix | 当前源码 [CI41051741668](https://github.com/ActiveInAI/PanDB/actions/runs/41051741668)全部成功；Nix实际构建pnpm包、JS依赖、Rust源vendor并验证Git固定哈希 |
-| Windows Pageant | 当前 0.2.5：Windows target/Clippy、本机账户名 8 项通过；CI41051741668 的真实 Windows 内核 release 13 项全部通过 |
-| 前端 | Node26下format/lint/typecheck/全量test及生产build通过 |
-| 文档 | Node26生产build及postbuild通过；266索引页、270本地化页、1486导出文件 |
-| GitHub脚本 | 321通过，含3项现代Windows支持策略回归和4项保留手工/停用配置选择检查 |
-| Go | Go1.27.3下21模块build和short unit命令通过 |
-| Java | 持久JUnit报告读回527通过，无失败和跳过 |
-| 插件SDK | Node26开发宿主build及58测试通过；Rust CLI23、packager8通过 |
-| SQL / 方言 | SQL-core713、原SQL分析集成case46、方言173通过；37份内置catalog均可加载 |
-| DuckDB | 实际native2.0.0执行BIGINT/中文/DECIMAL，Parquet写读与关闭重开通过 |
-| 旧数据兼容 | 七种3.51.3加密fixture在实际Cargo产出的3.54.1库中只读读回、拒绝wrong-key，前后SHA一致；Argon2新版本验证旧PHC通过 |
-| 实际界面 / HTTP / MCP | 浏览器登录、连接、编辑和执行SQL、Canvas中文结果视觉核对通过；HTTP8项、MCP4项，包括显式只读拒写 |
+| Rust工作区 | 本轮完整功能nextest **11564通过、0失败、375按既有配置跳过**；all-targets、`-D warnings`的严格Clippy成功 |
+| Windows / macOS / Nix | 当前代码五项维护验收全成功，含真实ZooKeeper3.5.5与SASL3.7.0；Nix实际重建JS依赖及Rust源vendor并验证固定哈希 |
+| Windows DuckDB | 实际native v2.0.0：引擎版本、SQL中文/BIGINT/DECIMAL、Parquet写读、checkpoint与重开共4项成功；PE依赖检查通过 |
+| Windows Pageant | 当前0.2.5：目标检查、严格Clippy、本机账户名8项及真实Windows release13项成功 |
+| 前端 | 本机Node26下连接类型/format/lint/typecheck/全量test五项成功，生产build成功；本轮主CI两分片及类型检查成功 |
+| 文档 | 修改反馈入口与移除社区资源后build/postbuild通过；278索引页、282本地化页、1546导出文件，导出中无已删除的4张社区图片 |
+| 脚本 / 发布流程 | 本机327项GitHub脚本加13项发布脚本，合计340通过；未就绪ZooKeeper阻止业务测试、延迟就绪及失败日志/清理回归成功 |
+| DuckDB组件 | 本机70项全通过；按生产路径修正的注册取消用例连续20轮成功；本轮CI组件70项全成功 |
+| 包分发演练 | 主CI完成CLI/MCP/插件包测试及publish dry-run；未执行安装包或外部分发发布 |
+| Go / Java / 插件 | 本机基线Go1.27.3下21模块build/short unit通过、Java持久JUnit527通过、插件宿主58及Rust CLI23/packager8通过；相关本轮主CI全部成功 |
+| SQL / 方言基线 | SQL-core713、原SQL分析集成46、方言173通过，37份内置catalog可加载；本轮工作区重新验收成功 |
+| Linux桌面 / 旧数据基线 | 完整默认功能native build/link成功；实际SQLite3.54.1库读取七种3.51.3旧加密格式、拒绝wrong-key且只读SHA不变，Argon2验证旧PHC成功 |
+| 界面 / HTTP / MCP基线 | 真实浏览器登录、连接、编辑执行SQL与Canvas中文结果核对通过；HTTP8项、MCP4项，含显式只读拒写；本轮未更改这些业务实现 |
 
-## 已修复的关键问题
+社区清理覆盖当前文档文字/关系、仓库入口、QQ群发布通知、14份未用翻译及4个未引用的二维码/图标。GitHub反馈页使用仓库已启用的Issues入口；上游专用Homebrew/Scoop/R2发布根作业限定在上游仓库执行，未替用户猜测其它发布目标。
 
-保持PanDB显示名称和应用更新来源，保留内部DBX协议及历史PanDB错误前缀解析。修正依赖API迁移、TLS/JWT后端选择、代理registry来源、SQL解析器适配、ZIP尺寸保护、编辑器事件调度与负时间格式。补回GLib和Pageant安全修复，校正Windows SID与安全属性的内存生命周期。多密码实现保留稳定2.6.1，内核补齐官方SQLite3.54.1维护修复，来源哈希与codec钩子已核对。
+构建修复保留实际编译与运行检查。cc-rs会从RUSTC_WRAPPER隐式继承sccache，Windows C++因此改用按锁文件、工具链和MSVC/SDK环境区分的产物缓存。同一Windows驱动Cargo release构建首次为18分46秒，本轮缓存复用为44.52秒；这是构建耗时，不能当作应用运行性能提升。
 
-## 验收边界
+根工作区未使用的旧Stylus/glob/minimatch可选链已清除，安全版本约束在隔离工程中验证兼容，应用未新增必需编译器依赖。ICU时区测试显式准备必需扩展；ZooKeeper就绪在TCP之外检查真实服务状态，保留所有业务断言及版本矩阵。Nix的JS依赖哈希由真实构建报告取得并重新验证，未猜测或绕过完整性校验。
 
-这是源码、依赖、构建与隔离功能验证；未对真实业务数据库或旧Windows实机执行迁移和运行验收。370项平台/显式集成用例按原配置跳过。
+当前三套npm审计均为0，GitHub开放依赖告警实读为0，未执行dismiss。**不能宣称每个依赖都采用注册表最新大版本，也不能宣称全项目零漏洞。** API/ABI及旧格式兼容线见[COMPATIBILITY.md](COMPATIBILITY.md)；RSA上游无补丁和其它维护状态见[SECURITY-REVIEW.md](SECURITY-REVIEW.md)。未添加审计忽略项。
 
-**不能宣称每个依赖均为其注册表最新大版本，也不能宣称全项目零漏洞。** API/ABI与旧格式的维护兼容线见[兼容性说明](COMPATIBILITY.md)；RSA上游无已修复版本及其它维护状态告警、Go未使用依赖图告警的分类见[安全复查](SECURITY-REVIEW.md)。未添加审计忽略项。
-
-## 文档交付与证据
-
-DOCX绝对路径：`/home/arch-gpt--notebook001/Downloads/PanDB_已删除社区相关内容.docx`。ZIP完整性与逐段社区词/链接复查均通过。
-
-结构化结果见[verification-summary.json](verification-summary.json)。原始日志与隔离验收文件位于 `/home/arch-gpt--notebook001/work/pandb-upgrade-20261030`；本地开发工作树为 `/home/arch-gpt--notebook001/dev/worktrees/pandb/upstream-latest-dependencies-20261029`。
-
-2026-10-30 支持策略调整：Windows 桌面以 Windows 11+ 为目标；停用 Win7 自动安装包与发布任务，保留标准 Windows 检查，DuckDB/TDengine Windows x64 使用标准 Rust 1.99.1 目标，Go 发布构建统一到 1.27.3。321 项脚本测试全通过，3 个 YAML 与 58 段 Bash 语法验证通过；应用功能代码未改变。
-
-现代 Windows Go agent 交叉编译额外验证：Oracle、RabbitMQ、Xugu、Kingbase 四个 x64 PE 均生成成功，构建信息均为 Go1.27.3。主分支首次安装发现 cbor-extract 可选脚本策略缺失，已显式禁用其原生加速构建并保留纯 JS 回退，未开启任意依赖脚本。独立 AI 代理工具锁文件同步、安全审计范围扩展和 Windows 检查见安全复查。
-
-本轮后续：修复 CI 逐文件 Rustfmt 发现的两处换行；DuckDB Windows CI 保持 Rust sccache，C++ 与既有发布流程一样直接调用 MSVC，修复 sccache 0.16 将 /WX- 排入 -Tp 源文件参数位置的问题。当前版本 Pageant 升级至 0.2.5；7 锁文件 1053 包版本重新审计，Pageant OSV 无命中。标准 Windows 桌面与独立 AI 代理工具已在 main e5f92aeee 的 CI 原生检查通过，其余正在完成；最新组件原生验收仍需本轮 CI 结果。
-
-最新状态：主分支 926b9b5d 的全量 CI41052876225 尚在执行。新增主分支 Pageant 测试发现步骤顺序错误（sccache 初始化之前运行），已仅调整顺序；为直接 MSVC 的 DuckDB 构建增加锁文件、工具链及 MSVC/SDK 环境相关的原生产物缓存。321 项脚本、YAML/Bash 及精确缓存目标路径校验通过，等待现有原生构建完成后再推送，避免重复取消编译。GitHub Dependabot 当前开放项 0，未隐藏 RSA 上游残余风险。
+真实供应商环境、实际用户数据库和用户业务验收不由源码/CI结果替代；本次未迁移真实数据库、未更改服务或凭据、未发布安装包。DOCX交付文件为 `PanDB_已删除社区相关内容.docx`，已重新验证ZIP/XML完整、社区文字/链接0、嵌入图片0。结构化结果见[verification-summary.json](verification-summary.json)，原始日志和本地交付回执保存在本任务受控证据目录。

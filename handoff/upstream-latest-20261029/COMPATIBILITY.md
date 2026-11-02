@@ -1,4 +1,4 @@
-# 依赖兼容性决策（2026-10-30）
+# 依赖兼容性决策（2026-11-02）
 
 用户要求依赖优先最新稳定版并保留项目能力。Windows 桌面支持目标为 Windows 11 及以上；Windows 7/10 不再作为适配、验证或验收目标，不再自动构建 Win7 安装包。存在可复现API、ABI、旧格式或操作系统约束的组件列明如下；这些例外意味着不能宣称每个依赖都采用其注册表最新大版本。
 
@@ -22,3 +22,7 @@
 Windows agents 与标准目标统一：Go 1.27.3、Rust 1.99.1、`x86_64-pc-windows-msvc`；Win7 发布作业停用，其余发布任务不依赖这些停用作业。
 
 Pageant 已迁移至官方当前稳定版 0.2.5（注册表 API 与归档 SHA256 已核对），不再因 Win7 固定旧版。保留映射边界保护及现代 Windows 账户名规范化；Windows 目标与严格 Clippy、本机账户名 8 项回归已通过；[CI41051741668](https://github.com/ActiveInAI/PanDB/actions/runs/41051741668) 的 Windows 原生 13 项全部通过。
+
+2026-11-02 补充：Windows DuckDB 的 cc-rs 会隐式继承 RUSTC_WRAPPER=sccache；sccache0.16 重排分离的 -Tp 与 /WX-，导致编译失败。此任务使用按工具链/锁文件/MSVC/SDK区分的原生产物缓存，不在该 C++ 路径启用编译包装器；主分支实际 Windows SQL/Parquet/重开四项已通过。普通 Rust/C 编译路径保留现有缓存。
+
+Vite 未使用的旧 Stylus/glob/minimatch 可选链已从实际应用依赖图清除；可选版本约束为 Stylus0.64.0/glob14.0.3/minimatch11.0.3。隔离工程已验证这组版本与项目 Vite8.3.5 的 glob 样式导入；应用未新增必需编译器依赖。仅与已移除 source-map-resolve0.6 对应的过期补丁及规则一并清理，未关闭补丁、完整性或漏洞检查。

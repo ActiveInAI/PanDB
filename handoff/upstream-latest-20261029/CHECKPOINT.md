@@ -218,3 +218,15 @@ main=f95f8b77f7ec6a2e00e1f1110a01492ea3e94503，CI41374325582已完成，仅ZooK
 ## 2026-11-02T02:57:57.645163+00:00 edb0860维护验收进展
 
 维护分支41379885119：Nix通过，自动重建证实新的JS依赖hash为sha256-xWn8a47H2M+7LC1Fexbo4MgS9mCTNmE/NNiKHzh4veE=。已下载artifact pandb-nix-verified-hash，内部文件pandb-nix-hash.patch，人工核对仅flake.nix第234行一项hash变化并应用；未猜hash。ZK两任务未执行任何业务测试即exit126，因为新维护job直接执行仓库100644脚本；主CI原来通过bash调用。已按主CI惯例修为bash .github/scripts/ci-agent-integration.sh，未改文件权限或放宽断言，需新提交后重新实测。Windows/macOS当前结果以41379885119任务状态为准。下一步小commit hash+调用修复并推维护分支，五项全绿后推进main并等完整CI（含Windows真实SQL4项）通过。
+
+## 2026-11-02T03:19:45.821271+00:00 main已推进afe3，必须等全量结果
+
+修正Bash调用后维护CI41380834793：真实ZooKeeper3.5.5与SASL3.7.0已success，Nix纯哈希构建+Rustsourcevendor已success；macOS/Windows当时还在cargo check。main已正常快进afe3de9b41923439e34508458d23cc07726e84d0，完整CI41381463333运行中，watch会话27970（45mindeadline，日志main-ci-afe3de9b4-watch.log）。main本轮所有真实DB兼容场景及前端已通过，尚待workspace Nextest/Clippy、Windows std与packages/独立DuckDB等最终状态；不能因为排队结束。
+
+Windows DuckDB本轮job125073062227已success：实际v2.0.0、中文/DECIMAL/Parquet/关闭重开4checks全pass（日志afe3-windows-duckdb-smoke-green.log），原生产物缓存后cargo release构建44.52秒；之前同命令首次构建18m46s（日志f95-windows-duckdb-first-green.log），不是应用运行性能测量。当前源码工作树除本checkpoint草稿外应干净。
+
+下一步：读回main413814与维护413808直到必要检查明确；若失败按真实日志修根因，不盲重跑。全绿后重写STATUS/FINAL/verification-summary/SECURITY为本轮真实数据，340脚本/发布、70组件、20取消稳定、Windows13Pageant+4SQL、NPM3套audit0、OSV1053+RSA残余；Docx已Nov02再验ZIP/XML0community/0media，SHA064ad4bd24fdb0952c1336dd987e7638a8dc057cea2d541862993ccbb1adb56f。报告提交只改handoff后仍等该最新main所需CI，再输出绝对DOCX、真实远端提交及风险，停止。Memory registry此轮用过MEMORY.md88-89定位历史，final需要按developer规定附一次memory引用block，不能更新memory。
+
+## 2026-11-02T03:35:07.831978+00:00 代码CI全绿，准备仅报告提交
+
+代码afe3已由主CI41381463333完成50success/0failure/2configuredskip（Win7与旧JDBC汇总），workspace11564pass0fail375skip，strictClippy、真实WindowsSQL4、独立DuckDB70与所有live场景成功。维护CI41380834793五项全部success。Watch27970已正常exit0收尾。报告草稿已改为本轮真实数据，仅handoff目录改动；后续仅报告commit正常pushmain并等最新所需CI结束，最后远端SHA/清洁树/Docx绝对路径/回执读回。不重开组件升级或无关排障。

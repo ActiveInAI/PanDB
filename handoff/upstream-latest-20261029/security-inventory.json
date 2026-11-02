@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-30",
+  "date": "2026-11-02",
   "npm": {
     "root": {
       "info": 0,
@@ -26,18 +26,6 @@
   },
   "rust_registry_versions_queried": 1053,
   "rust_unresolved_inventory": [
-    {
-      "name": "block-buffer",
-      "version": "0.10.4",
-      "lockfiles": [
-        "Cargo.lock",
-        "agents/drivers/duckdb/Cargo.lock",
-        "agents/drivers/tdengine/Cargo.lock"
-      ],
-      "ids": [
-        "GHSA-qwgh-2vcv-g2f7"
-      ]
-    },
     {
       "name": "proc-macro-error",
       "version": "1.0.4",
@@ -510,9 +498,30 @@
     "native_check": "Added to standard Windows CI; Linux check unsupported because registry module is Windows-specific"
   },
   "github_dependency_alerts": {
-    "verified_at": "2026-10-30T12:15:47.778815+00:00",
+    "verified_at": "2026-11-02T03:29:58.041333+00:00",
     "open": 0,
-    "previous_open": 5,
-    "dismissed_by_agent": false
-  }
+    "dismissed_by_agent": false,
+    "scope": "GitHub alert metadata; independent npm/OSV results reported separately"
+  },
+  "npm_current_audits": {
+    "root": 0,
+    "docs": 0,
+    "devhost": 0,
+    "verified_at": "2026-11-02T03:20:44.980553+00:00"
+  },
+  "optional_style_dependency_review": {
+    "outcome": "removed unused vulnerable optional chain from root graph",
+    "safe_optional_versions": {
+      "stylus": "0.64.0",
+      "glob": "14.0.3",
+      "minimatch": "11.0.3"
+    },
+    "isolated_vite_glob_import": "passed",
+    "archive_source_proof": "nov02-style-dependency-sources.json"
+  },
+  "ci_boundary_fixes": [
+    "cc-rs inherits recognized RUSTC_WRAPPER for C++; Windows DuckDB uses target output cache instead",
+    "upstream distribution jobs restricted to t8y2/dbx; no external distribution executed",
+    "community broadcast job and unreferenced QR/logo files removed"
+  ]
 }
