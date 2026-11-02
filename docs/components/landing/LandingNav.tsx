@@ -17,7 +17,6 @@ const i18n = {
     changelog: "Changelog",
     community: "Feedback",
     sponsors: "Sponsors",
-    contributors: "Contributors",
     drivers: "Offline Drivers",
     langLabel: "Switch language",
     menu: "Open navigation",
@@ -31,7 +30,6 @@ const i18n = {
     changelog: "更新日志",
     community: "问题反馈",
     sponsors: "赞助商",
-    contributors: "贡献者",
     drivers: "离线驱动",
     langLabel: "切换语言",
     menu: "打开导航",
@@ -40,7 +38,7 @@ const i18n = {
   },
 };
 
-export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" | "databases" | "changelog" | "community" | "issue" | "sponsors" | "contributors" | "drivers" | "plugins" | "privacy" }) {
+export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" | "databases" | "changelog" | "community" | "issue" | "sponsors" | "drivers" | "plugins" | "privacy" }) {
   const ref = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const t = i18n[lang];
@@ -52,7 +50,6 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
     community: `/${otherLang}/community`,
     issue: `/${otherLang}/issue`,
     sponsors: `/${otherLang}/sponsors`,
-    contributors: `/${otherLang}/contributors`,
     drivers: `/${otherLang}/drivers`,
     privacy: `/${otherLang}/privacy`,
   };
@@ -64,7 +61,6 @@ export function LandingNav({ lang, active }: { lang: DocsLang; active?: "home" |
     { id: "changelog", href: `/${lang}/changelog`, label: t.changelog, tabletHidden: false },
     { id: "community", href: `/${lang}/community`, label: t.community, tabletHidden: false },
     { id: "sponsors", href: `/${lang}/sponsors`, label: t.sponsors, tabletHidden: true },
-    { id: "contributors", href: `/${lang}/contributors`, label: t.contributors, tabletHidden: true },
     { id: "drivers", href: `/${lang}/drivers`, label: t.drivers, tabletHidden: false },
   ] as const;
 

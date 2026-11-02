@@ -8,12 +8,10 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { InstallTabs } from "@/components/landing/InstallTabs";
 import { RevealSection } from "@/components/landing/RevealSection";
-import { ContributorsWallContent } from "@/components/landing/ContributorsWall";
 import { DatabasePillMarquee } from "@/components/landing/DatabasePillMarquee";
 import contributorSnapshot from "@/data/contributors.json";
 import { databaseSupport } from "@/data/databaseSupport";
 import type { ContributorActivityData } from "@/lib/contributorActivity";
-import { contributorsFromActivity } from "@/lib/contributors";
 import { getAppVersion } from "@/lib/appVersion";
 import { fetchLatestReleaseInfo } from "@/lib/latestRelease";
 import { buildMetadata, getHtmlLang } from "@/lib/metadata";
@@ -355,8 +353,6 @@ const i18nText = {
     testimonialsTitle: "What DBX is good at",
     testimonialsDesc: "Reviews and coverage from real community sources — HelloGitHub, X, blogs, and YouTube.",
     capabilitiesTitle: "Built for real database work",
-    contributorsTitle: "Built by the community",
-    contributorsDesc: "DBX is fully open-source. Every feature, fix, and driver starts with a contributor.",
     sponsorsLabel: "❤️ Sponsors",
     partnersLabel: "🤝 Partners",
     qiniuSponsorDesc: "Qiniu Cloud provides DBX with object storage, CDN, and other cloud infrastructure resources.",
@@ -408,8 +404,6 @@ const i18nText = {
     testimonialsTitle: "DBX 适合什么样的工作",
     testimonialsDesc: "以下评价与收录均来自 HelloGitHub、X、知乎、博客园、掘金等真实来源。",
     capabilitiesTitle: "面向真实数据库工作的能力",
-    contributorsTitle: "社区共建",
-    contributorsDesc: "DBX 因每一位贡献者而生长",
     sponsorsLabel: "❤️ 赞助商",
     partnersLabel: "🤝 合作伙伴",
     qiniuSponsorDesc: "七牛云为 DBX 提供对象存储、CDN 等云基础设施资源支持。",
@@ -483,7 +477,6 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
   const metricItems = metrics(starLabel)[l];
   const appVersion = getAppVersion();
   const initialLatestRelease = await fetchLatestReleaseInfo();
-  const contributors = contributorsFromActivity(contributorData.contributors);
   const initialDownloadVersion = initialLatestRelease?.version ?? appVersion;
   const testimonialItems = localizedTestimonials[l];
   const softwareStructuredData = buildSoftwareApplicationStructuredData(l, initialDownloadVersion);
@@ -720,11 +713,6 @@ export default async function LandingPage({ params }: { params: Promise<{ lang: 
             </div>
           ))}
         </div>
-      </RevealSection>
-
-      {/* Contributors */}
-      <RevealSection className="max-w-[1180px] mx-auto px-7 pt-[70px] pb-1 max-[760px]:px-[18px]">
-        <ContributorsWallContent contributors={contributors} title={t.contributorsTitle} desc={t.contributorsDesc} lang={l} />
       </RevealSection>
 
       {/* Sponsor */}

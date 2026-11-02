@@ -325,12 +325,6 @@ MySQL, PostgreSQL, SQLite, Cloudflare D1, Redis, MongoDB, DuckDB, ClickHouse, SQ
 Open an issue on <a href="https://github.com/ActiveInAI/PanDB/issues">GitHub Issues</a>.
 </details>
 
-## Contributors
-
-<a href="https://github.com/ActiveInAI/PanDB/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB&max=300&columns=15" />
-</a>
-
 ## Star History
 
 <a href="https://www.star-history.com/?repos=ActiveInAI%2FPanDB&type=date&legend=top-left">

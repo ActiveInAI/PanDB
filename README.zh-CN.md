@@ -318,12 +318,6 @@ MySQL、PostgreSQL、SQLite、Cloudflare D1、Redis、MongoDB、DuckDB、ClickHo
 在 <a href="https://github.com/ActiveInAI/PanDB/issues">GitHub Issues</a> 提交 Issue。
 </details>
 
-## 贡献者
-
-<a href="https://github.com/ActiveInAI/PanDB/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ActiveInAI/PanDB&max=300&columns=15" />
-</a>
-
 ## Star History
 
 <a href="https://www.star-history.com/?repos=ActiveInAI%2FPanDB&type=date&legend=top-left">
