@@ -908,7 +908,8 @@ jobs:
       RUSTUP_TOOLCHAIN: 1.99.1
       CARGO_INCREMENTAL: "0"
       CARGO_TARGET_DIR: ${{ github.workspace }}/target/duckdb-driver
-      RUSTC_WRAPPER: sccache
+      # cc-rs otherwise implicitly wraps MSVC C++ through RUSTC_WRAPPER.
+      RUSTC_WRAPPER: ${{ !startsWith(matrix.runner, 'windows-') && 'sccache' || '' }}
       SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -921,10 +922,11 @@ jobs:
         with:
           python-version: "3.15"
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+        if: runner.os != 'Windows'
         with:
           version: "v0.16.0"
       - name: Configure S3 sccache
-        if: env.SCCACHE_GHA_ENABLED != 'true'
+        if: runner.os != 'Windows' && env.SCCACHE_GHA_ENABLED != 'true'
         shell: bash
         env:
           CACHE_BUCKET: ${{ secrets.SCCACHE_S3_BUCKET }}
@@ -988,7 +990,7 @@ jobs:
                     x86_64) SCCACHE_ARCH=x86_64-unknown-linux-musl ;;
                     aarch64) SCCACHE_ARCH=aarch64-unknown-linux-musl ;;
                   esac
-                  curl -sSfL "https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-${SCCACHE_ARCH}.tar.gz" \
+                  curl -sSfL "https://github.com/mozilla/sccache/releases/download/v0.16.0/sccache-v0.16.0-${SCCACHE_ARCH}.tar.gz" \
                     | tar -xz --strip-components=1 -C "$HOME/.cargo/bin"
                   export CC="sccache cc" CXX="sccache c++"
                   sccache --version
@@ -1031,7 +1033,7 @@ jobs:
               "/driver/dbx-agent-duckdb-${{ matrix.platform }}" < /dev/null
           fi
       - name: Show sccache stats
-        if: always()
+        if: always() && runner.os != 'Windows'
         continue-on-error: true
         shell: bash
         run: ${SCCACHE_PATH} --show-stats
@@ -1203,7 +1205,7 @@ jobs:
                     x86_64) SCCACHE_ARCH=x86_64-unknown-linux-musl ;;
                     aarch64) SCCACHE_ARCH=aarch64-unknown-linux-musl ;;
                   esac
-                  curl -sSfL "https://github.com/mozilla/sccache/releases/download/v0.10.0/sccache-v0.10.0-${SCCACHE_ARCH}.tar.gz" \
+                  curl -sSfL "https://github.com/mozilla/sccache/releases/download/v0.16.0/sccache-v0.16.0-${SCCACHE_ARCH}.tar.gz" \
                     | tar -xz --strip-components=1 -C "$HOME/.cargo/bin"
                   export CC="sccache cc" CXX="sccache c++"
                   sccache --version

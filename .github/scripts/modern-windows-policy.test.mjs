@@ -35,4 +35,8 @@ test("Windows agent release matrices and Go compilers use modern targets", () =>
     assert.match(block, /platform: windows-x64/);
   }
   assert.match(source, /go-version: "1\.27\.3"/);
+  const duckdb = job("agents-release.yml", "build-duckdb-native");
+  assert.ok(duckdb.includes("RUSTC_WRAPPER: ${{ !startsWith(matrix.runner, 'windows-') && 'sccache' || '' }}"));
+  assert.match(duckdb, /sccache-action@[^\n]+\n        if: runner\.os != 'Windows'/);
+  assert.doesNotMatch(source, /sccache\/releases\/download\/v0\.10\.0/);
 });

@@ -178,25 +178,33 @@ async fn worker_process_recovers_after_registered_cancel_interrupt() {
     let execution_id = "duckdb-worker-cancel-test";
     let registered = running_queries
         .register_task(execution_id.to_string(), RunningTaskMetadata::query("duckdb-conn", "main", None));
-    let cancel_client = client.clone();
+    // Match the production query dispatcher: an interrupt cancels this
+    // operation, never a potentially newer worker started after recovery.
+    // Keep this distinct from registered.token() so only the callback can
+    // cancel execute and the test really exercises registered interrupts.
+    let operation_cancel = CancellationToken::new();
+    let interrupt_cancel = operation_cancel.clone();
     running_queries.register_interrupt(execution_id, move || {
-        let cancel_client = cancel_client.clone();
-        tokio::spawn(async move {
-            let _ = cancel_client.cancel().await;
-        });
+        interrupt_cancel.cancel();
     });
 
     let long_query = client.execute(
         None,
         "SELECT sum(sin(i::DOUBLE) * cos(i::DOUBLE / 3.0)) FROM range(100000000000) AS t(i)".to_string(),
         Some(10),
-        Some(registered.token()),
+        Some(operation_cancel.clone()),
         Some(Duration::from_secs(30)),
     );
     tokio::pin!(long_query);
 
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    // Pinning alone does not poll an async query. Drive it before asking the
+    // registry to interrupt, while retaining the long-query completion guard.
+    tokio::select! {
+        result = &mut long_query => panic!("long query completed before cancellation: {result:?}"),
+        _ = tokio::time::sleep(Duration::from_millis(200)) => {}
+    }
     assert!(running_queries.cancel(execution_id));
+    assert!(operation_cancel.is_cancelled(), "registered interrupt must cancel the operation");
 
     let cancelled = tokio::time::timeout(Duration::from_secs(5), &mut long_query)
         .await

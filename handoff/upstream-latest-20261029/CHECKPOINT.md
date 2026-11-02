@@ -190,3 +190,13 @@
 GitHub Dependabot API开放项当前0（此前5），从未dismiss；实际OSV仍有RSA无补丁与维护状态风险。已浏览官方RUSTSEC2023-0071并确认明确rc18仍受影响，不能清零伪报；cargo tree已确认普通生产图只经russh0.65.0/ssh-key0.7.0-rc.11。结果文件github-open-alerts-pageant-modern.json，保护日志都在work/pandb-upgrade-20261030/logs。
 
 最终需要：让main必要CI得到明确结果，不能因为排队结束；最后报告更新为实际新CI结果、回执/远端SHA/清洁树/绝对DOCX路径。原始repo和运行中的其它服务未动；不做旧Windows适配、安装系统包、改真实DB、发邮件或发布安装包。
+
+## 2026-11-02T01:47:41.953982+00:00 Nov02 环境续作
+
+远端 main仍926b9b5d；本地c4a06c48d为已验证的Windows测试初始化顺序与DuckDB目标产物缓存修复，尚未发布。完整CI41052876225已结束：45成功、2跳过，3直接失败+2汇总失败。Root workspace Nextest与strict Clippy实际通过，旧runner shutdown143已在这一轮恢复；packages发布演练也通过。失败分别为Windows早于sccache setup（c4修好）、WindowsDuckDB /WX-（仅移除CC/CXX不足）、LinuxDuckDB取消回归69/70通过。
+
+读取cc1.10实际源码确认：没有CC/CXX时也会从RUSTC_WRAPPER自动继承sccache。因此本轮彻底移除WindowsDuckDB CI任务的RUSTC_WRAPPER、sccache action/S3初始化，用c4加入的RustCache原生产物缓存覆盖Rust/C++；编译前显式拒绝意外的RUSTC_WRAPPER以快速失败。agents-release混合矩阵仅Windows禁用wrapper/action/S3，Linux/mac保留；两处容器sccache旧0.10已对齐项目0.16，官方tag API核实两个musl发布资产存在。
+
+取消失败在test219，probe报DuckDB worker process exited。生产query/mod.rs1900分支早已注册operation_cancel.cancel的同步操作级回调；测试仍tokio::spawn调用client.cancel终止整个worker，且pinned future从未在sleep前被poll。这会让迟到旧kill杀掉新probe。已使测试与生产一致，使用与registry token不同的操作token，注册回调只能取消它；tokio::select实际驱动long_query，再取消，并断言该独立token已取消；保持5s取消/后续查询成功断言，不改生产代码、不增加超时、不跳过用例。
+
+321脚本全通过，两个YAML与37 Bash语法通过，DuckDB测试rustfmt与diffcheck通过。正在本机编译并运行修复case，会话72347，600秒deadline；日志duckdb-registered-cancel-fixed.log，复用旧maintenance/agents/drivers/duckdb/target，libduckdb-sys重新编译。接下来需要观察该结果并运行组件70项/取消case稳定性验证，同时GitHub新main CI验证真实MSVC无wrapper及全部必要检查。不能因排队结束。

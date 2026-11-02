@@ -396,16 +396,13 @@ test("local Rust entrypoints and live TDengine tests use nextest", () => {
   assert.doesNotMatch(integration, /cargo test/);
 });
 
-test("DuckDB Windows builds cache Rust and invoke MSVC C++ directly", () => {
+test("DuckDB Windows builds cache native outputs without implicit C++ wrappers", () => {
   const content = job("duckdb-windows-driver");
-  // S3 is preferred over the quota-limited GHA backend; GHA remains the fallback.
-  assert.ok(content.includes("SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}"));
-  // sccache reorders cc-rs's separate -Tp input after /WX- during preprocessing.
+  // cc-rs also inherits sccache from RUSTC_WRAPPER when CC/CXX are unset.
   assert.doesNotMatch(content, /^\s+(?:CC|CXX):.*sccache/m);
-  assert.ok(content.includes("RUSTC_WRAPPER: sccache"));
+  assert.doesNotMatch(content, /^\s+RUSTC_WRAPPER:/m);
+  assert.doesNotMatch(content, /uses: mozilla-actions\/sccache-action@/);
   assert.ok(content.includes("0b201ec74fa43914dc39ae48a89fd1d8cb592756"));
-  assert.ok(content.includes("fc920bf0ec8de6ee65d409111f7ec508035751ba"));
-  assert.ok(content.includes('version: "v0.16.0"'));
   assert.ok(content.includes("Swatinem/rust-cache@v2.9.3"));
   assert.ok(content.includes('workspaces: "agents/drivers/duckdb -> ../../../target/duckdb-driver"'));
   assert.ok(content.includes("shared-key: ci-duckdb-windows-driver-x86_64-pc-windows-msvc"));

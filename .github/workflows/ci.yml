@@ -859,14 +859,8 @@ jobs:
       # keeps the 1 MiB linker default and deep connect/serde call stacks abort
       # with 0xC00000FD ("DBX 已停止工作"). The standard Windows stack check covers the same reservation.
       RUSTFLAGS: -C debuginfo=line-tables-only -C target-feature=+crt-static -C link-arg=/STACK:8388608
-      RUSTC_WRAPPER: sccache
-      # Prefer S3 when available; GitHub's 10 GB cache quota evicts the shared
-      # Linux target caches when thousands of GHA sccache entries pile up.
-      SCCACHE_GHA_ENABLED: ${{ secrets.SCCACHE_S3_BUCKET == '' && 'true' || 'false' }}
-      SCCACHE_GHA_VERSION: duckdb-windows-v1
-      # Keep Rust cached, but use MSVC directly for bundled DuckDB C++.
-      # sccache 0.16 places /WX- after cc-rs's separate -Tp and MSVC then
-      # interprets /WX- as the source filename. Match agents-release.yml.
+      # cc-rs automatically inherits known RUSTC_WRAPPER values for C++.
+      # Native target caching below avoids the sccache /Tp preprocessing bug.
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -884,31 +878,6 @@ jobs:
         with:
           python-version: "3.15"
 
-      - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
-        with:
-          version: "v0.16.0"
-
-      - name: Configure S3 sccache
-        if: env.SCCACHE_GHA_ENABLED != 'true'
-        shell: bash
-        env:
-          CACHE_BUCKET: ${{ secrets.SCCACHE_S3_BUCKET }}
-          CACHE_ENDPOINT: ${{ secrets.SCCACHE_S3_ENDPOINT }}
-          CACHE_REGION: ${{ secrets.SCCACHE_S3_REGION }}
-          CACHE_KEY_PREFIX: ${{ secrets.SCCACHE_S3_KEY_PREFIX }}
-          CACHE_ACCESS_KEY_ID: ${{ secrets.SCCACHE_S3_ACCESS_KEY_ID }}
-          CACHE_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_S3_SECRET_ACCESS_KEY }}
-        run: |
-          {
-            echo "SCCACHE_BUCKET=${CACHE_BUCKET}"
-            echo "SCCACHE_ENDPOINT=${CACHE_ENDPOINT}"
-            echo "SCCACHE_REGION=${CACHE_REGION}"
-            echo "SCCACHE_S3_KEY_PREFIX=${CACHE_KEY_PREFIX}"
-            echo "SCCACHE_S3_USE_SSL=true"
-            echo "AWS_ACCESS_KEY_ID=${CACHE_ACCESS_KEY_ID}"
-            echo "AWS_SECRET_ACCESS_KEY=${CACHE_SECRET_ACCESS_KEY}"
-          } >> "$GITHUB_ENV"
-
       - name: Cache DuckDB native build outputs
         uses: Swatinem/rust-cache@v2.9.3
         with:
@@ -923,7 +892,11 @@ jobs:
       - name: Build DuckDB Windows driver
         shell: pwsh
         working-directory: agents/drivers/duckdb
-        run: cargo build --locked --release --bin dbx-duckdb-driver --target x86_64-pc-windows-msvc
+        run: |
+          if ($env:RUSTC_WRAPPER) {
+            throw "DuckDB MSVC must use native output caching; cc-rs otherwise wraps C++ implicitly."
+          }
+          cargo build --locked --release --bin dbx-duckdb-driver --target x86_64-pc-windows-msvc
 
       - name: Validate DuckDB Windows driver
         shell: bash
